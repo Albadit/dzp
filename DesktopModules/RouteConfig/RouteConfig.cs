@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
+using System.Web.Security;
 using DotNetNuke.Entities.Portals;
 using DotNetNuke.Entities.Tabs;
 using DotNetNuke.Entities.Users;
@@ -33,7 +34,7 @@ namespace DnnDev.Routing
         /// <summary>
         /// Set to true to write detailed routing info to App_Data\RouteConfig.log.
         /// </summary>
-        private const bool EnableLogging = false;
+        private const bool EnableLogging = true;
 
         // ── Template page names ───────────────────────────────────────────
         // Any DNN page whose name is in this set acts as a template:
@@ -63,6 +64,12 @@ namespace DnnDev.Routing
             var request = app.Context.Request;
             var path = request.Url.AbsolutePath;
 
+            // Store the original browser URL before DNN's Friendly URL module rewrites it.
+            // Only set once per request — DNN may trigger additional internal rewrites
+            // that re-enter BeginRequest; we must preserve the TRUE original URL.
+            if (app.Context.Items["OriginalPath"] == null)
+                app.Context.Items["OriginalPath"] = path;
+
             try
             {
                 ProcessRoute(app, request, path);
@@ -82,6 +89,11 @@ namespace DnnDev.Routing
         {
             var app = (HttpApplication)sender;
             var ctx = app.Context;
+
+            // If user is visiting a template page directly (e.g. /community-slug/home),
+            // redirect them to their actual community URL (e.g. /keizerswaard/home).
+            // This handles DNN 10's JS-based login which redirects to the template page.
+            RedirectTemplateToSlug(app);
 
             // Only act when our routing captured a community slug
             if (ctx.Items["RouteActive"] == null)
@@ -131,6 +143,77 @@ namespace DnnDev.Routing
         }
 
         /// <summary>
+        /// If the user is visiting a template page URL directly (e.g. /community-slug/home),
+        /// and they are authenticated, redirect to their actual community slug URL.
+        /// Handles DNN 10's SPA login which redirects to the template page via JavaScript.
+        ///
+        /// Uses a one-time cookie to prevent infinite redirect loops:
+        /// DNN's internal URL rewriting re-enters the pipeline after our slug rewrite,
+        /// making the path appear as the template page again. The cookie signals that
+        /// we already redirected and should not redirect again.
+        /// </summary>
+        private void RedirectTemplateToSlug(HttpApplication app)
+        {
+            var ctx = app.Context;
+
+            // If we already redirected on the previous request, skip and clear the cookie.
+            var skipCookie = ctx.Request.Cookies["RouteConfig_Skip"];
+            if (skipCookie != null)
+            {
+                Log("TEMPLATE CHECK: skip cookie found, clearing and returning");
+                // Expire the cookie immediately
+                var expire = new HttpCookie("RouteConfig_Skip") { Expires = DateTime.UtcNow.AddDays(-1), Path = "/" };
+                ctx.Response.Cookies.Add(expire);
+                return;
+            }
+
+            // Use the original browser URL saved in BeginRequest (before DNN rewrites to Default.aspx)
+            var path = (ctx.Items["OriginalPath"] as string ?? ctx.Request.Url.AbsolutePath).Trim('/');
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            var segments = path.Split('/');
+            Log("TEMPLATE CHECK: path='" + path + "' seg[0]='" + segments[0]
+                + "' isTemplate=" + TemplatePages.Contains(segments[0]));
+
+            // Check if the first segment is a template page name (e.g. "community-slug")
+            if (!TemplatePages.Contains(segments[0]))
+                return;
+
+            var identity = ctx.User?.Identity;
+            var isAuth = identity != null && identity.IsAuthenticated;
+            Log("TEMPLATE CHECK: isAuthenticated=" + isAuth
+                + " identity=" + (identity?.Name ?? "(null)"));
+            if (!isAuth)
+                return;
+
+            var userInfo = UserController.Instance.GetCurrentUserInfo();
+            var uid = userInfo?.UserID ?? -999;
+            Log("TEMPLATE CHECK: userInfo.UserID=" + uid
+                + " username='" + (userInfo?.Username ?? "(null)") + "'");
+            if (userInfo == null || userInfo.UserID < 0)
+                return;
+
+            var communitySlug = GetUserFirstCommunity(userInfo.Username);
+            Log("TEMPLATE CHECK: communitySlug='" + (communitySlug ?? "(null)") + "'");
+            if (string.IsNullOrEmpty(communitySlug))
+            {
+                Log("TEMPLATE REDIRECT: user '" + userInfo.Username + "' has no community");
+                return;
+            }
+
+            // Replace the template name with the real slug
+            segments[0] = communitySlug;
+            var redirectUrl = "/" + string.Join("/", segments);
+            Log("TEMPLATE REDIRECT: user '" + userInfo.Username + "' -> " + redirectUrl);
+
+            // Set a one-time cookie so the next request (after 302) skips this redirect.
+            ctx.Response.Cookies.Add(new HttpCookie("RouteConfig_Skip", "1") { Path = "/", HttpOnly = true });
+            ctx.Response.Redirect(redirectUrl, false);
+            app.CompleteRequest();
+        }
+
+        /// <summary>
         /// Rewrite to the Access Denied or 404 Error Page and set HTTP 403.
         /// </summary>
         private static void DenyCommunityAccess(HttpApplication app, string slug)
@@ -166,48 +249,68 @@ namespace DnnDev.Routing
             var ctx = app.Context;
             var response = ctx.Response;
             var request = ctx.Request;
+            var reqPath = request.Url.AbsolutePath;
 
-            // Only intercept 302 redirects (login success typically does 302)
-            if (response.StatusCode != 302)
+            // Intercept 301/302 redirects
+            if (response.StatusCode != 301 && response.StatusCode != 302)
                 return;
 
             var location = response.RedirectLocation;
             if (string.IsNullOrEmpty(location))
                 return;
 
+            Log("ENDREQUEST: " + reqPath + " -> " + response.StatusCode + " to '" + location + "'");
+
             // Check if user is authenticated and this looks like a post-login redirect
-            // (redirecting to home, a returnurl, or root after login)
-            var userInfo = UserController.Instance.GetCurrentUserInfo();
-            if (userInfo == null || userInfo.UserID < 0)
-                return;
+            // During the login POST, the auth cookie is in the response but HttpContext.User
+            // is still anonymous. If the response is SETTING the auth cookie, this is a login.
+            var username = GetUsernameFromResponseCookie(response);
+            if (string.IsNullOrEmpty(username))
+            {
+                Log("ENDREQUEST: no auth cookie in response, skipping");
+                return; // Not a login response — leave the redirect alone
+            }
 
-            // Check if we're redirecting from a login page or to a default landing page
-            var referer = request.UrlReferrer?.AbsolutePath?.ToLowerInvariant() ?? "";
-            var isFromLogin = referer.Contains("/login") || referer.Contains("/signin");
-
-            // Also check if the redirect is to home/root (typical after login)
-            var redirectPath = location.StartsWith("/") ? location : new Uri(location, UriKind.RelativeOrAbsolute).IsAbsoluteUri
-                ? new Uri(location).AbsolutePath
-                : location;
-            redirectPath = redirectPath.Split('?')[0].Trim('/');
-            var isToDefaultPage = string.IsNullOrEmpty(redirectPath) || redirectPath.Equals("home", StringComparison.OrdinalIgnoreCase);
-
-            if (!isFromLogin && !isToDefaultPage)
-                return;
+            Log("ENDREQUEST: auth cookie found for user '" + username + "'");
 
             // Get user's first community
-            var communitySlug = GetUserFirstCommunity(userInfo.Username);
+            var communitySlug = GetUserFirstCommunity(username);
             if (string.IsNullOrEmpty(communitySlug))
             {
-                Log("LOGIN REDIRECT: user '" + userInfo.Username + "' has no community, allowing default redirect");
+                Log("LOGIN REDIRECT: user '" + username + "' has no community, allowing default redirect");
                 return;
             }
 
             // Redirect to /{community-slug}/home instead
             var communityUrl = "/" + communitySlug + "/home";
-            Log("LOGIN REDIRECT: redirecting user '" + userInfo.Username + "' to '" + communityUrl + "'");
+            Log("LOGIN REDIRECT: redirecting user '" + username + "' to '" + communityUrl + "'");
 
             response.RedirectLocation = communityUrl;
+        }
+
+        /// <summary>
+        /// Read the username from the FormsAuthentication cookie being set in the response.
+        /// During a login POST, the cookie is in the response but not yet in HttpContext.User.
+        /// </summary>
+        private static string GetUsernameFromResponseCookie(HttpResponse response)
+        {
+            try
+            {
+                var cookieName = FormsAuthentication.FormsCookieName;
+                if (!response.Cookies.AllKeys.Contains(cookieName))
+                    return null;
+
+                var cookie = response.Cookies[cookieName];
+                if (cookie == null || string.IsNullOrEmpty(cookie.Value))
+                    return null;
+
+                var ticket = FormsAuthentication.Decrypt(cookie.Value);
+                return ticket?.Name;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -439,7 +542,10 @@ namespace DnnDev.Routing
                 + string.Join(", ", routeValues.Select(kv => kv.Key + "=" + kv.Value))
                 + "]");
 
-            app.Context.RewritePath("/Default.aspx?tabid=" + currentParent);
+            // Use setClientFilePath: false so Request.RawUrl stays as the original slug
+            // URL (e.g. /spijkenisse/home). This prevents DNN's Friendly URL module from
+            // detecting a mismatch and 301-redirecting to the canonical template URL.
+            app.Context.RewritePath("/Default.aspx", "", "tabid=" + currentParent, false);
         }
 
         /// <summary>
