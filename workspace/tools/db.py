@@ -25,7 +25,7 @@ MSSQL_USER = os.getenv("DB_USER", "sa")
 MSSQL_PASSWORD = os.getenv("DB_PASSWORD", os.getenv("MSSQL_PASSWORD", ""))
 MSSQL_DATABASE = os.getenv("DB_NAME", os.getenv("MSSQL_DATABASE", "master"))
 
-SQL_DIR = SCRIPT_DIR  # SQL files live alongside this script
+SQL_DIR = os.path.join(SCRIPT_DIR, "..", "db")  # SQL files live in workspace/db/
 
 
 # ── Connection ────────────────────────────────────────────────────

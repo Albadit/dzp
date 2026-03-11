@@ -16,6 +16,29 @@
         "isDefault": true
       },
       "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "recycle-dnn",
+      "detail": "Recycle IIS app pool so w3wp picks up the latest DLL+PDB",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "Start-Process -FilePath \"$env:SystemRoot\\System32\\inetsrv\\appcmd.exe\" -ArgumentList 'recycle apppool dzp' -Verb RunAs -Wait; Write-Host 'Warming up site...'; $ok=$false; for($i=1;$i -le 6;$i++){ Start-Sleep 10; try { Invoke-WebRequest -Uri 'http://dzp.dnndev.me' -UseBasicParsing -TimeoutSec 60 | Out-Null; $ok=$true; break } catch { Write-Host \"Attempt $i - not ready yet...\" } }; if($ok){ Write-Host 'Site is up!' } else { Write-Host 'WARNING: site did not respond in time' }"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "build-and-recycle",
+      "detail": "Build debug DLL then recycle IIS app pool",
+      "dependsOn": ["build-debug", "recycle-dnn"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
     }
   ]
 }

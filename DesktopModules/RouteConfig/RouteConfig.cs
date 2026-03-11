@@ -435,11 +435,11 @@ namespace DnnDev.Routing
             // Store original URL path before rewriting so skins/modules can use it
             app.Context.Items["RouteOriginalPath"] = path;
 
-            Log(path + " -> REWRITE " + resolvedPath + " values=["
+            Log(path + " -> REWRITE tabid=" + currentParent + " (" + resolvedPath + ") values=["
                 + string.Join(", ", routeValues.Select(kv => kv.Key + "=" + kv.Value))
                 + "]");
 
-            app.Context.RewritePath(resolvedPath);
+            app.Context.RewritePath("/Default.aspx?tabid=" + currentParent);
         }
 
         /// <summary>

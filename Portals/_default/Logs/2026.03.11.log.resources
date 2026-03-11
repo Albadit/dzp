@@ -861,3 +861,130 @@ Could not find stored procedure 'dbo.GetDatabaseVersion'.
 2026-03-11 21:30:36.789+01:00 [DESKTOP-VBFFE4H][D:8][T:434][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id 45312d3b-2f8e-4d50-842e-0b70c647efb9 because rendering has already begun
 2026-03-11 21:30:36.789+01:00 [DESKTOP-VBFFE4H][D:8][T:434][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id 45312d3b-2f8e-4d50-842e-0b70c647efb9 because rendering has already begun
 2026-03-11 21:30:36.790+01:00 [DESKTOP-VBFFE4H][D:8][T:434][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id 45312d3b-2f8e-4d50-842e-0b70c647efb9 because rendering has already begun
+2026-03-11 21:31:45.849+01:00 [DESKTOP-VBFFE4H][D:8][T:416][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id a2939d88-0426-4b10-adc9-b36bc8900387 because rendering has already begun
+2026-03-11 21:31:45.849+01:00 [DESKTOP-VBFFE4H][D:8][T:416][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id a2939d88-0426-4b10-adc9-b36bc8900387 because rendering has already begun
+2026-03-11 21:31:45.849+01:00 [DESKTOP-VBFFE4H][D:8][T:416][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id a2939d88-0426-4b10-adc9-b36bc8900387 because rendering has already begun
+2026-03-11 21:31:45.849+01:00 [DESKTOP-VBFFE4H][D:8][T:416][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id a2939d88-0426-4b10-adc9-b36bc8900387 because rendering has already begun
+2026-03-11 21:31:47.287+01:00 [DESKTOP-VBFFE4H][D:8][T:413][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id bcfab26f-e844-40cd-b9e8-9f39a1a937ed because rendering has already begun
+2026-03-11 21:31:47.288+01:00 [DESKTOP-VBFFE4H][D:8][T:413][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id bcfab26f-e844-40cd-b9e8-9f39a1a937ed because rendering has already begun
+2026-03-11 21:31:47.288+01:00 [DESKTOP-VBFFE4H][D:8][T:413][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id bcfab26f-e844-40cd-b9e8-9f39a1a937ed because rendering has already begun
+2026-03-11 21:31:47.288+01:00 [DESKTOP-VBFFE4H][D:8][T:413][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id bcfab26f-e844-40cd-b9e8-9f39a1a937ed because rendering has already begun
+2026-03-11 21:33:32.103+01:00 [DESKTOP-VBFFE4H][D:8][T:452][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id 61bc2209-6c81-480f-951a-24affc8430de because rendering has already begun
+2026-03-11 21:33:32.104+01:00 [DESKTOP-VBFFE4H][D:8][T:452][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id 61bc2209-6c81-480f-951a-24affc8430de because rendering has already begun
+2026-03-11 21:33:32.105+01:00 [DESKTOP-VBFFE4H][D:8][T:452][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id 61bc2209-6c81-480f-951a-24affc8430de because rendering has already begun
+2026-03-11 21:33:32.105+01:00 [DESKTOP-VBFFE4H][D:8][T:452][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id 61bc2209-6c81-480f-951a-24affc8430de because rendering has already begun
+2026-03-11 21:48:42.598+01:00 [DESKTOP-VBFFE4H][D:8][T:360][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id b45bb343-d612-4441-afb2-e1568e8802fa because rendering has already begun
+2026-03-11 21:48:42.602+01:00 [DESKTOP-VBFFE4H][D:8][T:360][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id b45bb343-d612-4441-afb2-e1568e8802fa because rendering has already begun
+2026-03-11 21:48:42.603+01:00 [DESKTOP-VBFFE4H][D:8][T:360][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id b45bb343-d612-4441-afb2-e1568e8802fa because rendering has already begun
+2026-03-11 21:48:42.603+01:00 [DESKTOP-VBFFE4H][D:8][T:360][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id b45bb343-d612-4441-afb2-e1568e8802fa because rendering has already begun
+2026-03-11 21:51:59.113+01:00 [DESKTOP-VBFFE4H][D:8][T:395][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id df1afe98-cd9e-4cfc-8c8b-cd24caaf1762 because rendering has already begun
+2026-03-11 21:51:59.113+01:00 [DESKTOP-VBFFE4H][D:8][T:395][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id df1afe98-cd9e-4cfc-8c8b-cd24caaf1762 because rendering has already begun
+2026-03-11 21:51:59.117+01:00 [DESKTOP-VBFFE4H][D:8][T:395][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id df1afe98-cd9e-4cfc-8c8b-cd24caaf1762 because rendering has already begun
+2026-03-11 21:51:59.117+01:00 [DESKTOP-VBFFE4H][D:8][T:395][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id df1afe98-cd9e-4cfc-8c8b-cd24caaf1762 because rendering has already begun
+2026-03-11 21:54:18.173+01:00 [DESKTOP-VBFFE4H][D:8][T:91][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id 3902e437-40f5-474a-b93d-96fe9cc28fb1 because rendering has already begun
+2026-03-11 21:54:18.173+01:00 [DESKTOP-VBFFE4H][D:8][T:91][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id 3902e437-40f5-474a-b93d-96fe9cc28fb1 because rendering has already begun
+2026-03-11 21:54:18.173+01:00 [DESKTOP-VBFFE4H][D:8][T:91][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id 3902e437-40f5-474a-b93d-96fe9cc28fb1 because rendering has already begun
+2026-03-11 21:54:18.174+01:00 [DESKTOP-VBFFE4H][D:8][T:91][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id 3902e437-40f5-474a-b93d-96fe9cc28fb1 because rendering has already begun
+2026-03-11 21:55:25.780+01:00 [DESKTOP-VBFFE4H][D:8][T:150][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id 849522d0-0628-4252-92c2-6edea6a8f01d because rendering has already begun
+2026-03-11 21:55:25.781+01:00 [DESKTOP-VBFFE4H][D:8][T:150][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id 849522d0-0628-4252-92c2-6edea6a8f01d because rendering has already begun
+2026-03-11 21:55:25.783+01:00 [DESKTOP-VBFFE4H][D:8][T:150][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id 849522d0-0628-4252-92c2-6edea6a8f01d because rendering has already begun
+2026-03-11 21:55:25.783+01:00 [DESKTOP-VBFFE4H][D:8][T:150][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id 849522d0-0628-4252-92c2-6edea6a8f01d because rendering has already begun
+2026-03-11 22:05:31.416+01:00 [DESKTOP-VBFFE4H][D:8][T:134][FATAL] DotNetNuke.Web.Common.Internal.DotNetNukeHttpApplication - System.IO.FileNotFoundException: Could not find file 'C:\DNN\dzp\App_Data\_imagecache\2354EA872EDA22BA9CCCEEECB7D067B0023631A9D8102D97131DDDD24B386511.tmp'.
+File name: 'C:\DNN\dzp\App_Data\_imagecache\2354EA872EDA22BA9CCCEEECB7D067B0023631A9D8102D97131DDDD24B386511.tmp'
+   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
+   at System.IO.FileStream.Init(String path, FileMode mode, FileAccess access, Int32 rights, Boolean useRights, FileShare share, Int32 bufferSize, FileOptions options, SECURITY_ATTRIBUTES secAttrs, String msgPath, Boolean bFromProxy, Boolean useLongPath, Boolean checkHost)
+   at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share)
+   at System.Web.HttpResponse.TransmitFile(String filename, Int64 offset, Int64 length)
+   at System.Web.HttpResponseWrapper.TransmitFile(String filename)
+   at DotNetNuke.Services.GeneratedImage.DiskImageStore.TryTransmitIfContains(String id, HttpResponseBase response)
+   at DotNetNuke.Services.GeneratedImage.ImageHandlerInternal.HandleImageRequest(HttpContextBase context, Func`2 imageGenCallback, String uniqueIdStringSeed)
+   at System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute()
+   at System.Web.HttpApplication.ExecuteStepImpl(IExecutionStep step)
+   at System.Web.HttpApplication.ExecuteStep(IExecutionStep step, Boolean& completedSynchronously)
+2026-03-11 22:25:41.784+01:00 [DESKTOP-VBFFE4H][D:3][T:57][ERROR] DotNetNuke.Services.Exceptions.Exceptions - System.Threading.Tasks.TaskCanceledException: A task was canceled.
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Tracing.ITraceWriterExtensions.<TraceBeginEndAsyncCore>d__17`1.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Controllers.ApiControllerActionInvoker.<InvokeActionAsyncCore>d__1.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Tracing.ITraceWriterExtensions.<TraceBeginEndAsyncCore>d__17`1.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Controllers.ActionFilterResult.<ExecuteAsync>d__5.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Filters.AuthorizationFilterAttribute.<ExecuteAuthorizationFilterAsyncCore>d__3.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Controllers.ExceptionFilterResult.<ExecuteAsync>d__6.MoveNext()
+2026-03-11 22:25:41.813+01:00 [DESKTOP-VBFFE4H][D:3][T:57][ERROR] DotNetNuke.Services.Exceptions.Exceptions - System.Threading.Tasks.TaskCanceledException: A task was canceled.
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Tracing.ITraceWriterExtensions.<TraceBeginEndAsyncCore>d__17`1.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Controllers.ApiControllerActionInvoker.<InvokeActionAsyncCore>d__1.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Tracing.ITraceWriterExtensions.<TraceBeginEndAsyncCore>d__17`1.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Controllers.ActionFilterResult.<ExecuteAsync>d__5.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Filters.AuthorizationFilterAttribute.<ExecuteAuthorizationFilterAsyncCore>d__3.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Controllers.ExceptionFilterResult.<ExecuteAsync>d__6.MoveNext()
+2026-03-11 22:25:41.823+01:00 [DESKTOP-VBFFE4H][D:3][T:57][ERROR] DotNetNuke.Services.Exceptions.Exceptions - System.Threading.Tasks.TaskCanceledException: A task was canceled.
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Tracing.ITraceWriterExtensions.<TraceBeginEndAsyncCore>d__17`1.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Controllers.ApiControllerActionInvoker.<InvokeActionAsyncCore>d__1.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Tracing.ITraceWriterExtensions.<TraceBeginEndAsyncCore>d__17`1.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Controllers.ActionFilterResult.<ExecuteAsync>d__5.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Filters.AuthorizationFilterAttribute.<ExecuteAuthorizationFilterAsyncCore>d__3.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Web.Http.Controllers.ExceptionFilterResult.<ExecuteAsync>d__6.MoveNext()
