@@ -408,6 +408,30 @@ def cmd_import(conn):
             pass
         master_conn.close()
 
+    # Re-map the database user to the login (RESTORE breaks this mapping)
+    try:
+        fix_conn = get_connection()
+        fix_conn.execute(
+            f"IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'{MSSQL_USER}') "
+            f"CREATE USER [{MSSQL_USER}] FOR LOGIN [{MSSQL_USER}]; "
+            f"ELSE ALTER USER [{MSSQL_USER}] WITH LOGIN = [{MSSQL_USER}]; "
+            f"ALTER ROLE db_owner ADD MEMBER [{MSSQL_USER}];"
+        )
+        fix_conn.close()
+        print(f"Re-mapped user [{MSSQL_USER}] to login.")
+    except Exception:
+        # If the normal user can't connect yet, use sa to fix it
+        sa_conn = get_master_connection()
+        sa_conn.execute(f"USE [{MSSQL_DATABASE}]")
+        sa_conn.execute(
+            f"IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'{MSSQL_USER}') "
+            f"CREATE USER [{MSSQL_USER}] FOR LOGIN [{MSSQL_USER}]; "
+            f"ELSE ALTER USER [{MSSQL_USER}] WITH LOGIN = [{MSSQL_USER}]; "
+            f"ALTER ROLE db_owner ADD MEMBER [{MSSQL_USER}];"
+        )
+        sa_conn.close()
+        print(f"Re-mapped user [{MSSQL_USER}] to login (via sa).")
+
 
 def confirm_then_run(conn, fn):
     if "--yes" in sys.argv or "-y" in sys.argv:
