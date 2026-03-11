@@ -1,7 +1,7 @@
-﻿@RenderPage("_Header2.cshtml")
-<div id="main">
+﻿@RenderPage("_Header.cshtml")
+
+<main class="h-full w-full flex flex-col items-center justify-center">
     @RenderBody()
-</div>
-<div id="footer">
-    &copy; 2011 DotNetNuke. All rights reserved.
-</div>
+</main>
+
+@RenderPage("_Footer.cshtml")
