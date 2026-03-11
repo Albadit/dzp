@@ -241,3 +241,12 @@
 03/11/2026 19:35:14 [INFO] DotNetNuke.Services.Upgrade.Upgrade End AddModuleToPage:119
 03/11/2026 19:35:14 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start RemoveHostPage:File Manager
 03/11/2026 19:35:14 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start RemoveHostPage:File Management
+03/11/2026 19:57:17 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:
+03/11/2026 19:57:17 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=assembly
+03/11/2026 19:57:17 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:
+03/11/2026 19:57:17 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:
+03/11/2026 19:57:17 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:57:17 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=assembly
+03/11/2026 19:57:17 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:<assemblyIdentity name="Microsoft.Extensions.FileProviders.Abstractions" publicKeyToken="adb9793829ddae60" xmlns="urn:schemas-microsoft-com:asm.v1" /><codeBase version="2.2.0.0" href="bin\Imageflow\Microsoft.Extensions.FileProviders.Abstractions.dll" xmlns="urn:schemas-microsoft-com:asm.v1" />
+03/11/2026 19:57:17 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:<assemblyIdentity name="Microsoft.Extensions.Hosting.Abstractions" publicKeyToken="adb9793829ddae60" xmlns="urn:schemas-microsoft-com:asm.v1" /><codeBase version="2.2.0.0" href="bin\Imageflow\Microsoft.Extensions.Hosting.Abstractions.dll" xmlns="urn:schemas-microsoft-com:asm.v1" />
+03/11/2026 19:57:17 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:<assemblyIdentity name="Microsoft.IO.RecyclableMemoryStream" publicKeyToken="31bf3856ad364e35" xmlns="urn:schemas-microsoft-com:asm.v1" /><codeBase version="3.0.1.0" href="bin\Imageflow\Microsoft.IO.RecyclableMemoryStream.dll" xmlns="urn:schemas-microsoft-com:asm.v1" />

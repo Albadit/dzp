@@ -1,0 +1,905 @@
+/* ==========================================================================
+   DNN Pane & Module Components
+   Skin-level layout for DNN panes and module containers.
+   ========================================================================== */
+
+/* ==========================================================================
+   DNN Login
+   ========================================================================== */
+
+/* ---- Login Form Container ---- */
+.dnnLoginService {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 24rem;
+  margin: 2.5rem auto;
+  padding: 2rem;
+  background: white;
+  border: 1px solid var(--default-200);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* ---- Form Rows ---- */
+.dnnLoginService .dnnFormItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  overflow: hidden;
+}
+
+.dnnLoginService .dnnLabel {
+  float: none !important;
+  width: auto !important;
+  text-align: left !important;
+  position: static !important;
+  padding: 0;
+  margin: 0;
+}
+
+.dnnLoginService .dnnLabel .dnnFormLabel {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--default-700);
+}
+
+/* Remove DNN's default label tooltip/help icon */
+.dnnLoginService .dnnLabel .dnnTooltip,
+.dnnLoginService .dnnLabel a.dnnFormHelp {
+  display: none;
+}
+
+/* ---- Text & Password Inputs ---- */
+.dnnLoginService input[type="text"],
+.dnnLoginService input[type="password"],
+.dnnLoginService input[type="email"] {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--default-900);
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+
+.dnnLoginService input[type="text"]:focus,
+.dnnLoginService input[type="password"]:focus,
+.dnnLoginService input[type="email"]:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
+}
+
+/* ---- Remember Me ---- */
+.dnnLoginService .dnnLoginRememberMe {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--default-600);
+  cursor: pointer;
+}
+
+/* Show native checkbox instead of DNN's jQuery replacement */
+.dnnLoginService input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: static !important;
+  z-index: auto !important;
+  opacity: 1 !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  margin: 0 !important;
+  cursor: pointer;
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dnnLoginService input[type="checkbox"]:checked {
+  background-color: var(--primary-600);
+  border-color: var(--primary-600);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Hide DNN's fake checkbox wrapper */
+.dnnLoginService .dnnCheckbox {
+  display: none !important;
+}
+
+.dnnLoginService .dnnBoxLabel {
+  font-size: 0.8125rem;
+  color: var(--default-600);
+  cursor: pointer;
+}
+
+/* ---- Primary Action (Login Button) ---- */
+.dnnLoginService .dnnPrimaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  background-color: var(--primary-600);
+  border: none;
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+  text-align: center;
+}
+
+.dnnLoginService .dnnPrimaryAction:hover {
+  background-color: var(--primary-700);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  color: white;
+  text-decoration: none;
+}
+
+/* ---- Secondary Action ---- */
+.dnnLoginService .dnnSecondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--default-600);
+  background-color: transparent;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  text-decoration: none;
+  text-align: center;
+}
+
+.dnnLoginService .dnnSecondaryAction:hover {
+  background-color: var(--default-50);
+  border-color: var(--default-400);
+  color: var(--default-700);
+  text-decoration: none;
+}
+
+/* ---- Login Actions (Reset Password link row) ---- */
+.dnnLoginService .dnnLoginActions {
+  margin: 0;
+}
+
+.dnnLoginService .dnnLoginActions .dnnActions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dnnLoginService .dnnLoginActions .dnnActions li {
+  list-style: none;
+}
+
+.dnnLoginService .dnnLoginActions .dnnSecondaryAction {
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.75rem;
+  border: none;
+  background: none;
+  color: var(--primary-600);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.dnnLoginService .dnnLoginActions .dnnSecondaryAction:hover {
+  color: var(--primary-700);
+  text-decoration: underline;
+}
+
+/* Hide empty/spacer labels */
+.dnnLoginService .dnnFormItem > .dnnFormLabel:empty,
+.dnnLoginService .dnnFormItem > span.dnnFormLabel:empty,
+.dnnLoginService .dnnFormItem > span.dnnFormLabel:has(+ .dnnLoginActions) {
+  display: none;
+}
+
+/* ---- Validation / Error Messages ---- */
+.dnnLoginService .dnnFormValidationSummary {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  color: #991b1b;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-button);
+}
+
+.dnnLoginService .dnnFormMessage.dnnFormError {
+  color: #991b1b;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.dnnLoginService .dnnFormMessage.dnnFormSuccess {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  color: #166534;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-button);
+}
+
+/* ==========================================================================
+   DNN Send Password / Reset Password
+   ========================================================================== */
+
+/* ---- Container ---- */
+.dnnSendPassword {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 24rem;
+  margin: 2.5rem auto;
+  padding: 2rem;
+  background: white;
+  border: 1px solid var(--default-200);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.dnnSendPasswordContent {
+  width: 100% !important;
+}
+
+/* ---- Info Message ---- */
+.dnnSendPassword .dnnFormMessage.dnnFormInfo {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--default-600);
+  background-color: var(--primary-50);
+  border: 1px solid var(--primary-200);
+  border-radius: var(--radius-button);
+}
+
+/* ---- Form Items ---- */
+.dnnSendPassword .dnnFormItem {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+/* ---- Labels ---- */
+.dnnSendPassword .dnnLabel {
+  display: block;
+  float: none !important;
+  width: auto !important;
+  text-align: left !important;
+  position: static !important;
+  margin-bottom: 0.375rem;
+  padding: 0;
+}
+
+.dnnSendPassword .dnnLabel label {
+  display: block;
+  text-align: left;
+}
+
+.dnnSendPassword .dnnLabel label span {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--default-700);
+  text-align: left;
+}
+
+/* Hide DNN tooltip/help icon */
+.dnnSendPassword .dnnLabel .dnnTooltip,
+.dnnSendPassword .dnnLabel a.dnnFormHelp {
+  display: none;
+}
+
+/* ---- Input ---- */
+.dnnSendPassword input[type="text"],
+.dnnSendPassword input[type="email"] {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--default-900);
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+
+.dnnSendPassword input[type="text"]:focus,
+.dnnSendPassword input[type="email"]:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
+}
+
+/* ---- Action Buttons ---- */
+.dnnSendPassword .dnnActions {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0 0;
+  gap: 0.5rem;
+}
+
+.dnnSendPassword .dnnActions li {
+  width: 100%;
+  list-style: none;
+}
+
+.dnnSendPassword .dnnActions li a {
+  width: 100%;
+}
+
+.dnnSendPassword .dnnPrimaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  background-color: var(--primary-600);
+  border: none;
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+}
+
+.dnnSendPassword .dnnPrimaryAction:hover {
+  background-color: var(--primary-700);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  color: white;
+  text-decoration: none;
+}
+
+.dnnSendPassword .dnnSecondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--default-600);
+  background-color: transparent;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  text-decoration: none;
+}
+
+.dnnSendPassword .dnnSecondaryAction:hover {
+  background-color: var(--default-50);
+  border-color: var(--default-400);
+  color: var(--default-700);
+  text-decoration: none;
+}
+
+/* ---- Validation Messages ---- */
+.dnnSendPassword .dnnFormValidationSummary {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  color: #991b1b;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-button);
+}
+
+.dnnSendPassword .dnnFormMessage.dnnFormError {
+  color: #991b1b;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.dnnSendPassword .dnnFormMessage.dnnFormSuccess {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  color: #166534;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-button);
+}
+
+/* ==========================================================================
+   DNN Razor Host Edit Script
+   ========================================================================== */
+
+/* ---- Container ---- */
+.dnnRazorHostEditScript {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dnnRazorHostEditScript fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---- Form Rows ---- */
+.dnnRazorHostEditScript .dnnFormItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+/* ---- Labels ---- */
+.dnnRazorHostEditScript .dnnLabel {
+  float: none !important;
+  width: auto !important;
+  text-align: left !important;
+  position: static !important;
+  padding: 0;
+  margin: 0;
+}
+
+.dnnRazorHostEditScript .dnnLabel label span {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--default-700);
+}
+
+/* ---- Select ---- */
+.dnnRazorHostEditScript select {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--default-900);
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+
+.dnnRazorHostEditScript select:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
+}
+
+/* ---- Source File Info ---- */
+.dnnRazorHostEditScript .razorHostModSource {
+  font-size: 0.75rem;
+  color: var(--default-500);
+  padding: 0.375rem 0.75rem;
+  background-color: var(--default-50);
+  border-radius: var(--radius-button);
+}
+
+/* ---- Textarea ---- */
+.dnnRazorHostEditScript textarea {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0.75rem;
+  font-size: 0.8125rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.6;
+  color: var(--default-900);
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+  resize: vertical;
+}
+
+.dnnRazorHostEditScript textarea:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
+}
+
+/* ---- Checkbox ---- */
+.dnnRazorHostEditScript input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: static !important;
+  z-index: auto !important;
+  opacity: 1 !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  margin: 0 !important;
+  cursor: pointer;
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dnnRazorHostEditScript input[type="checkbox"]:checked {
+  background-color: var(--primary-600);
+  border-color: var(--primary-600);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.dnnRazorHostEditScript .dnnCheckbox {
+  display: none !important;
+}
+
+/* ---- Inline Select + Button Row ---- */
+.dnnRazorHostEditScript .dnnFormItem:has(select) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dnnRazorHostEditScript .dnnFormItem:has(select) select {
+  flex: 1;
+  min-width: 0;
+}
+
+.dnnRazorHostEditScript .dnnFormItem:has(select) .dnnSecondaryAction {
+  white-space: nowrap;
+}
+
+/* ---- Checkbox + Label Row ---- */
+.dnnRazorHostEditScript .dnnFormItem:has(input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ---- Action Buttons ---- */
+.dnnRazorHostEditScript > .dnnActions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-top: 1px solid var(--default-200);
+  padding-top: 1rem;
+}
+
+.dnnRazorHostEditScript > .dnnActions li {
+  list-style: none;
+}
+
+/* ==========================================================================
+   DNN Module Drag & Drop
+   Styling for the edit-mode drag hints, floating modules, drop targets,
+   and empty-pane outlines.
+   ========================================================================== */
+
+.dnnModuleManager .DnnModule.floating, .dnnModuleSorting .DnnModule.floating {
+  border-radius: 1rem;
+}
+
+/* ---- Drag Hint Card ---- */
+.dnnDragHint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.25rem 1.5rem;
+  background: white;
+  border: 1px solid var(--default-200);
+  border-radius: 1rem;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  cursor: grab;
+  outline: none !important;
+  height: auto !important;
+  min-height: 0;
+  user-select: none;
+}
+
+.dnnDragHint:active {
+  cursor: grabbing;
+}
+
+.dnnDragHint > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  position: relative;
+}
+
+/* ---- Module Icon ---- */
+.dnnDragHint .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  background: transparent;
+  border: none;
+  overflow: hidden;
+}
+
+.dnnDragHint .icon img {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+  opacity: 0.6;
+}
+
+/* ---- Module Title ---- */
+.dnnDragHint .title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--default-700);
+  text-align: center;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+/* ---- Cancel / Close Button ---- */
+.dnnDragHint .cancel-module {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.375rem;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: none !important;
+  background-image: none !important;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  z-index: 1;
+  padding: 0;
+  font-size: 0;
+  line-height: 1;
+}
+
+/* Override any DNN background-image on the anchor */
+.dnnDragHint .cancel-module,
+.dnnDragHint .cancel-module:hover,
+.dnnDragHint .cancel-module:focus {
+  background: none !important;
+  background-image: none !important;
+}
+
+.dnnDragHint .cancel-module::after {
+  content: "\00d7";
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--default-400);
+  transition: color 0.15s ease;
+}
+
+.dnnDragHint .cancel-module:hover::after {
+  color: var(--default-700);
+}
+
+/* ---- Drop Target Zone ---- */
+.dnnDropTarget {
+  display: block;
+  visibility: visible !important;
+  height: 110px !important;
+  width: 100%;
+  border: 2px dashed var(--primary-400) !important;
+  background: var(--primary-50) !important;
+  border-radius: var(--radius-card);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dnnDropTarget > p {
+  color: var(--primary-600) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 45px;
+}
+
+/* ---- Sortable Panes ---- */
+.dnnSortable.ui-sortable,
+.dnnSortable.ui-droppable {
+  padding: 0;
+}
+
+.dnnSortable {
+  min-height: 110px !important;
+}
+
+/* ---- Empty Pane Outlines (edit mode) ---- */
+.dnnDropEmptyPanes {
+  outline: 2px dashed var(--default-300) !important;
+  outline-offset: -1px;
+  min-width: 110px !important;
+  border-radius: var(--radius-card);
+}
+
+/* ==========================================================================
+   DNN Confirmation / jQuery UI Dialog
+   ========================================================================== */
+
+/* ---- Dialog Container ---- */
+.ui-dialog.dnnFormPopup {
+  border: none !important;
+  border-radius: var(--radius-card) !important;
+  background: white !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+/* ---- Title Bar ---- */
+.ui-dialog.dnnFormPopup .ui-dialog-titlebar {
+  background: var(--default-50) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--default-200) !important;
+  border-radius: 0 !important;
+  padding: 0.875rem 1.25rem !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ui-dialog.dnnFormPopup .ui-dialog-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--default-900);
+  margin: 0;
+  float: none;
+}
+
+/* ---- Title Bar Close Button ---- */
+.ui-dialog.dnnFormPopup .ui-dialog-titlebar-close {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-button);
+  color: var(--default-400);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 0;
+}
+
+.ui-dialog.dnnFormPopup .ui-dialog-titlebar-close:hover {
+  background-color: var(--default-100);
+  color: var(--default-700);
+}
+
+.ui-dialog.dnnFormPopup .ui-dialog-titlebar-close::after {
+  content: "\2715";
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.ui-dialog.dnnFormPopup .ui-dialog-titlebar-close .ui-button-icon,
+.ui-dialog.dnnFormPopup .ui-dialog-titlebar-close .ui-icon {
+  display: none;
+}
+
+/* ---- Dialog Body ---- */
+.ui-dialog.dnnFormPopup .ui-dialog-content {
+  padding: 1.25rem 1.25rem !important;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--default-700);
+  border: none !important;
+}
+
+/* ---- Dialog Button Pane ---- */
+.ui-dialog.dnnFormPopup .ui-dialog-buttonpane {
+  background: var(--default-50) !important;
+  border: none !important;
+  border-top: 1px solid var(--default-200) !important;
+  padding: 0.75rem 1.25rem !important;
+  margin: 0 !important;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ui-dialog.dnnFormPopup .ui-dialog-buttonset {
+  display: flex;
+  gap: 0.5rem;
+  float: none !important;
+}
+
+/* ---- Primary Button (Yes / OK) ---- */
+.ui-dialog.dnnFormPopup .dnnPrimaryAction,
+.ui-dialog.dnnFormPopup .ui-dialog-buttonset .ui-button:first-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.25rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600;
+  color: white !important;
+  background-color: var(--primary-600) !important;
+  border: none !important;
+  border-radius: var(--radius-button) !important;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ui-dialog.dnnFormPopup .dnnPrimaryAction:hover,
+.ui-dialog.dnnFormPopup .ui-dialog-buttonset .ui-button:first-child:hover {
+  background-color: var(--primary-700) !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* ---- Secondary Button (No / Cancel) ---- */
+.ui-dialog.dnnFormPopup .dnnSecondaryAction,
+.ui-dialog.dnnFormPopup .dnnConfirmCancel,
+.ui-dialog.dnnFormPopup .ui-dialog-buttonset .ui-button:not(:first-child) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.25rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500;
+  color: var(--default-600) !important;
+  background-color: white !important;
+  border: 1px solid var(--default-300) !important;
+  border-radius: var(--radius-button) !important;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.ui-dialog.dnnFormPopup .dnnSecondaryAction:hover,
+.ui-dialog.dnnFormPopup .dnnConfirmCancel:hover,
+.ui-dialog.dnnFormPopup .ui-dialog-buttonset .ui-button:not(:first-child):hover {
+  background-color: var(--default-50) !important;
+  border-color: var(--default-400) !important;
+  color: var(--default-700) !important;
+}
+
+/* ---- Overlay (backdrop) ---- */
+.ui-widget-overlay {
+  background: rgb(0 0 0 / 0.4) !important;
+  opacity: 1 !important;
+}
