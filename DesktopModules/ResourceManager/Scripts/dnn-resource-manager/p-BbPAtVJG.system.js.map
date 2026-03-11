@@ -1,0 +1,1 @@
+{"version":3,"file":"p-BbPAtVJG.system.js","sources":["@stencil/core/internal/app-globals"],"sourcesContent":["export const globalScripts = () => {};\nexport const globalStyles = \"\";\n"],"names":[],"mappings":";;;;;AAAY,SAAC,aAAa,gBAAG,MAAM;;;;;;;;"}

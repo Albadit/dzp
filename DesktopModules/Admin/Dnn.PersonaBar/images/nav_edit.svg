@@ -1,0 +1,8 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 2048 2048" style="enable-background:new 0 0 2048 2048;" xml:space="preserve">
+	<circle class="back" cx="1024" cy="1024" r="1024"></circle>
+	<g>
+		<polygon class="main" points="662.6,1232.5 662,1233.1 638,1410 814.9,1386 815.5,1385.4 	"></polygon>
+		<rect class="main" x="655.9" y="887" transform="matrix(0.7071 -0.7071 0.7071 0.7071 -395.309 1035.9109)" width="793.9" height="216.3"></rect>
+	</g>
+</svg>

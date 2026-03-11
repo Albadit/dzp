@@ -1,0 +1,243 @@
+03/11/2026 19:33:13 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Folder Creation CheckFile Creation CheckFile Deletion CheckFolder Deletion Check
+03/11/2026 19:33:13 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Checking IIS configuration
+03/11/2026 19:33:13 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Database Script DotNetNuke.Schema
+03/11/2026 19:33:13 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\DotNetNuke.Schema.SqlDataProvider
+03/11/2026 19:33:22 [INFO] DotNetNuke.Services.Upgrade.Upgrade End ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\DotNetNuke.Schema.SqlDataProvider
+03/11/2026 19:33:22 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Database Script DotNetNuke.Data
+03/11/2026 19:33:22 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\DotNetNuke.Data.SqlDataProvider
+03/11/2026 19:33:54 [INFO] DotNetNuke.Services.Upgrade.Upgrade End ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\DotNetNuke.Data.SqlDataProvider
+03/11/2026 19:33:54 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Membership Database Scripts
+03/11/2026 19:33:54 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallMemberRoleProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade End InstallMemberRoleProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Applying Upgrade Script 10.00.00.01
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade End ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Applying Upgrade Script 10.00.00.02
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.02.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.02.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade End ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.02.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.02.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Applying Upgrade Script 10.00.00.03
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.03.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.03.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade End ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.03.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.00.03.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Applying Upgrade Script 10.00.01
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade End ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.00.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Applying Upgrade Script 10.01.00
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.01.00.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.01.00.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade End ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.01.00.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.01.00.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Applying Upgrade Script 10.01.01
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.01.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.01.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade End ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.01.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.01.01.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Applying Upgrade Script 10.02.03
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.02.03.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.02.03.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade End ExecuteScript:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.02.03.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpgradeVersion:C:\DNN\dzp\Providers\DataProviders\SqlDataProvider\10.02.03.SqlDataProvider
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Upgrading Application to 10.0.0.1
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start Application Upgrades: 10.0.0
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start AddHostPage:Superuser Accounts
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start AddPage:Superuser Accounts
+03/11/2026 19:33:55 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start AddModuleToPage:15
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End AddModuleToPage:15
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Upgrading Application to 10.0.0.2
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start Application Upgrades: 10.0.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Upgrading Application to 10.0.0.3
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start Application Upgrades: 10.0.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Upgrading Application to 10.0.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start Application Upgrades: 10.0.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Upgrading Application to 10.1.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start Application Upgrades: 10.1.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Upgrading Application to 10.1.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start Application Upgrades: 10.1.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Upgrading Application to 10.2.3
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start Application Upgrades: 10.2.3
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Updating Config for 10.0.0.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.00.00.01
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.0.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.0.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.00.00.01
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Updating Config for 10.0.0.2
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.00.00.02
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.0.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.0.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.00.00.02
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Updating Config for 10.0.0.3
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.00.00.03
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.0.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.0.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.00.00.03
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Updating Config for 10.0.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.00.01
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.0.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.0.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.00.01
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Updating Config for 10.1.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.01.00
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.1.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.1.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.01.00
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Updating Config for 10.1.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.01.01
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.1.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.1.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.01.01
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Updating Config for 10.2.3
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.02.03
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start UpdateConfig:10.2.3
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.2.3
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade End UpdateConfig:10.02.03
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Deleting Older Files for 10.0.0.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start DeleteFiles:10.00.00.01
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Deleting Older Files for 10.0.0.2
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start DeleteFiles:10.00.00.02
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Deleting Older Files for 10.0.0.3
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start DeleteFiles:10.00.00.03
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Deleting Older Files for 10.0.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start DeleteFiles:10.00.01
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Deleting Older Files for 10.1.0
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start DeleteFiles:10.01.00
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Deleting Older Files for 10.1.1
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start DeleteFiles:10.01.01
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Deleting Older Files for 10.2.3
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start DeleteFiles:10.02.03
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Upgrading Application
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - AspNetMvc_5.3.61130.707_Install.zip
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\AspNetMvc_5.3.61130.707_Install.zip
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - AspNetWebApi_5.3.61130.707_Install.zip
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\AspNetWebApi_5.3.61130.707_Install.zip
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - AspNetWebPages_3.0.61130.707_Install.zip
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\AspNetWebPages_3.0.61130.707_Install.zip
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - HtmlSanitizer_9.1.878_Install.zip
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\HtmlSanitizer_9.1.878_Install.zip
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - MailKit_4.8.0.0_Install.zip
+03/11/2026 19:33:56 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\MailKit_4.8.0.0_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - Microsoft.CodeDom.Providers.DotNetCompilerPlatform_04.01.00_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\Microsoft.CodeDom.Providers.DotNetCompilerPlatform_04.01.00_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=extension
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - Microsoft.Extensions.DependencyInjection_8.0.23.53103_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\Microsoft.Extensions.DependencyInjection_8.0.23.53103_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - Microsoft.Extensions.FileSystemGlobbing_5.0.20.51904_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\Microsoft.Extensions.FileSystemGlobbing_5.0.20.51904_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - Microsoft.Web.Infrastructure_2.0.34876.0_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\Microsoft.Web.Infrastructure_2.0.34876.0_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - Newtonsoft.Json_13.0.3.27908_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\Newtonsoft.Json_13.0.3.27908_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - SharpZipLib_1.4.2.13_Install.zip
+03/11/2026 19:33:57 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\SharpZipLib_1.4.2.13_Install.zip
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - WebFormsMvp_1.4.5.0_Install.zip
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Library\WebFormsMvp_1.4.5.0_Install.zip
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DDRMenu_10.02.03_Install.zip
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DDRMenu_10.02.03_Install.zip
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - Dnn.EditBar.UI_10.02.03_Install.zip
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\Dnn.EditBar.UI_10.02.03_Install.zip
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - Dnn.PersonaBar.UI_10.02.03_Install.zip
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\Dnn.PersonaBar.UI_10.02.03_Install.zip
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Installer.XmlMerge Start AddNode:
+03/11/2026 19:33:58 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:33:59 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Connector - DNNCE_AzureConnector_10.02.03_Install.zip
+03/11/2026 19:33:59 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_AzureConnector_10.02.03_Install.zip
+03/11/2026 19:33:59 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DNNCE_Console_10.02.03_Install.zip
+03/11/2026 19:33:59 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_Console_10.02.03_Install.zip
+03/11/2026 19:33:59 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DNNCE_CoreMessaging_10.02.03_Install.zip
+03/11/2026 19:33:59 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_CoreMessaging_10.02.03_Install.zip
+03/11/2026 19:34:00 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DNNCE_HTML_10.02.03_Install.zip
+03/11/2026 19:34:00 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_HTML_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DNNCE_HtmlEditorManager_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_HtmlEditorManager_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DNNCE_Journal_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_Journal_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DNNCE_MemberDirectory_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_MemberDirectory_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DNNCE_RazorHost_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_RazorHost_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DNNCE_ResourceManager_10.02.03_Install.zip
+03/11/2026 19:34:01 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_ResourceManager_10.02.03_Install.zip
+03/11/2026 19:34:02 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - DNNCE_SiteExportImport_10.02.03_Install.zip
+03/11/2026 19:34:02 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_SiteExportImport_10.02.03_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Module - DNNCE_SocialGroups_10.02.03_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\DNNCE_SocialGroups_10.02.03_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Connector - GoogleAnalytics4Connector_10.02.03_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\GoogleAnalytics4Connector_10.02.03_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Connector - GoogleAnalyticsConnector_10.02.03_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\GoogleAnalyticsConnector_10.02.03_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Connector - GoogleTagManagerConnector_10.02.03_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\GoogleTagManagerConnector_10.02.03_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Skin - Aperture_10.2.3_install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Skin\Aperture_10.2.3_install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=fileExtension
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - jQuery.iframe-transport_10.07.00_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\jQuery.iframe-transport_10.07.00_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - jQuery_03.07.01_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\jQuery_03.07.01_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - Knockout_03.05.01_Install.zip
+03/11/2026 19:34:03 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\Knockout_03.05.01_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - Selectize_00.12.06_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\Selectize_00.12.06_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Provider - AspNetClientCapabilityProvider_10.02.03_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Provider\AspNetClientCapabilityProvider_10.02.03_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - DNNCE_ExchangeOnlineAuthProvider_10.02.03_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Provider\DNNCE_ExchangeOnlineAuthProvider_10.02.03_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Provider - DNNCE_FolderProviders_10.02.03_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Provider\DNNCE_FolderProviders_10.02.03_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Library - DNNCE_GoogleMailAuthProvider_10.02.03_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Provider\DNNCE_GoogleMailAuthProvider_10.02.03_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Provider - DNNConnect.CKEditorProvider_10.02.03_Install.zip
+03/11/2026 19:34:04 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Provider\DNNConnect.CKEditorProvider_10.02.03_Install.zip
+03/11/2026 19:34:05 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:34:05 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=path
+03/11/2026 19:34:05 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing Provider - DnnJwtAuth_10.02.03_Install.zip
+03/11/2026 19:34:05 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Provider\DnnJwtAuth_10.02.03_Install.zip
+03/11/2026 19:34:05 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=name
+03/11/2026 19:34:05 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=key
+03/11/2026 19:34:05 [INFO] DotNetNuke.Services.Installer.XmlMerge Start UpdateNode: keyAttribute=key
+03/11/2026 19:34:05 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing PersonaBar - Dnn.PersonaBar.Extensions_10.02.03_Install.zip
+03/11/2026 19:34:05 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\Module\Dnn.PersonaBar.Extensions_10.02.03_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - HoverIntent_01.10.01_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\HoverIntent_01.10.01_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - jQueryMigrate_03.04.01_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\jQueryMigrate_03.04.01_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - jQueryUI_01.14.01_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\jQueryUI_01.14.01_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - KnockoutMapping_02.04.01_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\KnockoutMapping_02.04.01_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - DnnPlugins_10.02.03_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\DnnPlugins_10.02.03_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Installing JavaScript_Library - jQuery.Fileupload_10.07.00_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start InstallPackage:C:\DNN\dzp\Install\JavaScriptLibrary\jQuery.Fileupload_10.07.00_Install.zip
+03/11/2026 19:34:07 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Initializing Host Settings
+03/11/2026 19:34:10 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Creating Site [My Website]
+03/11/2026 19:34:10 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start CreateUserInfo:host
+03/11/2026 19:34:21 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Create Super User
+03/11/2026 19:34:21 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Creating Super Userhost
+03/11/2026 19:34:21 [INFO] DotNetNuke.Services.Upgrade.Internals.Steps.BaseInstallationStep Checking HTTPS for site My Website
+03/11/2026 19:35:13 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start AddHostPage:HTML Editor Manager
+03/11/2026 19:35:13 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start AddPage:HTML Editor Manager
+03/11/2026 19:35:13 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start RemoveModule:RadEditor Manager
+03/11/2026 19:35:13 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start AddModuleToPage:115
+03/11/2026 19:35:13 [INFO] DotNetNuke.Services.Upgrade.Upgrade End AddModuleToPage:115
+03/11/2026 19:35:14 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start AddHostPage:Global Assets
+03/11/2026 19:35:14 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start AddPage:Global Assets
+03/11/2026 19:35:14 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start AddModuleToPage:119
+03/11/2026 19:35:14 [INFO] DotNetNuke.Services.Upgrade.Upgrade End AddModuleToPage:119
+03/11/2026 19:35:14 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start RemoveHostPage:File Manager
+03/11/2026 19:35:14 [INFO] DotNetNuke.Services.Upgrade.Upgrade Start RemoveHostPage:File Management
