@@ -290,6 +290,7 @@
         }
     }
     var sbDashboardActive = currentPath.TrimEnd('/').Equals("/dashboard", StringComparison.OrdinalIgnoreCase);
+    var sbOnSettings = segments.Length > 0 && segments[0].Equals("settings", StringComparison.OrdinalIgnoreCase);
 
     // Determine logo link: use real slug from route values
     var sbAllTabs = TabController.Instance.GetTabsByPortal(sbPs.PortalId).AsList();
@@ -323,7 +324,7 @@
 
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto px-3 py-4">
-        <% if (sbShowDashboard) { %>
+        <% if (sbShowDashboard && !sbOnSettings) { %>
         <div class="mb-6">
             <ul class="space-y-1">
                 <li>

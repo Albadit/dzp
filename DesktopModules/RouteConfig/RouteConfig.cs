@@ -84,9 +84,6 @@ namespace DnnDev.Routing
             var app = (HttpApplication)sender;
             var request = app.Context.Request;
 
-            if (!request.IsAuthenticated)
-                return;
-
             // Use the original path we stored at BeginRequest (before DNN rewrote it)
             var originalPath = app.Context.Items["_OriginalPath"] as string;
             if (string.IsNullOrEmpty(originalPath) || originalPath.Contains("."))
@@ -100,19 +97,17 @@ namespace DnnDev.Routing
             if (segments.Length == 0)
                 return;
 
-            // Skip reserved DNN paths — they are not community slugs
-            if (IsReservedPrefix(segments[0]))
-                return;
-
             try
             {
-                var username = app.Context.User.Identity.Name;
-                var communitySlugs = GetUserCommunitySlugs(username);
-                var isSuperUser = IsSuperUser(username);
+                var username = app.Context.User?.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                    return; // Anonymous — let DNN handle permissions
 
                 // ── Case 1: URL starts with literal template name "community-slug" ──
+                // Redirect to the user's actual community or dashboard
                 if (segments[0].Equals("community-slug", StringComparison.OrdinalIgnoreCase))
                 {
+                    var communitySlugs = GetUserCommunitySlugs(username);
                     if (communitySlugs == null || communitySlugs.Count == 0)
                         return;
 
@@ -133,66 +128,32 @@ namespace DnnDev.Routing
                     return;
                 }
 
-                // ── Case 2: URL starts with a community slug — verify access ──
+                // ── Case 2: URL starts with a community slug — verify membership ──
+                var allSlugs = GetAllCommunitySlugs();
+                if (allSlugs == null || !allSlugs.Contains(segments[0], StringComparer.OrdinalIgnoreCase))
+                    return; // Not a community URL — let DNN handle it
+
                 // Superusers can access any community
-                if (isSuperUser)
+                if (IsSuperUser(username))
                     return;
 
-                // Check if the first segment is a known community slug
-                var visitedSlug = segments[0];
-                var allSlugs = GetAllCommunitySlugs();
-                var isCommunitySluggUrl = allSlugs != null && allSlugs.Contains(visitedSlug, StringComparer.OrdinalIgnoreCase);
+                // Check if user belongs to this community
+                var userSlugs = GetUserCommunitySlugs(username);
+                if (userSlugs != null && userSlugs.Any(s =>
+                    s.Equals(segments[0], StringComparison.OrdinalIgnoreCase)))
+                    return; // User belongs — allow
 
-                if (isCommunitySluggUrl)
-                {
-                    // User is visiting a community page — check membership
-                    if (communitySlugs != null && communitySlugs.Any(s =>
-                        s.Equals(visitedSlug, StringComparison.OrdinalIgnoreCase)))
-                        return; // User belongs to this community, allow access
-                }
-                else
-                {
-                    // Not a community URL — allow /dashboard only for multi-community users, and real DNN pages
-                    if (visitedSlug.Equals("dashboard", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (communitySlugs != null && communitySlugs.Count > 1)
-                            return; // Multi-community user, allow dashboard
-                        // Single community user → will be redirected below
-                    }
-
-                    // Check if the first segment is a real (non-template) root page
-                    int portalId = ResolvePortalId(request);
-                    if (portalId >= 0)
-                    {
-                        var allTabs = AllTabsCache.GetOrAdd(portalId, pid =>
-                            TabController.Instance.GetTabsByPortal(pid).AsList());
-                        var isRealPage = allTabs.Any(t =>
-                            t.ParentId == -1 && !t.IsDeleted
-                            && !TemplatePages.Contains(t.TabName)
-                            && t.TabName.Equals(visitedSlug, StringComparison.OrdinalIgnoreCase));
-                        if (isRealPage)
-                            return; // Real DNN page like /settings — allow
-                    }
-                }
-
-                // User is on a community they don't belong to, or on an unknown URL
-                // → redirect to their community or dashboard
+                // User does NOT belong to this community — redirect to their own
                 string redirectPath;
-                if (communitySlugs != null && communitySlugs.Count == 1)
-                {
-                    redirectPath = "/" + communitySlugs[0] + "/home";
-                }
-                else if (communitySlugs != null && communitySlugs.Count > 1)
-                {
+                if (userSlugs != null && userSlugs.Count == 1)
+                    redirectPath = "/" + userSlugs[0] + "/home";
+                else if (userSlugs != null && userSlugs.Count > 1)
                     redirectPath = "/dashboard";
-                }
                 else
-                {
                     redirectPath = "/";
-                }
 
                 Log(originalPath + " -> ACCESS DENIED for '" + username
-                    + "', not a member of '" + visitedSlug + "', redirecting to " + redirectPath);
+                    + "', not a member of '" + segments[0] + "', redirecting to " + redirectPath);
                 app.Context.Response.Redirect(redirectPath, false);
                 app.Context.ApplicationInstance.CompleteRequest();
             }
@@ -501,7 +462,7 @@ namespace DnnDev.Routing
                 "admin", "host", "portals", "desktopmodules", "providers",
                 "resources", "install", "api", "icons", "images", "js",
                 "controls", "bin", "app_data", "config", "login", "register",
-                "logoff", "default", "error", "keepalive", "dashboard"
+                "logoff", "default", "error", "keepalive"
             };
 
             foreach (var r in reserved)

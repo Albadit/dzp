@@ -16,7 +16,7 @@
         && t.TabName.Equals(hdrSegs[0], StringComparison.OrdinalIgnoreCase));
     var hdrSiteUrl = hdrSegs.Length > 0 && !hdrFirstIsRealPage
         ? "/" + hdrSegs[0] + "/home"
-        : "/home";
+        : "/home"; // updated later when on non-community pages
     var hdrSiteName = ps.PortalName;
     var hdrUser = DotNetNuke.Entities.Users.UserController.Instance.GetCurrentUserInfo();
     var hdrUserName = hdrUser.DisplayName;
@@ -69,19 +69,66 @@
     }
 
     // Slug prefix for community-scoped links
-    var hdrSlug = hdrSegs.Length > 0 && !hdrFirstIsRealPage
-        ? "/" + hdrSegs[0]
-        : "";
+    var hdrSlug = "";
+    var hdrCommunityLink = "/home"; // fallback
+    if (hdrSegs.Length > 0 && !hdrFirstIsRealPage)
+    {
+        // On a community page — use slug from URL
+        hdrSlug = "/" + hdrSegs[0];
+        hdrCommunityLink = hdrSlug + "/home";
+        hdrSiteUrl = hdrCommunityLink;
+    }
+    else
+    {
+        // On a non-community page (e.g. /settings) — look up user's communities
+        var hdrLinkConnStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"] != null
+            ? System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString
+            : null;
+        if (!string.IsNullOrEmpty(hdrLinkConnStr) && hdrUser.UserID > 0)
+        {
+            var hdrUserSlugs = new System.Collections.Generic.List<string>();
+            using (var hdrLinkConn = new System.Data.SqlClient.SqlConnection(hdrLinkConnStr))
+            {
+                hdrLinkConn.Open();
+                using (var hdrLinkCmd = hdrLinkConn.CreateCommand())
+                {
+                    hdrLinkCmd.CommandText = "SELECT c.Slug FROM Community c INNER JOIN UserCommunity uc ON c.CommunityId = uc.CommunityId WHERE uc.UserId = @uid";
+                    hdrLinkCmd.Parameters.AddWithValue("@uid", hdrUser.UserID);
+                    using (var hdrLinkRdr = hdrLinkCmd.ExecuteReader())
+                    {
+                        while (hdrLinkRdr.Read())
+                            hdrUserSlugs.Add(hdrLinkRdr.GetString(0));
+                    }
+                }
+            }
+            if (hdrUserSlugs.Count == 1)
+            {
+                hdrSlug = "/" + hdrUserSlugs[0];
+                hdrCommunityLink = hdrSlug + "/home";
+                hdrSiteUrl = hdrCommunityLink;
+            }
+            else if (hdrUserSlugs.Count > 1)
+            {
+                hdrCommunityLink = "/dashboard";
+                hdrSiteUrl = "/dashboard";
+            }
+        }
+    }
 
     // User popup menu links
-    var hdrPopupLinks = new[] {
-        new { Href = hdrSlug + "/home",             Label = "Community",                    Css = "text-gray-700", Separator = "" },
-        new { Href = hdrSlug + "/manage/managers",  Label = "Communitymanagers",            Css = "text-gray-700", Separator = "border-b border-gray-200" },
-        new { Href = hdrSlug + "/manage/managers",  Label = "Voeg communitymanagers toe",   Css = "text-gray-700", Separator = "" },
-        new { Href = "/settings/profile",           Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
-        new { Href = "/settings",                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
-        new { Href = "/logoff",                     Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
-    };
+    var hdrOnDashboard = hdrSegs.Length > 0 && hdrSegs[0].Equals("dashboard", StringComparison.OrdinalIgnoreCase);
+    var hdrPopupLinks = hdrOnDashboard
+        ? new[] {
+            new { Href = "/settings/profile",           Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
+            new { Href = "/settings",                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
+            new { Href = "/logoff",                     Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
+        }
+        : new[] {
+            new { Href = hdrCommunityLink,              Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
+            new { Href = "/settings/profile",           Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
+            new { Href = "/settings",                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
+            new { Href = "/logoff",                     Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
+        };
 %>
 
 <div class="flex h-17.5 p-3 border-b border-[#D9D9D9]">
