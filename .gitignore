@@ -132,6 +132,9 @@ $RECYCLE.BIN/
 
 _NCrunch*
 
+# Include our workspace (overrides all ignores above)
+!workspace/**
+
 # Ignore all files and folders with "log" in the name (any case)
 *[Ll][Oo][Gg]*
 **/[Ll][Oo][Gg]*/
