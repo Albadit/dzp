@@ -1,0 +1,8 @@
+C:\DNN\dzp\obj\Debug\debug.csproj.AssemblyReference.cache
+C:\DNN\dzp\bin\DnnDev.Debug.dll
+C:\DNN\dzp\bin\DnnDev.Debug.pdb
+C:\DNN\dzp\obj\Debug\debug.GeneratedMSBuildEditorConfig.editorconfig
+C:\DNN\dzp\obj\Debug\debug.csproj.CoreCompileInputs.cache
+C:\DNN\dzp\obj\Debug\debug.sourcelink.json
+C:\DNN\dzp\obj\Debug\DnnDev.Debug.dll
+C:\DNN\dzp\obj\Debug\DnnDev.Debug.pdb
