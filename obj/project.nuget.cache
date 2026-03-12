@@ -1,11 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "srcuO9ZDR1M=",
+  "dgSpecHash": "bTyZTw5Pp3M=",
   "success": true,
   "projectFilePath": "C:\\DNN\\dzp\\debug.csproj",
-  "expectedPackageFiles": [
-    "C:\\Users\\ardit\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
-    "C:\\Users\\ardit\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net48\\1.0.3\\microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg.sha512"
-  ],
+  "expectedPackageFiles": [],
   "logs": []
 }
