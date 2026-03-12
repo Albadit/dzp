@@ -1,6 +1,6 @@
 is_global = true
 build_property.RootNamespace = debug
-build_property.ProjectDir = C:\DNN\dzp\
+build_property.ProjectDir = C:\DNN\dzp\dzp\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.CsWinRTUseWindowsUIXamlProjections = false
