@@ -95,9 +95,8 @@
             <img src="<%= hdrLogoUrl %>" alt="<%= hdrSiteName %>" class="h-full"/>
         </a>
     </div>
-    <div class="w-full flex justify-between justify-end">
-        <% if (!string.IsNullOrEmpty(hdrCommunity)) { %>
-        <div class="flex gap-2.5">
+    <div class="w-full flex justify-between">
+        <div class="flex gap-2.5 <%= string.IsNullOrEmpty(hdrCommunity) ? "invisible" : "" %>">
             <div class="sm:flex hidden h-full aspect-square object-cover rounded-xs bg-gray-200 justify-center items-center font-bold">Logo</div>
             <div class="lg:w-80 w-45 flex flex-col lg:justify-between justify-center">
                 <span class="lg:text-base text-sm font-bold w-full text-ellipsis overflow-hidden whitespace-nowrap"><%= hdrCommunity %></span>
@@ -107,7 +106,6 @@
                 </div>
             </div>
         </div>
-        <% } %>
         <div class="flex gap-8 items-center">
             <i data-lucide="bell" class="lg:block hidden size-5.5 shrink-0"></i>
             <i data-lucide="search" class="lg:block hidden size-5.5 shrink-0"></i>

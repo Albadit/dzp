@@ -261,12 +261,43 @@
     var currentUser = UserController.Instance.GetCurrentUserInfo();
     var navGroups = BuildNavGroups(placeholders, currentPath, sbPs.PortalId, currentUser);
 
+    // Check if user has more than one community (show dashboard link)
+    var sbShowDashboard = false;
+    if (currentUser != null && currentUser.UserID > 0)
+    {
+        var sbConnStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"] != null
+            ? System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString
+            : null;
+        if (!string.IsNullOrEmpty(sbConnStr))
+        {
+            using (var sbConn = new System.Data.SqlClient.SqlConnection(sbConnStr))
+            {
+                sbConn.Open();
+                using (var sbCmd = sbConn.CreateCommand())
+                {
+                    if (currentUser.IsSuperUser)
+                    {
+                        sbCmd.CommandText = "SELECT COUNT(*) FROM Community";
+                    }
+                    else
+                    {
+                        sbCmd.CommandText = "SELECT COUNT(*) FROM UserCommunity WHERE UserId = @userId";
+                        sbCmd.Parameters.AddWithValue("@userId", currentUser.UserID);
+                    }
+                    sbShowDashboard = (int)sbCmd.ExecuteScalar() > 1;
+                }
+            }
+        }
+    }
+    var sbDashboardActive = currentPath.TrimEnd('/').Equals("/dashboard", StringComparison.OrdinalIgnoreCase);
+
     // Determine logo link: use real slug from route values
     var sbAllTabs = TabController.Instance.GetTabsByPortal(sbPs.PortalId).AsList();
     var sbSlug = placeholders.ContainsKey("{community-slug}") ? placeholders["{community-slug}"] : null;
     var sbFirstIsRealPage = segments.Length > 0 && sbAllTabs.Any(t =>
         t.ParentId == -1 && !t.IsDeleted
         && t.TabName.Equals(segments[0], StringComparison.OrdinalIgnoreCase));
+    var sbOnCommunityRoot = segments.Length == 1 && !sbFirstIsRealPage;
     var sbLogoUrl = !string.IsNullOrEmpty(sbSlug)
         ? "/" + sbSlug + "/home"
         : (segments.Length > 0 && !sbFirstIsRealPage
@@ -292,11 +323,25 @@
 
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto px-3 py-4">
+        <% if (sbShowDashboard) { %>
+        <div class="mb-6">
+            <ul class="space-y-1">
+                <li>
+                    <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors <%= sbDashboardActive ? "bg-primary-50 text-primary-700 font-semibold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900" %>">
+                        <i data-lucide="layout-dashboard" class="size-5 shrink-0"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <% } %>
+        <% if (!sbOnCommunityRoot) { %>
         <% foreach (var group in navGroups) { %>
         <div class="mb-6">
             <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400"><%= group.Title %></h3>
             <% Response.Write(RenderNav(group.Items, 0)); %>
         </div>
+        <% } %>
         <% } %>
     </nav>
 

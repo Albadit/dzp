@@ -100,33 +100,100 @@ namespace DnnDev.Routing
             if (segments.Length == 0)
                 return;
 
-            // Check if the first segment is literally a template page name
-            if (!segments[0].Equals("community-slug", StringComparison.OrdinalIgnoreCase))
+            // Skip reserved DNN paths — they are not community slugs
+            if (IsReservedPrefix(segments[0]))
                 return;
 
             try
             {
                 var username = app.Context.User.Identity.Name;
                 var communitySlugs = GetUserCommunitySlugs(username);
+                var isSuperUser = IsSuperUser(username);
 
-                if (communitySlugs == null || communitySlugs.Count == 0)
+                // ── Case 1: URL starts with literal template name "community-slug" ──
+                if (segments[0].Equals("community-slug", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (communitySlugs == null || communitySlugs.Count == 0)
+                        return;
+
+                    string newPath;
+                    if (communitySlugs.Count == 1)
+                    {
+                        segments[0] = communitySlugs[0];
+                        newPath = "/" + string.Join("/", segments) + "/home";
+                    }
+                    else
+                    {
+                        newPath = "/dashboard";
+                    }
+
+                    Log(originalPath + " -> community redirect to " + newPath + " for user '" + username + "'");
+                    app.Context.Response.Redirect(newPath, false);
+                    app.Context.ApplicationInstance.CompleteRequest();
+                    return;
+                }
+
+                // ── Case 2: URL starts with a community slug — verify access ──
+                // Superusers can access any community
+                if (isSuperUser)
                     return;
 
-                string newPath;
-                if (communitySlugs.Count == 1)
+                // Check if the first segment is a known community slug
+                var visitedSlug = segments[0];
+                var allSlugs = GetAllCommunitySlugs();
+                var isCommunitySluggUrl = allSlugs != null && allSlugs.Contains(visitedSlug, StringComparer.OrdinalIgnoreCase);
+
+                if (isCommunitySluggUrl)
                 {
-                    // Single community → redirect to /{slug}/home
-                    segments[0] = communitySlugs[0];
-                    newPath = "/" + string.Join("/", segments) + "/home";
+                    // User is visiting a community page — check membership
+                    if (communitySlugs != null && communitySlugs.Any(s =>
+                        s.Equals(visitedSlug, StringComparison.OrdinalIgnoreCase)))
+                        return; // User belongs to this community, allow access
                 }
                 else
                 {
-                    // Multiple communities → redirect to /dashboard
-                    newPath = "/dashboard";
+                    // Not a community URL — allow /dashboard only for multi-community users, and real DNN pages
+                    if (visitedSlug.Equals("dashboard", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (communitySlugs != null && communitySlugs.Count > 1)
+                            return; // Multi-community user, allow dashboard
+                        // Single community user → will be redirected below
+                    }
+
+                    // Check if the first segment is a real (non-template) root page
+                    int portalId = ResolvePortalId(request);
+                    if (portalId >= 0)
+                    {
+                        var allTabs = AllTabsCache.GetOrAdd(portalId, pid =>
+                            TabController.Instance.GetTabsByPortal(pid).AsList());
+                        var isRealPage = allTabs.Any(t =>
+                            t.ParentId == -1 && !t.IsDeleted
+                            && !TemplatePages.Contains(t.TabName)
+                            && t.TabName.Equals(visitedSlug, StringComparison.OrdinalIgnoreCase));
+                        if (isRealPage)
+                            return; // Real DNN page like /settings — allow
+                    }
                 }
 
-                Log(originalPath + " -> community redirect to " + newPath + " for user '" + username + "'");
-                app.Context.Response.Redirect(newPath, false);
+                // User is on a community they don't belong to, or on an unknown URL
+                // → redirect to their community or dashboard
+                string redirectPath;
+                if (communitySlugs != null && communitySlugs.Count == 1)
+                {
+                    redirectPath = "/" + communitySlugs[0] + "/home";
+                }
+                else if (communitySlugs != null && communitySlugs.Count > 1)
+                {
+                    redirectPath = "/dashboard";
+                }
+                else
+                {
+                    redirectPath = "/";
+                }
+
+                Log(originalPath + " -> ACCESS DENIED for '" + username
+                    + "', not a member of '" + visitedSlug + "', redirecting to " + redirectPath);
+                app.Context.Response.Redirect(redirectPath, false);
                 app.Context.ApplicationInstance.CompleteRequest();
             }
             catch (Exception ex)
@@ -170,6 +237,58 @@ namespace DnnDev.Routing
                 }
             }
             return slugs;
+        }
+
+        /// <summary>
+        /// Get all community slugs in the system (for checking if a URL segment is a community).
+        /// </summary>
+        private static List<string> GetAllCommunitySlugs()
+        {
+            var connStr = ConfigurationManager.ConnectionStrings["SiteSqlServer"]?.ConnectionString;
+            if (string.IsNullOrEmpty(connStr)) return null;
+
+            var slugs = new List<string>();
+            using (var conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Slug FROM Community";
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var slug = reader["Slug"] as string;
+                            if (!string.IsNullOrEmpty(slug))
+                                slugs.Add(slug);
+                        }
+                    }
+                }
+            }
+            return slugs;
+        }
+
+        /// <summary>
+        /// Check if a DNN user is a superuser.
+        /// </summary>
+        private static bool IsSuperUser(string username)
+        {
+            if (string.IsNullOrEmpty(username)) return false;
+
+            var connStr = ConfigurationManager.ConnectionStrings["SiteSqlServer"]?.ConnectionString;
+            if (string.IsNullOrEmpty(connStr)) return false;
+
+            using (var conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT IsSuperUser FROM Users WHERE Username = @username";
+                    cmd.Parameters.AddWithValue("@username", username);
+                    var result = cmd.ExecuteScalar();
+                    return result != null && (bool)result;
+                }
+            }
         }
 
         private static void Log(string msg)
@@ -382,7 +501,7 @@ namespace DnnDev.Routing
                 "admin", "host", "portals", "desktopmodules", "providers",
                 "resources", "install", "api", "icons", "images", "js",
                 "controls", "bin", "app_data", "config", "login", "register",
-                "logoff", "default", "error", "keepalive"
+                "logoff", "default", "error", "keepalive", "dashboard"
             };
 
             foreach (var r in reserved)
