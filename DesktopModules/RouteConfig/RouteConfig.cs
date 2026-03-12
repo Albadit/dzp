@@ -1,18 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
 using DotNetNuke.Entities.Portals;
 using DotNetNuke.Entities.Tabs;
+using DnnDev.Routing.Data;
 
 namespace DnnDev.Routing
 {
     /// <summary>
     /// HTTP Module that handles recursive slug-based routing for DNN.
     ///
-    /// Template pages are DNN pages listed in <see cref="TemplatePages"/>.
+    /// Template pages are DNN pages listed in <see cref="Constants.TemplatePages"/>.
     /// Any URL segment at a template position is accepted as a slug value.
     /// The module walks the DNN page tree recursively, matching segments to
     /// either literal child pages or template pages (which capture the value).
@@ -34,17 +33,6 @@ namespace DnnDev.Routing
         /// </summary>
         private const bool EnableLogging = false;
 
-        // ── Template page names ───────────────────────────────────────────
-        // Any DNN page whose name is in this set acts as a template:
-        // the URL segment is captured as a route value instead of being
-        // matched literally. Add/remove names here and rebuild.
-        private static readonly HashSet<string> TemplatePages =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "community-slug",
-                "company-slug",
-            };
-
         // ── Cache (reset on app-pool recycle) ──────────────────────────
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, IList<TabInfo>>
             AllTabsCache = new System.Collections.Concurrent.ConcurrentDictionary<int, IList<TabInfo>>();
@@ -62,7 +50,7 @@ namespace DnnDev.Routing
             var path = request.Url.AbsolutePath;
 
             // Store original path before DNN's URL rewriter changes it
-            app.Context.Items["_OriginalPath"] = path;
+            app.Context.Items[Constants.ItemRawOriginalPath] = path;
 
             try
             {
@@ -85,7 +73,7 @@ namespace DnnDev.Routing
             var request = app.Context.Request;
 
             // Use the original path we stored at BeginRequest (before DNN rewrote it)
-            var originalPath = app.Context.Items["_OriginalPath"] as string;
+            var originalPath = app.Context.Items[Constants.ItemRawOriginalPath] as string;
             if (string.IsNullOrEmpty(originalPath) || originalPath.Contains("."))
                 return;
 
@@ -107,8 +95,8 @@ namespace DnnDev.Routing
                 // Redirect to the user's actual community or dashboard
                 if (segments[0].Equals("community-slug", StringComparison.OrdinalIgnoreCase))
                 {
-                    var communitySlugs = GetUserCommunitySlugs(username);
-                    if (communitySlugs == null || communitySlugs.Count == 0)
+                    var communitySlugs = CommunityRepository.GetUserSlugsByUsername(username);
+                    if (communitySlugs.Count == 0)
                         return;
 
                     string newPath;
@@ -129,26 +117,27 @@ namespace DnnDev.Routing
                 }
 
                 // ── Case 2: URL starts with a community slug — verify membership ──
-                var allSlugs = GetAllCommunitySlugs();
-                if (allSlugs == null || !allSlugs.Contains(segments[0], StringComparer.OrdinalIgnoreCase))
+                var allSlugs = CommunityRepository.GetAllSlugs();
+                if (allSlugs.Count == 0 || !allSlugs.Any(s =>
+                    s.Equals(segments[0], StringComparison.OrdinalIgnoreCase)))
                     return; // Not a community URL — let DNN handle it
 
                 // Superusers can access any community
-                if (IsSuperUser(username))
+                if (CommunityRepository.IsSuperUser(username))
                     return;
 
                 // Check if user belongs to this community
-                var userSlugs = GetUserCommunitySlugs(username);
-                if (userSlugs != null && userSlugs.Any(s =>
+                var userSlugs = CommunityRepository.GetUserSlugsByUsername(username);
+                if (userSlugs.Any(s =>
                     s.Equals(segments[0], StringComparison.OrdinalIgnoreCase)))
                     return; // User belongs — allow
 
                 // User does NOT belong to this community — redirect to their own
                 string redirectPath;
-                if (userSlugs != null && userSlugs.Count == 1)
+                if (userSlugs.Count == 1)
                     redirectPath = "/" + userSlugs[0] + "/home";
-                else if (userSlugs != null && userSlugs.Count > 1)
-                    redirectPath = "/dashboard";
+                else if (userSlugs.Count > 1)
+                    redirectPath = Constants.DashboardUrl;
                 else
                     redirectPath = "/";
 
@@ -160,95 +149,6 @@ namespace DnnDev.Routing
             catch (Exception ex)
             {
                 Log("Community redirect EXCEPTION: " + ex);
-            }
-        }
-
-        /// <summary>
-        /// Look up all community slugs for a DNN user from the database.
-        /// </summary>
-        private static List<string> GetUserCommunitySlugs(string username)
-        {
-            if (string.IsNullOrEmpty(username)) return null;
-
-            var connStr = ConfigurationManager.ConnectionStrings["SiteSqlServer"]?.ConnectionString;
-            if (string.IsNullOrEmpty(connStr)) return null;
-
-            var slugs = new List<string>();
-            using (var conn = new SqlConnection(connStr))
-            {
-                conn.Open();
-                using (var cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = @"
-                        SELECT c.Slug
-                        FROM Community c
-                        INNER JOIN UserCommunity uc ON c.CommunityId = uc.CommunityId
-                        INNER JOIN Users u ON u.UserID = uc.UserId
-                        WHERE u.Username = @username";
-                    cmd.Parameters.AddWithValue("@username", username);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var slug = reader["Slug"] as string;
-                            if (!string.IsNullOrEmpty(slug))
-                                slugs.Add(slug);
-                        }
-                    }
-                }
-            }
-            return slugs;
-        }
-
-        /// <summary>
-        /// Get all community slugs in the system (for checking if a URL segment is a community).
-        /// </summary>
-        private static List<string> GetAllCommunitySlugs()
-        {
-            var connStr = ConfigurationManager.ConnectionStrings["SiteSqlServer"]?.ConnectionString;
-            if (string.IsNullOrEmpty(connStr)) return null;
-
-            var slugs = new List<string>();
-            using (var conn = new SqlConnection(connStr))
-            {
-                conn.Open();
-                using (var cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = "SELECT Slug FROM Community";
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var slug = reader["Slug"] as string;
-                            if (!string.IsNullOrEmpty(slug))
-                                slugs.Add(slug);
-                        }
-                    }
-                }
-            }
-            return slugs;
-        }
-
-        /// <summary>
-        /// Check if a DNN user is a superuser.
-        /// </summary>
-        private static bool IsSuperUser(string username)
-        {
-            if (string.IsNullOrEmpty(username)) return false;
-
-            var connStr = ConfigurationManager.ConnectionStrings["SiteSqlServer"]?.ConnectionString;
-            if (string.IsNullOrEmpty(connStr)) return false;
-
-            using (var conn = new SqlConnection(connStr))
-            {
-                conn.Open();
-                using (var cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = "SELECT IsSuperUser FROM Users WHERE Username = @username";
-                    cmd.Parameters.AddWithValue("@username", username);
-                    var result = cmd.ExecuteScalar();
-                    return result != null && (bool)result;
-                }
             }
         }
 
@@ -281,7 +181,7 @@ namespace DnnDev.Routing
                 return;
 
             // 1. Skip reserved DNN system prefixes
-            if (IsReservedPrefix(segments[0]))
+            if (Constants.ReservedPrefixes.Contains(segments[0]))
                 return;
 
             // 2. Resolve portal
@@ -329,7 +229,7 @@ namespace DnnDev.Routing
                 //     DNN would silently show the parent page — force a 404 instead.
                 var firstRootPage = allTabs.FirstOrDefault(t =>
                     t.ParentId == -1 && !t.IsDeleted
-                    && !TemplatePages.Contains(t.TabName)
+                    && !Constants.TemplatePages.Contains(t.TabName)
                     && t.TabName.Equals(segments[0], StringComparison.OrdinalIgnoreCase));
                 if (firstRootPage != null)
                 {
@@ -339,7 +239,7 @@ namespace DnnDev.Routing
                         !t.IsDeleted && t.TabName.Equals("404 Error Page", StringComparison.OrdinalIgnoreCase));
                     if (errorPage != null)
                     {
-                        app.Context.Items["RouteActive"] = true;
+                        app.Context.Items[Constants.ItemRouteActive] = true;
                         app.Context.RewritePath("/" + errorPage.TabName);
                         app.Context.Response.StatusCode = 404;
                     }
@@ -367,7 +267,7 @@ namespace DnnDev.Routing
                 // a) Literal match — non-template child page
                 var literalMatch = children.FirstOrDefault(t =>
                     t.TabName.Equals(segment, StringComparison.OrdinalIgnoreCase)
-                    && !TemplatePages.Contains(t.TabName));
+                    && !Constants.TemplatePages.Contains(t.TabName));
 
                 if (literalMatch != null)
                 {
@@ -378,7 +278,7 @@ namespace DnnDev.Routing
                 }
 
                 // b) Template match — accept ANY value for the first template child found
-                var templateChild = children.FirstOrDefault(t => TemplatePages.Contains(t.TabName));
+                var templateChild = children.FirstOrDefault(t => Constants.TemplatePages.Contains(t.TabName));
                 if (templateChild != null)
                 {
                     resolvedPath += "/" + templateChild.TabName;
@@ -404,20 +304,23 @@ namespace DnnDev.Routing
                 app.Context.Items[kvp.Key] = kvp.Value;
 
             // Store the list of matched template keys so Razor can discover them
-            app.Context.Items["RouteKeys"] = routeValues.Keys.ToArray();
-            app.Context.Items["RouteActive"] = true;
+            app.Context.Items[Constants.ItemRouteKeys] = routeValues.Keys.ToArray();
+            app.Context.Items[Constants.ItemRouteActive] = true;
 
             // Backward-compat: RouteSlug / RouteTemplate = first template matched
             if (routeValues.Count > 0)
             {
                 var first = routeValues.First();
-                app.Context.Items["RouteSlug"] = first.Value;
-                app.Context.Items["RouteTemplate"] = first.Key;
+                app.Context.Items[Constants.ItemRouteSlug] = first.Value;
+                app.Context.Items[Constants.ItemRouteTemplate] = first.Key;
             }
 
             Log(path + " -> REWRITE " + resolvedPath + " values=["
                 + string.Join(", ", routeValues.Select(kv => kv.Key + "=" + kv.Value))
                 + "]");
+
+            // Store the original path so skin partials can read the real URL
+            app.Context.Items[Constants.ItemOriginalPath] = path;
 
             app.Context.RewritePath(resolvedPath);
         }
@@ -450,28 +353,6 @@ namespace DnnDev.Routing
             }
 
             return 0; // fallback to default portal
-        }
-
-        /// <summary>
-        /// Skip slugs that match DNN system paths to avoid hijacking real folders.
-        /// </summary>
-        private static bool IsReservedPrefix(string slug)
-        {
-            var reserved = new[]
-            {
-                "admin", "host", "portals", "desktopmodules", "providers",
-                "resources", "install", "api", "icons", "images", "js",
-                "controls", "bin", "app_data", "config", "login", "register",
-                "logoff", "default", "error", "keepalive"
-            };
-
-            foreach (var r in reserved)
-            {
-                if (slug.Equals(r, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
         }
 
         public void Dispose() { }

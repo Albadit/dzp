@@ -235,75 +235,28 @@
 </script>
 
 <%
-    var sbPs = PortalSettings.Current;
+    var sb = DnnDev.Routing.Models.DzpContext.Current;
 
-    // Use the original URL path (before RouteConfig.RewritePath) when available,
-    // because after rewrite RawUrl contains template names like "community-slug"
-    // instead of the real slugs like "keizerswaard".
-    var originalPath = HttpContext.Current.Items["RouteOriginalPath"] as string;
-    var rawUrl = HttpContext.Current.Request.RawUrl;
-    var qsIdx = rawUrl.IndexOf('?');
-    var currentPath = originalPath ?? (qsIdx >= 0 ? rawUrl.Substring(0, qsIdx) : rawUrl);
-    var segments = currentPath.TrimStart('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-    var placeholders = ExtractPlaceholders(segments);
+    // Extract template placeholders from NavSections + current URL segments
+    var placeholders = ExtractPlaceholders(sb.Segments);
 
-    // Also load route values from HttpContext.Items (set by RouteConfig)
-    var routeKeys = HttpContext.Current.Items["RouteKeys"] as string[];
-    if (routeKeys != null) {
-        foreach (var key in routeKeys) {
-            var val = HttpContext.Current.Items[key] as string;
-            if (!string.IsNullOrEmpty(val))
-                placeholders["{" + key + "}"] = val;
-        }
+    // Merge route values from DzpContext (set by RouteConfig)
+    foreach (var kv in sb.Placeholders)
+    {
+        if (!placeholders.ContainsKey(kv.Key))
+            placeholders[kv.Key] = kv.Value;
     }
 
     // Build nav with active-state + permission checks
-    var currentUser = UserController.Instance.GetCurrentUserInfo();
-    var navGroups = BuildNavGroups(placeholders, currentPath, sbPs.PortalId, currentUser);
+    var navGroups = BuildNavGroups(placeholders, sb.CurrentPath, sb.Portal.PortalId, sb.User);
 
-    // Check if user has more than one community (show dashboard link)
-    var sbShowDashboard = false;
-    if (currentUser != null && currentUser.UserID > 0)
-    {
-        var sbConnStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"] != null
-            ? System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString
-            : null;
-        if (!string.IsNullOrEmpty(sbConnStr))
-        {
-            using (var sbConn = new System.Data.SqlClient.SqlConnection(sbConnStr))
-            {
-                sbConn.Open();
-                using (var sbCmd = sbConn.CreateCommand())
-                {
-                    if (currentUser.IsSuperUser)
-                    {
-                        sbCmd.CommandText = "SELECT COUNT(*) FROM Community";
-                    }
-                    else
-                    {
-                        sbCmd.CommandText = "SELECT COUNT(*) FROM UserCommunity WHERE UserId = @userId";
-                        sbCmd.Parameters.AddWithValue("@userId", currentUser.UserID);
-                    }
-                    sbShowDashboard = (int)sbCmd.ExecuteScalar() > 1;
-                }
-            }
-        }
-    }
-    var sbDashboardActive = currentPath.TrimEnd('/').Equals("/dashboard", StringComparison.OrdinalIgnoreCase);
-    var sbOnSettings = segments.Length > 0 && segments[0].Equals("settings", StringComparison.OrdinalIgnoreCase);
-
-    // Determine logo link: use real slug from route values
-    var sbAllTabs = TabController.Instance.GetTabsByPortal(sbPs.PortalId).AsList();
+    // Determine logo link (use resolved slug from route values)
     var sbSlug = placeholders.ContainsKey("{community-slug}") ? placeholders["{community-slug}"] : null;
-    var sbFirstIsRealPage = segments.Length > 0 && sbAllTabs.Any(t =>
-        t.ParentId == -1 && !t.IsDeleted
-        && t.TabName.Equals(segments[0], StringComparison.OrdinalIgnoreCase));
-    var sbOnCommunityRoot = segments.Length == 1 && !sbFirstIsRealPage;
     var sbLogoUrl = !string.IsNullOrEmpty(sbSlug)
         ? "/" + sbSlug + "/home"
-        : (segments.Length > 0 && !sbFirstIsRealPage
-            ? "/" + segments[0] + "/home"
-            : "/home");
+        : (sb.IsOnCommunityPage
+            ? "/" + sb.Segments[0] + "/home"
+            : DnnDev.Routing.Constants.FallbackHomeUrl);
 %>
 
 <!-- Overlay for mobile -->
@@ -315,7 +268,7 @@
     <!-- Header (mobile only) -->
     <div class="h-17.5 flex items-center justify-between px-4 py-3 border-b border-gray-200 lg:hidden shrink-0">
         <a href="<%= sbLogoUrl %>" class="self-stretch">
-            <img src="<%= sbPs.HomeDirectory + sbPs.LogoFile %>" alt="<%= sbPs.PortalName %>" class="h-full"/>
+            <img src="<%= sb.LogoUrl %>" alt="<%= sb.Portal.PortalName %>" class="h-full"/>
         </a>
         <button type="button" id="sidebar-close" class="p-1 rounded-md hover:bg-gray-100 transition-colors" aria-label="Close sidebar">
             <i data-lucide="x" class="size-5 text-gray-500"></i>
@@ -324,11 +277,11 @@
 
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto px-3 py-4">
-        <% if (sbShowDashboard && !sbOnSettings) { %>
+        <% if (sb.ShowDashboardLink && !sb.IsOnSettings) { %>
         <div class="mb-6">
             <ul class="space-y-1">
                 <li>
-                    <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors <%= sbDashboardActive ? "bg-primary-50 text-primary-700 font-semibold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900" %>">
+                    <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors <%= sb.IsOnDashboard ? "bg-primary-50 text-primary-700 font-semibold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900" %>">
                         <i data-lucide="layout-dashboard" class="size-5 shrink-0"></i>
                         <span>Dashboard</span>
                     </a>
@@ -336,7 +289,7 @@
             </ul>
         </div>
         <% } %>
-        <% if (!sbOnCommunityRoot) { %>
+        <% if (!sb.IsOnCommunityRoot) { %>
         <% foreach (var group in navGroups) { %>
         <div class="mb-6">
             <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400"><%= group.Title %></h3>

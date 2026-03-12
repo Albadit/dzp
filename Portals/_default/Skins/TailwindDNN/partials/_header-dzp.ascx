@@ -1,130 +1,16 @@
 <%
-    var ps = DotNetNuke.Entities.Portals.PortalSettings.Current;
-    var hdrLogoUrl = ps.HomeDirectory + ps.LogoFile;
-
-    // Use the original URL path (before RouteConfig.RewritePath) when available
-    var hdrOriginalPath = HttpContext.Current.Items["RouteOriginalPath"] as string;
-    var hdrRawUrl = HttpContext.Current.Request.RawUrl;
-    var hdrQsIdx = hdrRawUrl.IndexOf('?');
-    var hdrPath = hdrOriginalPath ?? (hdrQsIdx >= 0 ? hdrRawUrl.Substring(0, hdrQsIdx) : hdrRawUrl);
-    var hdrSegs = hdrPath.TrimStart('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-
-    // Check if the first segment is a real root-level DNN page (e.g. "settings")
-    var hdrAllTabs = DotNetNuke.Entities.Tabs.TabController.Instance.GetTabsByPortal(ps.PortalId).AsList();
-    var hdrFirstIsRealPage = hdrSegs.Length > 0 && hdrAllTabs.Any(t =>
-        t.ParentId == -1 && !t.IsDeleted
-        && t.TabName.Equals(hdrSegs[0], StringComparison.OrdinalIgnoreCase));
-    var hdrSiteUrl = hdrSegs.Length > 0 && !hdrFirstIsRealPage
-        ? "/" + hdrSegs[0] + "/home"
-        : "/home"; // updated later when on non-community pages
-    var hdrSiteName = ps.PortalName;
-    var hdrUser = DotNetNuke.Entities.Users.UserController.Instance.GetCurrentUserInfo();
-    var hdrUserName = hdrUser.DisplayName;
-    var hdrUserEmail = hdrUser.Email;
-    var hdrProfileImg = "/DnnImageHandler.ashx?mode=profilepic&userId=" + hdrUser.UserID;
-
-    // Look up community name from the URL slug
-    var hdrCommunitySlug = hdrSegs.Length > 0 && !hdrFirstIsRealPage ? hdrSegs[0] : null;
-    var hdrCommunity = "";
-    if (!string.IsNullOrEmpty(hdrCommunitySlug))
-    {
-        var hdrConnStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"] != null
-            ? System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString
-            : null;
-        if (!string.IsNullOrEmpty(hdrConnStr))
-        {
-            using (var hdrConn = new System.Data.SqlClient.SqlConnection(hdrConnStr))
-            {
-                hdrConn.Open();
-                using (var hdrCmd = hdrConn.CreateCommand())
-                {
-                    hdrCmd.CommandText = "SELECT Name FROM Community WHERE Slug = @slug";
-                    hdrCmd.Parameters.AddWithValue("@slug", hdrCommunitySlug);
-                    hdrCommunity = (hdrCmd.ExecuteScalar() as string) ?? "";
-                }
-            }
-        }
-    }
-
-    // Determine highest DNN role for this user
-    var hdrRole = "Lid";
-    var hdrUserRoles = hdrUser.Roles;
-    if (hdrUser.IsSuperUser)
-    {
-        hdrRole = "Superuser";
-    }
-    else if (hdrUserRoles != null)
-    {
-        // Skip generic DNN roles, pick the most relevant one
-        var hdrSkipRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            { "Registered Users", "Subscribers", "All Users", "Unverified Users" };
-        foreach (var r in hdrUserRoles)
-        {
-            if (!hdrSkipRoles.Contains(r))
-            {
-                hdrRole = r;
-                break;
-            }
-        }
-    }
-
-    // Slug prefix for community-scoped links
-    var hdrSlug = "";
-    var hdrCommunityLink = "/home"; // fallback
-    if (hdrSegs.Length > 0 && !hdrFirstIsRealPage)
-    {
-        // On a community page — use slug from URL
-        hdrSlug = "/" + hdrSegs[0];
-        hdrCommunityLink = hdrSlug + "/home";
-        hdrSiteUrl = hdrCommunityLink;
-    }
-    else
-    {
-        // On a non-community page (e.g. /settings) — look up user's communities
-        var hdrLinkConnStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"] != null
-            ? System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString
-            : null;
-        if (!string.IsNullOrEmpty(hdrLinkConnStr) && hdrUser.UserID > 0)
-        {
-            var hdrUserSlugs = new System.Collections.Generic.List<string>();
-            using (var hdrLinkConn = new System.Data.SqlClient.SqlConnection(hdrLinkConnStr))
-            {
-                hdrLinkConn.Open();
-                using (var hdrLinkCmd = hdrLinkConn.CreateCommand())
-                {
-                    hdrLinkCmd.CommandText = "SELECT c.Slug FROM Community c INNER JOIN UserCommunity uc ON c.CommunityId = uc.CommunityId WHERE uc.UserId = @uid";
-                    hdrLinkCmd.Parameters.AddWithValue("@uid", hdrUser.UserID);
-                    using (var hdrLinkRdr = hdrLinkCmd.ExecuteReader())
-                    {
-                        while (hdrLinkRdr.Read())
-                            hdrUserSlugs.Add(hdrLinkRdr.GetString(0));
-                    }
-                }
-            }
-            if (hdrUserSlugs.Count == 1)
-            {
-                hdrSlug = "/" + hdrUserSlugs[0];
-                hdrCommunityLink = hdrSlug + "/home";
-                hdrSiteUrl = hdrCommunityLink;
-            }
-            else if (hdrUserSlugs.Count > 1)
-            {
-                hdrCommunityLink = "/dashboard";
-                hdrSiteUrl = "/dashboard";
-            }
-        }
-    }
+    // ── All state is precomputed in DzpContext (one instance per request) ──
+    var hdr = DnnDev.Routing.Models.DzpContext.Current;
 
     // User popup menu links
-    var hdrOnDashboard = hdrSegs.Length > 0 && hdrSegs[0].Equals("dashboard", StringComparison.OrdinalIgnoreCase);
-    var hdrPopupLinks = hdrOnDashboard
+    var hdrPopupLinks = hdr.IsOnDashboard
         ? new[] {
             new { Href = "/settings/profile",           Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
             new { Href = "/settings",                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
             new { Href = "/logoff",                     Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
         }
         : new[] {
-            new { Href = hdrCommunityLink,              Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
+            new { Href = hdr.CommunityLink,             Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
             new { Href = "/settings/profile",           Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
             new { Href = "/settings",                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
             new { Href = "/logoff",                     Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
@@ -138,18 +24,18 @@
             <i data-lucide="menu" class="size-5"></i>
         </button>
         <!-- Logo -->
-        <a href="<%= hdrSiteUrl %>" class="lg:block hidden self-stretch">
-            <img src="<%= hdrLogoUrl %>" alt="<%= hdrSiteName %>" class="h-full"/>
+        <a href="<%= hdr.SiteUrl %>" class="lg:block hidden self-stretch">
+            <img src="<%= hdr.LogoUrl %>" alt="<%= hdr.Portal.PortalName %>" class="h-full"/>
         </a>
     </div>
     <div class="w-full flex justify-between">
-        <div class="flex gap-2.5 <%= string.IsNullOrEmpty(hdrCommunity) ? "invisible" : "" %>">
+        <div class="flex gap-2.5 <%= string.IsNullOrEmpty(hdr.CommunityName) ? "invisible" : "" %>">
             <div class="sm:flex hidden h-full aspect-square object-cover rounded-xs bg-gray-200 justify-center items-center font-bold">Logo</div>
             <div class="lg:w-80 w-45 flex flex-col lg:justify-between justify-center">
-                <span class="lg:text-base text-sm font-bold w-full text-ellipsis overflow-hidden whitespace-nowrap"><%= hdrCommunity %></span>
+                <span class="lg:text-base text-sm font-bold w-full text-ellipsis overflow-hidden whitespace-nowrap"><%= hdr.CommunityName %></span>
                 <div class="flex gap-2 items-center">
                     <i data-lucide="coffee" class="size-3 shrink-0"></i>
-                    <span class="lg:text-base w-full text-xs text-ellipsis overflow-hidden whitespace-nowrap"><%= hdrRole %></span>
+                    <span class="lg:text-base w-full text-xs text-ellipsis overflow-hidden whitespace-nowrap"><%= hdr.UserRole %></span>
                 </div>
             </div>
         </div>
@@ -157,10 +43,10 @@
             <i data-lucide="bell" class="lg:block hidden size-5.5 shrink-0"></i>
             <i data-lucide="search" class="lg:block hidden size-5.5 shrink-0"></i>
             <div id="user-menu-trigger" class="flex gap-2.5 items-center self-stretch relative cursor-pointer">
-                <img src="<%= hdrProfileImg %>" alt="<%= hdrUserName %>" class="h-full shrink-0 aspect-square object-cover rounded-full">
+                <img src="<%= hdr.ProfileImageUrl %>" alt="<%= hdr.UserDisplayName %>" class="h-full shrink-0 aspect-square object-cover rounded-full">
                 <div class="lg:flex hidden flex-col max-w-32 leading-none">
-                    <span class="w-full font-bold text-ellipsis overflow-hidden whitespace-nowrap"><%= hdrUserName %></span>
-                    <span class="w-full text-sm text-ellipsis overflow-hidden whitespace-nowrap"><%= hdrUserEmail %></span>
+                    <span class="w-full font-bold text-ellipsis overflow-hidden whitespace-nowrap"><%= hdr.UserDisplayName %></span>
+                    <span class="w-full text-sm text-ellipsis overflow-hidden whitespace-nowrap"><%= hdr.UserEmail %></span>
                 </div>
 
                 <!-- User Popup -->

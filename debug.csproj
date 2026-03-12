@@ -16,6 +16,7 @@
   <ItemGroup>
     <Reference Include="System.Web" />
     <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
     <Reference Include="DotNetNuke">
       <HintPath>bin\DotNetNuke.dll</HintPath>
       <Private>false</Private>
