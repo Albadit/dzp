@@ -22,8 +22,51 @@
     var hdrUserName = hdrUser.DisplayName;
     var hdrUserEmail = hdrUser.Email;
     var hdrProfileImg = "/DnnImageHandler.ashx?mode=profilepic&userId=" + hdrUser.UserID;
-    var hdrCommunity = "Detailhandelsraad Hoeksche Waard (DHR)";
-    var hdrRole = "Community management";
+
+    // Look up community name from the URL slug
+    var hdrCommunitySlug = hdrSegs.Length > 0 && !hdrFirstIsRealPage ? hdrSegs[0] : null;
+    var hdrCommunity = "";
+    if (!string.IsNullOrEmpty(hdrCommunitySlug))
+    {
+        var hdrConnStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"] != null
+            ? System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString
+            : null;
+        if (!string.IsNullOrEmpty(hdrConnStr))
+        {
+            using (var hdrConn = new System.Data.SqlClient.SqlConnection(hdrConnStr))
+            {
+                hdrConn.Open();
+                using (var hdrCmd = hdrConn.CreateCommand())
+                {
+                    hdrCmd.CommandText = "SELECT Name FROM Community WHERE Slug = @slug";
+                    hdrCmd.Parameters.AddWithValue("@slug", hdrCommunitySlug);
+                    hdrCommunity = (hdrCmd.ExecuteScalar() as string) ?? "";
+                }
+            }
+        }
+    }
+
+    // Determine highest DNN role for this user
+    var hdrRole = "Lid";
+    var hdrUserRoles = hdrUser.Roles;
+    if (hdrUser.IsSuperUser)
+    {
+        hdrRole = "Superuser";
+    }
+    else if (hdrUserRoles != null)
+    {
+        // Skip generic DNN roles, pick the most relevant one
+        var hdrSkipRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { "Registered Users", "Subscribers", "All Users", "Unverified Users" };
+        foreach (var r in hdrUserRoles)
+        {
+            if (!hdrSkipRoles.Contains(r))
+            {
+                hdrRole = r;
+                break;
+            }
+        }
+    }
 
     // Slug prefix for community-scoped links
     var hdrSlug = hdrSegs.Length > 0 && !hdrFirstIsRealPage
@@ -52,7 +95,8 @@
             <img src="<%= hdrLogoUrl %>" alt="<%= hdrSiteName %>" class="h-full"/>
         </a>
     </div>
-    <div class="w-full flex justify-between">
+    <div class="w-full flex justify-between justify-end">
+        <% if (!string.IsNullOrEmpty(hdrCommunity)) { %>
         <div class="flex gap-2.5">
             <div class="sm:flex hidden h-full aspect-square object-cover rounded-xs bg-gray-200 justify-center items-center font-bold">Logo</div>
             <div class="lg:w-80 w-45 flex flex-col lg:justify-between justify-center">
@@ -63,6 +107,7 @@
                 </div>
             </div>
         </div>
+        <% } %>
         <div class="flex gap-8 items-center">
             <i data-lucide="bell" class="lg:block hidden size-5.5 shrink-0"></i>
             <i data-lucide="search" class="lg:block hidden size-5.5 shrink-0"></i>

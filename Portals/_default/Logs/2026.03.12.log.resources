@@ -2718,3 +2718,61 @@ Instead, wrap the contents of the block in "{}":
    at System.Web.WebPages.WebPageBase.RenderSurrounding(String partialViewName, Action`1 body)
    at System.Web.WebPages.WebPageBase.PopContext()
    at DotNetNuke.Web.Razor.RazorEngine.Render(TextWriter writer)
+2026-03-12 10:25:12.966+01:00 [DESKTOP-QRL34JO][D:3][T:18][FATAL] DotNetNuke.Web.Common.Internal.DotNetNukeHttpApplication - System.IO.FileNotFoundException: Could not find file 'C:\DNN\dzp\App_Data\_imagecache\AEED7836122A322A10BA9EC9396D6CA9FED6B848EE902FD95E89C7458B745DBC.tmp'.
+File name: 'C:\DNN\dzp\App_Data\_imagecache\AEED7836122A322A10BA9EC9396D6CA9FED6B848EE902FD95E89C7458B745DBC.tmp'
+   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
+   at System.IO.FileStream.Init(String path, FileMode mode, FileAccess access, Int32 rights, Boolean useRights, FileShare share, Int32 bufferSize, FileOptions options, SECURITY_ATTRIBUTES secAttrs, String msgPath, Boolean bFromProxy, Boolean useLongPath, Boolean checkHost)
+   at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share)
+   at System.Web.HttpResponse.TransmitFile(String filename, Int64 offset, Int64 length)
+   at System.Web.HttpResponseWrapper.TransmitFile(String filename)
+   at DotNetNuke.Services.GeneratedImage.DiskImageStore.TryTransmitIfContains(String id, HttpResponseBase response)
+   at DotNetNuke.Services.GeneratedImage.ImageHandlerInternal.HandleImageRequest(HttpContextBase context, Func`2 imageGenCallback, String uniqueIdStringSeed)
+   at System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute()
+   at System.Web.HttpApplication.ExecuteStepImpl(IExecutionStep step)
+   at System.Web.HttpApplication.ExecuteStep(IExecutionStep step, Boolean& completedSynchronously)
+2026-03-12 10:29:48.670+01:00 [DESKTOP-QRL34JO][D:3][T:20][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id 417ec2f1-4368-4941-8d4c-d4b0699d7e82 because rendering has already begun
+2026-03-12 10:29:48.673+01:00 [DESKTOP-QRL34JO][D:3][T:20][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id 417ec2f1-4368-4941-8d4c-d4b0699d7e82 because rendering has already begun
+2026-03-12 10:29:48.673+01:00 [DESKTOP-QRL34JO][D:3][T:20][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id 417ec2f1-4368-4941-8d4c-d4b0699d7e82 because rendering has already begun
+2026-03-12 10:29:48.673+01:00 [DESKTOP-QRL34JO][D:3][T:8][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id fffddc83-3c11-41a4-8eba-b3a05566e525 because rendering has already begun
+2026-03-12 10:29:48.675+01:00 [DESKTOP-QRL34JO][D:3][T:8][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id fffddc83-3c11-41a4-8eba-b3a05566e525 because rendering has already begun
+2026-03-12 10:29:48.675+01:00 [DESKTOP-QRL34JO][D:3][T:8][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id fffddc83-3c11-41a4-8eba-b3a05566e525 because rendering has already begun
+2026-03-12 10:29:48.675+01:00 [DESKTOP-QRL34JO][D:3][T:8][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id fffddc83-3c11-41a4-8eba-b3a05566e525 because rendering has already begun
+2026-03-12 10:29:48.673+01:00 [DESKTOP-QRL34JO][D:3][T:20][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id 417ec2f1-4368-4941-8d4c-d4b0699d7e82 because rendering has already begun
+2026-03-12 10:29:57.410+01:00 [DESKTOP-QRL34JO][D:3][T:51][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id a7828dc5-42c2-49bc-bffd-e57c3d7b8d62 because rendering has already begun
+2026-03-12 10:29:57.411+01:00 [DESKTOP-QRL34JO][D:3][T:51][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id a7828dc5-42c2-49bc-bffd-e57c3d7b8d62 because rendering has already begun
+2026-03-12 10:29:57.412+01:00 [DESKTOP-QRL34JO][D:3][T:51][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id a7828dc5-42c2-49bc-bffd-e57c3d7b8d62 because rendering has already begun
+2026-03-12 10:29:57.413+01:00 [DESKTOP-QRL34JO][D:3][T:51][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id a7828dc5-42c2-49bc-bffd-e57c3d7b8d62 because rendering has already begun
+2026-03-12 10:29:59.671+01:00 [DESKTOP-QRL34JO][D:3][T:59][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id 0dab1c79-c077-4a48-8488-65c8f47e7f59 because rendering has already begun
+2026-03-12 10:29:59.671+01:00 [DESKTOP-QRL34JO][D:3][T:59][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id 0dab1c79-c077-4a48-8488-65c8f47e7f59 because rendering has already begun
+2026-03-12 10:29:59.672+01:00 [DESKTOP-QRL34JO][D:3][T:59][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id 0dab1c79-c077-4a48-8488-65c8f47e7f59 because rendering has already begun
+2026-03-12 10:29:59.673+01:00 [DESKTOP-QRL34JO][D:3][T:59][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id 0dab1c79-c077-4a48-8488-65c8f47e7f59 because rendering has already begun
+2026-03-12 10:30:11.468+01:00 [DESKTOP-QRL34JO][D:3][T:43][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id d1b8563c-00fa-4d65-b79d-df2e451a0843 because rendering has already begun
+2026-03-12 10:30:11.469+01:00 [DESKTOP-QRL34JO][D:3][T:43][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id d1b8563c-00fa-4d65-b79d-df2e451a0843 because rendering has already begun
+2026-03-12 10:30:11.470+01:00 [DESKTOP-QRL34JO][D:3][T:43][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id d1b8563c-00fa-4d65-b79d-df2e451a0843 because rendering has already begun
+2026-03-12 10:30:11.471+01:00 [DESKTOP-QRL34JO][D:3][T:43][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id d1b8563c-00fa-4d65-b79d-df2e451a0843 because rendering has already begun
+2026-03-12 10:31:05.650+01:00 [DESKTOP-QRL34JO][D:3][T:70][ERROR] DotNetNuke.Services.Exceptions.Exceptions - DotNetNuke.Services.Exceptions.PageLoadException: Unhandled error loading page. ---> System.Web.HttpException: The file '/Portals/_default/skins/tailwinddnn/home.ascx' does not exist.
+   at System.Web.UI.Util.CheckVirtualFileExists(VirtualPath virtualPath)
+   at System.Web.Compilation.BuildManager.GetVPathBuildResultInternal(VirtualPath virtualPath, Boolean noBuild, Boolean allowCrossApp, Boolean allowBuildInPrecompile, Boolean throwIfNotFound, Boolean ensureIsUpToDate)
+   at System.Web.Compilation.BuildManager.GetVPathBuildResultWithNoAssert(HttpContext context, VirtualPath virtualPath, Boolean noBuild, Boolean allowCrossApp, Boolean allowBuildInPrecompile, Boolean throwIfNotFound, Boolean ensureIsUpToDate)
+   at System.Web.Compilation.BuildManager.GetVPathBuildResult(HttpContext context, VirtualPath virtualPath, Boolean noBuild, Boolean allowCrossApp, Boolean allowBuildInPrecompile, Boolean ensureIsUpToDate)
+   at System.Web.UI.TemplateControl.LoadControl(VirtualPath virtualPath)
+   at DotNetNuke.UI.ControlUtilities.LoadControl[T](TemplateControl containerControl, String controlSrc)
+   at DotNetNuke.UI.Skins.Skin.LoadSkin(PageBase page, String skinPath)
+   --- End of inner exception stack trace ---
+2026-03-12 10:31:08.354+01:00 [DESKTOP-QRL34JO][D:3][T:30][ERROR] DotNetNuke.Services.Exceptions.Exceptions - DotNetNuke.Services.Exceptions.PageLoadException: Unhandled error loading page. ---> System.Web.HttpException: The file '/Portals/_default/skins/tailwinddnn/home.ascx' does not exist.
+   at System.Web.UI.Util.CheckVirtualFileExists(VirtualPath virtualPath)
+   at System.Web.Compilation.BuildManager.GetVPathBuildResultInternal(VirtualPath virtualPath, Boolean noBuild, Boolean allowCrossApp, Boolean allowBuildInPrecompile, Boolean throwIfNotFound, Boolean ensureIsUpToDate)
+   at System.Web.Compilation.BuildManager.GetVPathBuildResultWithNoAssert(HttpContext context, VirtualPath virtualPath, Boolean noBuild, Boolean allowCrossApp, Boolean allowBuildInPrecompile, Boolean throwIfNotFound, Boolean ensureIsUpToDate)
+   at System.Web.Compilation.BuildManager.GetVPathBuildResult(HttpContext context, VirtualPath virtualPath, Boolean noBuild, Boolean allowCrossApp, Boolean allowBuildInPrecompile, Boolean ensureIsUpToDate)
+   at System.Web.UI.TemplateControl.LoadControl(VirtualPath virtualPath)
+   at DotNetNuke.UI.ControlUtilities.LoadControl[T](TemplateControl containerControl, String controlSrc)
+   at DotNetNuke.UI.Skins.Skin.LoadSkin(PageBase page, String skinPath)
+   --- End of inner exception stack trace ---
+2026-03-12 10:50:29.438+01:00 [DESKTOP-QRL34JO][D:7][T:81][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id f48eac93-a508-44fb-bdf0-a5b99e3ed5e9 because rendering has already begun
+2026-03-12 10:50:29.438+01:00 [DESKTOP-QRL34JO][D:7][T:31][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.js to CRC id 24ce1cc9-ded0-4dea-8abe-f23a7463d3c3 because rendering has already begun
+2026-03-12 10:50:29.447+01:00 [DESKTOP-QRL34JO][D:7][T:31][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id 24ce1cc9-ded0-4dea-8abe-f23a7463d3c3 because rendering has already begun
+2026-03-12 10:50:29.447+01:00 [DESKTOP-QRL34JO][D:7][T:31][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id 24ce1cc9-ded0-4dea-8abe-f23a7463d3c3 because rendering has already begun
+2026-03-12 10:50:29.447+01:00 [DESKTOP-QRL34JO][D:7][T:31][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id 24ce1cc9-ded0-4dea-8abe-f23a7463d3c3 because rendering has already begun
+2026-03-12 10:50:29.447+01:00 [DESKTOP-QRL34JO][D:7][T:81][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xml.jsparser.js to CRC id f48eac93-a508-44fb-bdf0-a5b99e3ed5e9 because rendering has already begun
+2026-03-12 10:50:29.447+01:00 [DESKTOP-QRL34JO][D:7][T:81][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.js to CRC id f48eac93-a508-44fb-bdf0-a5b99e3ed5e9 because rendering has already begun
+2026-03-12 10:50:29.447+01:00 [DESKTOP-QRL34JO][D:7][T:81][ERROR] DotNetNuke.Web.Client.ResourceManager.ClientResourceController - Cannot add resource /js/dnn.xmlhttp.jsxmlhttprequest.js to CRC id f48eac93-a508-44fb-bdf0-a5b99e3ed5e9 because rendering has already begun

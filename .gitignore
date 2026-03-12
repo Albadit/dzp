@@ -131,3 +131,7 @@ $RECYCLE.BIN/
 .DS_Store
 
 _NCrunch*
+
+# Ignore all files and folders with "log" in the name (any case)
+*[Ll][Oo][Gg]*
+**/[Ll][Oo][Gg]*/

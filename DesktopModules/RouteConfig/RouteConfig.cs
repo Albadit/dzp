@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
 using DotNetNuke.Entities.Portals;
@@ -50,6 +52,7 @@ namespace DnnDev.Routing
         public void Init(HttpApplication context)
         {
             context.BeginRequest += OnBeginRequest;
+            context.PostAuthenticateRequest += OnPostAuthenticateRequest;
         }
 
         private void OnBeginRequest(object sender, EventArgs e)
@@ -57,6 +60,9 @@ namespace DnnDev.Routing
             var app = (HttpApplication)sender;
             var request = app.Context.Request;
             var path = request.Url.AbsolutePath;
+
+            // Store original path before DNN's URL rewriter changes it
+            app.Context.Items["_OriginalPath"] = path;
 
             try
             {
@@ -66,6 +72,104 @@ namespace DnnDev.Routing
             {
                 Log("EXCEPTION for " + path + ": " + ex);
             }
+        }
+
+        /// <summary>
+        /// After authentication, if any URL segment is literally a template page name
+        /// (e.g. "community-slug"), replace it with the authenticated user's actual
+        /// community slug and redirect.
+        /// </summary>
+        private void OnPostAuthenticateRequest(object sender, EventArgs e)
+        {
+            var app = (HttpApplication)sender;
+            var request = app.Context.Request;
+
+            if (!request.IsAuthenticated)
+                return;
+
+            // Use the original path we stored at BeginRequest (before DNN rewrote it)
+            var originalPath = app.Context.Items["_OriginalPath"] as string;
+            if (string.IsNullOrEmpty(originalPath) || originalPath.Contains("."))
+                return;
+
+            var trimmed = originalPath.Trim('/');
+            if (string.IsNullOrEmpty(trimmed))
+                return;
+
+            var segments = trimmed.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0)
+                return;
+
+            // Check if the first segment is literally a template page name
+            if (!segments[0].Equals("community-slug", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            try
+            {
+                var username = app.Context.User.Identity.Name;
+                var communitySlugs = GetUserCommunitySlugs(username);
+
+                if (communitySlugs == null || communitySlugs.Count == 0)
+                    return;
+
+                string newPath;
+                if (communitySlugs.Count == 1)
+                {
+                    // Single community → redirect to /{slug}/home
+                    segments[0] = communitySlugs[0];
+                    newPath = "/" + string.Join("/", segments) + "/home";
+                }
+                else
+                {
+                    // Multiple communities → redirect to /dashboard
+                    newPath = "/dashboard";
+                }
+
+                Log(originalPath + " -> community redirect to " + newPath + " for user '" + username + "'");
+                app.Context.Response.Redirect(newPath, false);
+                app.Context.ApplicationInstance.CompleteRequest();
+            }
+            catch (Exception ex)
+            {
+                Log("Community redirect EXCEPTION: " + ex);
+            }
+        }
+
+        /// <summary>
+        /// Look up all community slugs for a DNN user from the database.
+        /// </summary>
+        private static List<string> GetUserCommunitySlugs(string username)
+        {
+            if (string.IsNullOrEmpty(username)) return null;
+
+            var connStr = ConfigurationManager.ConnectionStrings["SiteSqlServer"]?.ConnectionString;
+            if (string.IsNullOrEmpty(connStr)) return null;
+
+            var slugs = new List<string>();
+            using (var conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT c.Slug
+                        FROM Community c
+                        INNER JOIN UserCommunity uc ON c.CommunityId = uc.CommunityId
+                        INNER JOIN Users u ON u.UserID = uc.UserId
+                        WHERE u.Username = @username";
+                    cmd.Parameters.AddWithValue("@username", username);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var slug = reader["Slug"] as string;
+                            if (!string.IsNullOrEmpty(slug))
+                                slugs.Add(slug);
+                        }
+                    }
+                }
+            }
+            return slugs;
         }
 
         private static void Log(string msg)
