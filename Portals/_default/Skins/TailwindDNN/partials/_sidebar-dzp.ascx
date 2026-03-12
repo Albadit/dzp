@@ -257,13 +257,6 @@
         }
     }
 
-    // TODO: replace with real DB query, e.g. SELECT Slug FROM Communities WHERE UserId = @userId
-    var sbDbSlug = "error";
-
-    var routeSlug = HttpContext.Current.Items["community-slug"] as string ?? sbDbSlug;
-    if (!string.IsNullOrEmpty(routeSlug) && !placeholders.ContainsKey("{community-slug}"))
-        placeholders["{community-slug}"] = routeSlug;
-
     // Build nav with active-state + permission checks
     var currentUser = UserController.Instance.GetCurrentUserInfo();
     var navGroups = BuildNavGroups(placeholders, currentPath, sbPs.PortalId, currentUser);
@@ -278,7 +271,7 @@
         ? "/" + sbSlug + "/home"
         : (segments.Length > 0 && !sbFirstIsRealPage
             ? "/" + segments[0] + "/home"
-            : "/" + sbDbSlug + "/home");
+            : "/home");
 %>
 
 <!-- Overlay for mobile -->

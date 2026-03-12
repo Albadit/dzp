@@ -2,12 +2,21 @@
 @{
     var isLoggedIn = HttpContext.Current.Request.IsAuthenticated;
 
-    var communitySlug = HttpContext.Current.Items["community-slug"] as string ?? "keizerswaard";
+    string communitySlug = null;
+    if (isLoggedIn) {
+        var userId = DotNetNuke.Entities.Users.UserController.Instance.GetCurrentUserInfo().UserID;
+        var db = Database.Open("SiteSqlServer");
+        var row = db.QuerySingle(
+            "SELECT TOP 1 c.Slug FROM Community c INNER JOIN UserCommunity uc ON c.CommunityID = uc.CommunityID WHERE uc.UserID = @0",
+            userId);
+        if (row != null) { communitySlug = (string)row.Slug; }
+    }
 
+    var dashboardUrl = communitySlug != null ? "/" + communitySlug + "/home" : "/";
     var logo = new { Href = "/", Label = "DZP Connect" };
     var cta  = isLoggedIn
-        ? new { Href = $"/{communitySlug}/home",                                          Label = "Dashboard" }
-        : new { Href = $"/signin?returnurl={HttpUtility.UrlEncode($"/{communitySlug}/home")}", Label = "Login" };
+        ? new { Href = dashboardUrl,                                              Label = "Dashboard" }
+        : new { Href = "/signin",                                                 Label = "Login" };
 
     var navItems = new[] {
         new { Href = "#product",           Label = "Product" },

@@ -9,9 +9,6 @@
     var hdrPath = hdrOriginalPath ?? (hdrQsIdx >= 0 ? hdrRawUrl.Substring(0, hdrQsIdx) : hdrRawUrl);
     var hdrSegs = hdrPath.TrimStart('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
-    // TODO: replace with real DB query, e.g. SELECT Slug FROM Communities WHERE UserId = @userId
-    var hdrDbSlug = "keizerswaard";
-
     // Check if the first segment is a real root-level DNN page (e.g. "settings")
     var hdrAllTabs = DotNetNuke.Entities.Tabs.TabController.Instance.GetTabsByPortal(ps.PortalId).AsList();
     var hdrFirstIsRealPage = hdrSegs.Length > 0 && hdrAllTabs.Any(t =>
@@ -19,7 +16,7 @@
         && t.TabName.Equals(hdrSegs[0], StringComparison.OrdinalIgnoreCase));
     var hdrSiteUrl = hdrSegs.Length > 0 && !hdrFirstIsRealPage
         ? "/" + hdrSegs[0] + "/home"
-        : "/" + (HttpContext.Current.Items["community-slug"] as string ?? hdrDbSlug) + "/home";
+        : "/home";
     var hdrSiteName = ps.PortalName;
     var hdrUser = DotNetNuke.Entities.Users.UserController.Instance.GetCurrentUserInfo();
     var hdrUserName = hdrUser.DisplayName;
@@ -29,9 +26,9 @@
     var hdrRole = "Community management";
 
     // Slug prefix for community-scoped links
-    var hdrSlug = "/" + (hdrSegs.Length > 0 && !hdrFirstIsRealPage
-        ? hdrSegs[0]
-        : HttpContext.Current.Items["community-slug"] as string ?? hdrDbSlug);
+    var hdrSlug = hdrSegs.Length > 0 && !hdrFirstIsRealPage
+        ? "/" + hdrSegs[0]
+        : "";
 
     // User popup menu links
     var hdrPopupLinks = new[] {
