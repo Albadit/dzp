@@ -2,21 +2,12 @@
 @{
     var isLoggedIn = HttpContext.Current.Request.IsAuthenticated;
 
-    string communitySlug = null;
-    int communityCount = 0;
-    if (isLoggedIn) {
-        var userId = DotNetNuke.Entities.Users.UserController.Instance.GetCurrentUserInfo().UserID;
-        var db = Database.Open("SiteSqlServer");
-        var rows = db.Query(
-            "SELECT c.Slug FROM Community c INNER JOIN UserCommunity uc ON c.CommunityID = uc.CommunityID WHERE uc.UserID = @0",
-            userId);
-        foreach (var r in rows) {
-            communityCount++;
-            if (communitySlug == null) { communitySlug = (string)r.Slug; }
-        }
-    }
+    var hdr = DnnDev.Routing.Models.DzpContext.Current;
+    var communitySlug = hdr.CommunitySlug;
 
-    var dashboardUrl = communityCount > 1 ? "/dashboard" : (communitySlug != null ? "/" + communitySlug + "/home" : "/");
+    var dashboardUrl = !string.IsNullOrEmpty(communitySlug)
+        ? "/" + communitySlug + "/home"
+        : (hdr.ShowDashboardLink ? "/dashboard" : "/");
     var logo = new { Href = "/", Label = "DZP Connect" };
     var cta  = isLoggedIn
         ? new { Href = dashboardUrl,  Label = "Dashboard" }

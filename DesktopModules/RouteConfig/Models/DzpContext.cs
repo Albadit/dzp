@@ -98,6 +98,21 @@ namespace DnnDev.Routing.Models
             ctx.UserEmail = user.Email;
             ctx.ProfileImageUrl = "/DnnImageHandler.ashx?mode=profilepic&userId=" + user.UserID;
 
+            // ── Clear last_community cookie on logout ────────────────
+            if (user == null || user.UserID <= 0)
+            {
+                var stale = HttpContext.Current.Request.Cookies["last_community"];
+                if (stale != null)
+                {
+                    HttpContext.Current.Response.Cookies.Set(new HttpCookie("last_community", "")
+                    {
+                        Path = "/",
+                        HttpOnly = true,
+                        Expires = DateTime.UtcNow.AddDays(-1)
+                    });
+                }
+            }
+
             // ── First-segment detection ──────────────────────────────
             var allTabs = TabController.Instance.GetTabsByPortal(ps.PortalId).AsList();
             ctx.FirstSegmentIsRealPage = ctx.Segments.Length > 0
@@ -114,15 +129,67 @@ namespace DnnDev.Routing.Models
             ctx.IsOnCommunityRoot = ctx.Segments.Length == 1 && ctx.IsOnCommunityPage;
 
             // ── Community slug & name ────────────────────────────────
-            var communitySlug = ctx.IsOnCommunityPage ? ctx.Segments[0] : null;
+            var communitySlug = ctx.Segments.Length > 0 ? ctx.Segments[0] : null;
+
+            // Only treat it as a community slug if it actually exists in the DB
+            var communityName = CommunityRepository.GetCommunityNameBySlug(communitySlug);
+            if (string.IsNullOrEmpty(communityName))
+                communitySlug = null;
+
+            // Remember last visited community in a cookie
+            if (!string.IsNullOrEmpty(communitySlug))
+            {
+                var cookie = new HttpCookie("last_community", communitySlug)
+                {
+                    Path = "/",
+                    HttpOnly = true,
+                    Expires = DateTime.UtcNow.AddDays(90)
+                };
+                HttpContext.Current.Response.Cookies.Set(cookie);
+            }
+
+            // Fallback: cookie → DB (for non-community pages like /administrator)
+            if (string.IsNullOrEmpty(communitySlug) && user != null && user.UserID > 0)
+            {
+                var lastCookie = HttpContext.Current.Request.Cookies["last_community"];
+                if (lastCookie != null && !string.IsNullOrEmpty(lastCookie.Value))
+                {
+                    communitySlug = lastCookie.Value;
+                    communityName = CommunityRepository.GetCommunityNameBySlug(communitySlug);
+
+                    // Invalid cookie — community no longer exists
+                    if (string.IsNullOrEmpty(communityName))
+                    {
+                        communitySlug = null;
+                        HttpContext.Current.Response.Cookies.Set(new HttpCookie("last_community", "")
+                        {
+                            Path = "/",
+                            HttpOnly = true,
+                            Expires = DateTime.UtcNow.AddDays(-1)
+                        });
+                    }
+                }
+
+                // If still unresolved, fall back to DB
+                if (string.IsNullOrEmpty(communitySlug))
+                {
+                    var userSlugs = CommunityRepository.GetUserSlugsByUserId(user.UserID);
+                    if (userSlugs.Count > 0)
+                    {
+                        communitySlug = userSlugs[userSlugs.Count - 1];
+                        communityName = CommunityRepository.GetCommunityNameBySlug(communitySlug);
+                    }
+                }
+            }
+
             ctx.CommunitySlug = communitySlug;
-            ctx.CommunityName = CommunityRepository.GetCommunityNameBySlug(communitySlug);
+            ctx.CommunityName = communityName ?? "";
 
             // ── User role ────────────────────────────────────────────
             ctx.UserRole = ResolveUserRole(user);
 
             // ── Community link & site URL ────────────────────────────
-            ResolveCommunityLinks(ctx, user);
+            ResolveCommunityLinks(ctx);
 
             // ── Dashboard visibility ─────────────────────────────────
             if (user != null && user.UserID > 0)
@@ -148,6 +215,13 @@ namespace DnnDev.Routing.Models
                 }
             }
 
+            // Ensure community-slug is in Placeholders for sidebar nav
+            if (!string.IsNullOrEmpty(ctx.CommunitySlug)
+                && !ctx.Placeholders.ContainsKey("{community-slug}"))
+            {
+                ctx.Placeholders["{community-slug}"] = ctx.CommunitySlug;
+            }
+
             return ctx;
         }
 
@@ -171,34 +245,17 @@ namespace DnnDev.Routing.Models
             return Constants.DefaultRoleLabel;
         }
 
-        private static void ResolveCommunityLinks(DzpContext ctx, UserInfo user)
+        private static void ResolveCommunityLinks(DzpContext ctx)
         {
-            if (ctx.IsOnCommunityPage)
+            if (!string.IsNullOrEmpty(ctx.CommunitySlug))
             {
-                // On a community page — derive links from URL slug
-                var slugPrefix = "/" + ctx.Segments[0];
-                ctx.CommunityLink = slugPrefix + "/home";
-                ctx.SiteUrl = ctx.CommunityLink;
-                return;
-            }
-
-            // On a non-community page (e.g. /settings) — look up user's communities
-            ctx.CommunityLink = Constants.FallbackHomeUrl;
-            ctx.SiteUrl = Constants.FallbackHomeUrl;
-
-            if (user == null || user.UserID <= 0) return;
-
-            var userSlugs = CommunityRepository.GetUserSlugsByUserId(user.UserID);
-            if (userSlugs.Count == 1)
-            {
-                var slugPrefix = "/" + userSlugs[0];
-                ctx.CommunityLink = slugPrefix + "/home";
+                ctx.CommunityLink = "/" + ctx.CommunitySlug + "/home";
                 ctx.SiteUrl = ctx.CommunityLink;
             }
-            else if (userSlugs.Count > 1)
+            else
             {
-                ctx.CommunityLink = Constants.DashboardUrl;
-                ctx.SiteUrl = Constants.DashboardUrl;
+                ctx.CommunityLink = Constants.FallbackHomeUrl;
+                ctx.SiteUrl = Constants.FallbackHomeUrl;
             }
         }
     }

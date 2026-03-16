@@ -13,5 +13,8 @@ static readonly SidebarSection[] NavSections = {
         N("/{community-slug}/manage/groups",     "component"),
         N("/{community-slug}/manage/newsletter", "newspaper")
     ),
+    new SidebarSection("Admin",
+        N("/administrator/communities", "plus-circle")
+    ),
 };
 </script>
