@@ -4,7 +4,7 @@ function initDataTable(tid) {
 
   var pageSize = parseInt(root.dataset.pageSize) || 10;
   var currentPage = 1;
-  var sortCol = null, sortDir = 'asc';
+  var sortColumns = []; // [{col, dir}] multi-column sort stack
 
   var table  = root.querySelector('.dt-table');
   var allRows  = Array.from(table.querySelectorAll('.dt-tbody .dt-row'));
@@ -23,6 +23,7 @@ function initDataTable(tid) {
   var cancelBtn  = root.querySelector('.dt-btn-cancel');
   var pageInfo   = root.querySelector('.dt-page-info');
   var pagination   = root.querySelector('.dt-pagination');
+  var rowCount   = root.querySelector('.dt-row-count');
 
   var modal     = document.getElementById(tid + '-modal');
   var delModal  = document.getElementById(tid + '-del-modal');
@@ -75,22 +76,68 @@ function initDataTable(tid) {
   root.querySelectorAll('.dt-sort').forEach(function(th) {
     th.addEventListener('click', function() {
       var col = this.dataset.col;
-      if (sortCol === col) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
-      else { sortCol = col; sortDir = 'asc'; }
-      root.querySelectorAll('.dt-sort').forEach(function(s) { s.dataset.dir = ''; });
-      this.dataset.dir = sortDir;
+      var idx = -1;
+      for (var i = 0; i < sortColumns.length; i++) {
+        if (sortColumns[i].col === col) { idx = i; break; }
+      }
+      if (idx >= 0) {
+        // Already sorting on this column: cycle asc → desc → remove
+        if (sortColumns[idx].dir === 'asc') {
+          sortColumns[idx].dir = 'desc';
+        } else {
+          sortColumns.splice(idx, 1);
+        }
+      } else {
+        sortColumns.push({ col: col, dir: 'asc' });
+      }
+      updateSortIndicators();
       currentPage = 1; applySortAndRender();
     });
   });
 
-  // Sort filtered rows by the active column and re-render the table
+  function updateSortIndicators() {
+    root.querySelectorAll('.dt-sort').forEach(function(th) {
+      var col = th.dataset.col;
+      var numEl = th.querySelector('.dt-sort-num');
+      var wrapEl = th.querySelector('.dt-sort-icon-wrap');
+      var idx = -1;
+      for (var i = 0; i < sortColumns.length; i++) {
+        if (sortColumns[i].col === col) { idx = i; break; }
+      }
+      if (idx >= 0) {
+        var dir = sortColumns[idx].dir;
+        th.dataset.dir = dir;
+        if (numEl) {
+          numEl.textContent = sortColumns.length > 1 ? (idx + 1) : '';
+          numEl.classList.toggle('hidden', sortColumns.length <= 1);
+        }
+        if (wrapEl) {
+          var icon = dir === 'asc' ? 'move-up' : 'move-down';
+          wrapEl.innerHTML = '<i data-lucide="' + icon + '" class="size-3.5 text-blue-500"></i>';
+        }
+      } else {
+        th.dataset.dir = '';
+        if (numEl) { numEl.textContent = ''; numEl.classList.add('hidden'); }
+        if (wrapEl) {
+          wrapEl.innerHTML = '<i data-lucide="arrow-down-up" class="size-3.5 opacity-40"></i>';
+        }
+      }
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  // Sort filtered rows by all active columns and re-render
   function applySortAndRender() {
-    if (sortCol) {
+    if (sortColumns.length > 0) {
       filtered.sort(function(a, b) {
-        var aVal = getCellText(a, sortCol).toLowerCase();
-        var bVal = getCellText(b, sortCol).toLowerCase();
-        var cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
-        return sortDir === 'desc' ? -cmp : cmp;
+        for (var i = 0; i < sortColumns.length; i++) {
+          var s = sortColumns[i];
+          var aVal = getCellText(a, s.col).toLowerCase();
+          var bVal = getCellText(b, s.col).toLowerCase();
+          var cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
+          if (cmp !== 0) return s.dir === 'desc' ? -cmp : cmp;
+        }
+        return 0;
       });
     }
     // Reorder DOM nodes to match sorted order (CSS grid follows DOM order)
@@ -135,6 +182,11 @@ function initDataTable(tid) {
       pageInput.max = pages;
       pageInput.value = currentPage;
       pageTotal.textContent = '/ ' + pages;
+    }
+
+    if (rowCount) {
+      var numEl = rowCount.querySelector('.dt-row-count-num');
+      if (numEl) numEl.textContent = total;
     }
 
     updateBulkState();
@@ -188,6 +240,7 @@ function initDataTable(tid) {
   function updateBulkState() {
     if (!bulkBtn) return;
     var ids = getSelectedIds();
+    var visible = getVisibleCheckboxes();
     if (ids.length > 0) {
       bulkBtn.classList.remove('hidden');
       bulkBtn.classList.add('inline-flex');
@@ -195,6 +248,12 @@ function initDataTable(tid) {
     } else {
       bulkBtn.classList.add('hidden');
       bulkBtn.classList.remove('inline-flex');
+    }
+    if (checkAll) {
+      var allChecked = visible.length > 0 && ids.length === visible.length;
+      var someChecked = ids.length > 0 && !allChecked;
+      checkAll.checked = allChecked;
+      checkAll.indeterminate = someChecked;
     }
   }
 
