@@ -36,7 +36,8 @@ namespace DnnDev.Routing
                 "admin", "host", "portals", "desktopmodules", "providers",
                 "resources", "install", "api", "icons", "images", "js",
                 "controls", "bin", "app_data", "config", "login", "register",
-                "logoff", "default", "error", "keepalive"
+                "logoff", "default", "error", "keepalive",
+                "administrator", "settings",
             };
 
         // ── DNN roles to ignore when resolving a user's display role ─────

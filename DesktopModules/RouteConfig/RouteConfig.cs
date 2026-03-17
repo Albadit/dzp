@@ -184,6 +184,10 @@ namespace DnnDev.Routing
             if (Constants.ReservedPrefixes.Contains(segments[0]))
                 return;
 
+            // 1b. Skip DNN control URLs (e.g. /page/ctl/Edit/mid/418)
+            if (segments.Any(s => s.Equals("ctl", StringComparison.OrdinalIgnoreCase)))
+                return;
+
             // 2. Resolve portal
             int portalId = ResolvePortalId(request);
             if (portalId < 0)

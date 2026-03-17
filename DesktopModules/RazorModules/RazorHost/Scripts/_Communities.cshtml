@@ -1,0 +1,49 @@
+@* ═══════════════════════════════════════════════════════════════════
+    Communities Admin Page
+    ──────────────────────
+    Uses the reusable DataTable component to manage the Community table.
+═══════════════════════════════════════════════════════════════════ *@
+
+@using DnnDev.Routing.Models
+
+@{
+    var config = new DataTableConfig
+    {
+        Title           = "Community's beheren",
+        DbTable         = "Community",
+        PrimaryKey      = "CommunityID",
+        PageSize        = 15,
+        AllowCreate     = true,
+        AllowEdit       = true,
+        AllowDelete     = true,
+        AllowBulkDelete = true,
+        Columns = new[] {
+            new DataTableColumn {
+                Key         = "Name",
+                Label       = "Naam",
+                Type        = "text",
+                Required    = true,
+                MaxLength   = 256,
+                Placeholder = "Naam van community",
+                Sortable    = true,
+                Filterable  = true
+            },
+            new DataTableColumn {
+                Key            = "Slug",
+                Label          = "Slug",
+                Type           = "slug",
+                Required       = true,
+                MaxLength      = 256,
+                Placeholder    = "url-vriendelijke-slug",
+                Pattern        = "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                PatternMessage = "Alleen kleine letters, cijfers en koppeltekens (bijv. mijn-community)",
+                Sortable       = true,
+                Filterable     = true
+            }
+        }
+    };
+
+    PageData["config"] = config;
+}
+
+@RenderPage("Shared/_DataTable.cshtml")
