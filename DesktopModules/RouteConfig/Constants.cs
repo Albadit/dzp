@@ -21,23 +21,23 @@ namespace DnnDev.Routing
 
         // ── Template page names ──────────────────────────────────────────
         // DNN pages whose name is in this set act as slug templates.
-        public static readonly HashSet<string> TemplatePages =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        // Value = standalone pages that resolve as single-segment routes only.
+        public static readonly Dictionary<string, string[]> TemplatePages =
+            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
             {
-                "community-slug",
-                "company-slug",
+                { "community-slug", new[] { "dashboard" } },
+                { "company-slug", Array.Empty<string>() },
             };
 
-        // ── Reserved URL prefixes ────────────────────────────────────────
-        // First URL segments that must never be treated as community slugs.
-        public static readonly HashSet<string> ReservedPrefixes =
+        // ── System URL prefixes ─────────────────────────────────────────
+        // Physical/virtual directories and DNN internals that have no DNN tab.
+        // Everything else is resolved dynamically from the DNN page tree.
+        public static readonly HashSet<string> SystemPrefixes =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "admin", "host", "portals", "desktopmodules", "providers",
-                "resources", "install", "api", "icons", "images", "js",
-                "controls", "bin", "app_data", "config", "login", "register",
-                "logoff", "default", "error", "keepalive",
-                "administrator", "settings",
+                "portals", "desktopmodules", "providers", "resources",
+                "install", "api", "icons", "images", "js", "controls",
+                "bin", "app_data", "config",
             };
 
         // ── DNN roles to ignore when resolving a user's display role ─────

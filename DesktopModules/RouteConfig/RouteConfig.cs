@@ -33,9 +33,22 @@ namespace DnnDev.Routing
         /// </summary>
         private const bool EnableLogging = false;
 
-        // ── Cache (reset on app-pool recycle) ──────────────────────────
+        // ── Slug validators per template page ──────────────────────────
+        // Maps template page name → function that returns true if the slug exists.
+        // Templates without an entry are accepted without validation.
+        private static readonly Dictionary<string, Func<string, bool>> SlugValidators =
+            new Dictionary<string, Func<string, bool>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["community-slug"] = slug =>
+                    CommunityRepository.GetAllSlugs()
+                        .Any(s => s.Equals(slug, StringComparison.OrdinalIgnoreCase)),
+            };
+
+        // ── Cache (refreshes every 30 seconds) ──────────────────────────
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, IList<TabInfo>>
             AllTabsCache = new System.Collections.Concurrent.ConcurrentDictionary<int, IList<TabInfo>>();
+        private static DateTime _tabsCacheExpiry = DateTime.MinValue;
+        private static readonly object _tabsCacheLock = new object();
 
         public void Init(HttpApplication context)
         {
@@ -180,8 +193,8 @@ namespace DnnDev.Routing
             if (segments.Length == 0)
                 return;
 
-            // 1. Skip reserved DNN system prefixes
-            if (Constants.ReservedPrefixes.Contains(segments[0]))
+            // 1. Skip physical/virtual system directories (no DNN tab for these)
+            if (Constants.SystemPrefixes.Contains(segments[0]))
                 return;
 
             // 1b. Skip DNN control URLs (e.g. /page/ctl/Edit/mid/418)
@@ -193,7 +206,18 @@ namespace DnnDev.Routing
             if (portalId < 0)
                 return;
 
-            // 3. Get all tabs for the portal
+            // 3. Get all tabs for the portal (cache refreshes every 30s)
+            if (DateTime.UtcNow > _tabsCacheExpiry)
+            {
+                lock (_tabsCacheLock)
+                {
+                    if (DateTime.UtcNow > _tabsCacheExpiry)
+                    {
+                        AllTabsCache.Clear();
+                        _tabsCacheExpiry = DateTime.UtcNow.AddSeconds(30);
+                    }
+                }
+            }
             var allTabs = AllTabsCache.GetOrAdd(portalId, pid =>
                 TabController.Instance.GetTabsByPortal(pid).AsList());
 
@@ -233,7 +257,7 @@ namespace DnnDev.Routing
                 //     DNN would silently show the parent page — force a 404 instead.
                 var firstRootPage = allTabs.FirstOrDefault(t =>
                     t.ParentId == -1 && !t.IsDeleted
-                    && !Constants.TemplatePages.Contains(t.TabName)
+                    && !Constants.TemplatePages.ContainsKey(t.TabName)
                     && t.TabName.Equals(segments[0], StringComparison.OrdinalIgnoreCase));
                 if (firstRootPage != null)
                 {
@@ -245,6 +269,44 @@ namespace DnnDev.Routing
                     {
                         app.Context.Items[Constants.ItemRouteActive] = true;
                         app.Context.RewritePath("/" + errorPage.TabName);
+                        app.Context.Response.StatusCode = 404;
+                    }
+                    return;
+                }
+            }
+
+            // 4c. Standalone template pages (e.g. /dashboard).
+            //     These are single-segment-only routes defined in TemplatePages values.
+            //     If the first segment matches a standalone page, allow only exact match;
+            //     extra segments after it → 404.
+            //     Since standalone pages are children of a template page in the DNN tree,
+            //     we must rewrite the URL to the template parent path.
+            foreach (var kvp in Constants.TemplatePages)
+            {
+                foreach (var standalone in kvp.Value)
+                {
+                    if (!segments[0].Equals(standalone, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    if (segments.Length == 1)
+                    {
+                        // Rewrite /dashboard → /community-slug/dashboard so DNN finds the page
+                        var rewritten = "/" + kvp.Key + "/" + standalone;
+                        Log(path + " -> standalone page '" + standalone + "', rewriting to " + rewritten);
+                        app.Context.Items[Constants.ItemRouteActive] = true;
+                        app.Context.Items[Constants.ItemOriginalPath] = path;
+                        app.Context.RewritePath(rewritten);
+                        return;
+                    }
+
+                    // Extra segments after standalone page → 404
+                    Log(path + " -> standalone page '" + standalone + "' with extra segments, rewriting to 404");
+                    var err404 = allTabs.FirstOrDefault(t =>
+                        !t.IsDeleted && t.TabName.Equals("404 Error Page", StringComparison.OrdinalIgnoreCase));
+                    if (err404 != null)
+                    {
+                        app.Context.Items[Constants.ItemRouteActive] = true;
+                        app.Context.RewritePath("/" + err404.TabName);
                         app.Context.Response.StatusCode = 404;
                     }
                     return;
@@ -271,7 +333,7 @@ namespace DnnDev.Routing
                 // a) Literal match — non-template child page
                 var literalMatch = children.FirstOrDefault(t =>
                     t.TabName.Equals(segment, StringComparison.OrdinalIgnoreCase)
-                    && !Constants.TemplatePages.Contains(t.TabName));
+                    && !Constants.TemplatePages.ContainsKey(t.TabName));
 
                 if (literalMatch != null)
                 {
@@ -282,7 +344,7 @@ namespace DnnDev.Routing
                 }
 
                 // b) Template match — accept ANY value for the first template child found
-                var templateChild = children.FirstOrDefault(t => Constants.TemplatePages.Contains(t.TabName));
+                var templateChild = children.FirstOrDefault(t => Constants.TemplatePages.ContainsKey(t.TabName));
                 if (templateChild != null)
                 {
                     resolvedPath += "/" + templateChild.TabName;
@@ -294,7 +356,19 @@ namespace DnnDev.Routing
                     continue;
                 }
 
-                // c) No match for this segment → fall through → DNN 404
+                // c) No match — if we already matched a template, treat the
+                //    remaining segments as DNN friendly-URL parameters
+                //    (e.g. /author/Daniel%20Metter after /community-slug/timeline).
+                if (firstSegmentMatched)
+                {
+                    for (int r = segIndex; r < segments.Length; r++)
+                        resolvedPath += "/" + segments[r];
+                    Log(path + " seg[" + segIndex + "] '" + segment
+                        + "' -> no child page, appending remaining as friendly-URL params");
+                    break;
+                }
+
+                // No template matched yet → not a slug URL
                 Log(path + " seg[" + segIndex + "] '" + segment + "' -> no match, returning");
                 return;
             }
@@ -302,6 +376,26 @@ namespace DnnDev.Routing
             // The first segment MUST match a template (otherwise it's not a slug URL)
             if (!firstSegmentMatched)
                 return;
+
+            // 5b. Validate captured slug values against the database.
+            //     Each template page can have a registered validator in SlugValidators.
+            //     If validation fails, redirect to the previous page or fallback.
+            foreach (var kvp in routeValues)
+            {
+                Func<string, bool> validator;
+                if (!SlugValidators.TryGetValue(kvp.Key, out validator))
+                    continue; // No validator registered — accept any value
+
+                if (!validator(kvp.Value))
+                {
+                    Log(path + " -> " + kvp.Key + " value '" + kvp.Value + "' not found in DB, redirecting back");
+                    var referer = request.Headers["Referer"];
+                    var fallback = string.IsNullOrEmpty(referer) ? Constants.FallbackHomeUrl : referer;
+                    app.Context.Response.Redirect(fallback, false);
+                    app.Context.ApplicationInstance.CompleteRequest();
+                    return;
+                }
+            }
 
             // 6. Store all route values in HttpContext.Items keyed by template name
             foreach (var kvp in routeValues)
