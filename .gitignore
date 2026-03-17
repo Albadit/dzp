@@ -138,3 +138,26 @@ _NCrunch*
 # Ignore all files and folders with "log" in the name (any case)
 *[Ll][Oo][Gg]*
 **/[Ll][Oo][Gg]*/
+
+# =========================
+# Images
+# =========================
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.ico
+*.svg
+*.webp
+*.avif
+*.heic
+*.heif
+*.jfif
+*.psd
+*.raw
+*.cr2
+*.nef
+*.arw
