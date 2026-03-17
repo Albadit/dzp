@@ -170,6 +170,15 @@
   }
 
   var totalRows = rows.Count;
+
+  // Build grid-template-columns: optional checkbox + data columns + optional actions
+  var colParts = new List<string>();
+  if (cfg.AllowBulkDelete) { colParts.Add("2.5rem"); }
+  foreach (var col in visibleColumns) {
+    colParts.Add(col.Type == "readonly" ? "auto" : "1fr");
+  }
+  if (cfg.AllowEdit || cfg.AllowDelete) { colParts.Add("6rem"); }
+  var gridCols = string.Join(" ", colParts);
 }
 
 <div id="@tid" class="w-full max-w-5xl mx-auto flex flex-col gap-4 py-6" data-page-size="10" data-total="@totalRows">
@@ -220,62 +229,65 @@
     </div>
   </div>
 
-  <!-- Table -->
+  <!-- Table (div-based) -->
   <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-    <table class="dt-table min-w-full text-sm" data-id="@tid">
-      <thead class="bg-gray-50">
-        <tr>
-          @if (cfg.AllowBulkDelete) {
-            <th class="w-10 px-3 py-3">
-              <input type="checkbox" class="dt-check-all size-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-target="@tid" />
-            </th>
-          }
-          @foreach (var col in visibleColumns) {
-            <th class="px-4 py-3 text-left font-semibold text-gray-700 select-none @(col.Sortable ? "cursor-pointer hover:text-blue-600 dt-sort" : "")"
-              @if (col.Sortable) { <text>data-col="@col.Key" data-dir="" data-target="@tid"</text> }>
-              <span class="inline-flex items-center gap-1">
-                @col.Label
-                @if (col.Sortable) {
-                  <svg class="size-3.5 opacity-40" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/></svg>
-                }
-              </span>
-            </th>
-          }
-          @if (cfg.AllowEdit || cfg.AllowDelete) {
-            <th class="w-24 px-4 py-3 text-right font-semibold text-gray-700">Actions</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
+    <div class="dt-table min-w-full text-sm" data-id="@tid" style="display:grid; grid-template-columns: @gridCols;">
+
+      @* ── Header ── *@
+      @if (cfg.AllowBulkDelete) {
+        <div class="bg-gray-50 px-3 py-3 flex items-center">
+          <input type="checkbox" class="dt-check-all size-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-target="@tid" />
+        </div>
+      }
+      @foreach (var col in visibleColumns) {
+        if (col.Sortable) {
+        <div class="bg-gray-50 px-4 py-3 text-left font-semibold text-gray-700 select-none flex items-center cursor-pointer hover:text-blue-600 dt-sort"
+          data-col="@col.Key" data-dir="" data-target="@tid">
+          <span class="inline-flex items-center gap-1">
+            @col.Label
+            <svg class="size-3.5 opacity-40" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/></svg>
+          </span>
+        </div>
+        } else {
+        <div class="bg-gray-50 px-4 py-3 text-left font-semibold text-gray-700 select-none flex items-center">
+          <span class="inline-flex items-center gap-1">@col.Label</span>
+        </div>
+        }
+      }
+      @if (cfg.AllowEdit || cfg.AllowDelete) {
+        <div class="bg-gray-50 px-4 py-3 text-right font-semibold text-gray-700 flex items-center justify-end">Actions</div>
+      }
+
+      @* ── Body ── *@
+      <div class="dt-tbody contents">
         @if (rows.Count == 0 && string.IsNullOrEmpty(errorMsg)) {
-          <tr class="dt-row-empty">
-            <td colspan="@(visibleColumns.Length + (cfg.AllowBulkDelete ? 1 : 0) + (cfg.AllowEdit || cfg.AllowDelete ? 1 : 0))"
-              class="px-4 py-12 text-center text-gray-400">
+          <div class="dt-row-empty" style="grid-column: 1 / -1;">
+            <div class="px-4 py-12 text-center text-gray-400">
               <svg class="size-8 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859M12 3v8.25m0 0l-3-3m3 3l3-3"/></svg>
               <p>No data found.</p>
-            </td>
-          </tr>
+            </div>
+          </div>
         }
         @foreach (var row in rows) {
           var pkVal = row.ContainsKey(cfg.PrimaryKey) ? row[cfg.PrimaryKey]?.ToString() : "";
-          <tr class="dt-row border-t border-gray-100 hover:bg-gray-50/50 transition-colors" data-pk="@pkVal">
+          <div class="dt-row contents group" data-pk="@pkVal">
             @if (cfg.AllowBulkDelete) {
-              <td class="px-3 py-3">
+              <div class="px-3 py-3 border-t border-gray-100 flex items-center group-hover:bg-gray-50/50 transition-colors">
                 <input type="checkbox" class="dt-check-row size-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" value="@pkVal" data-target="@tid" />
-              </td>
+              </div>
             }
             @foreach (var col in visibleColumns) {
               var cellVal = row.ContainsKey(col.Key) ? (row[col.Key]?.ToString() ?? "") : "";
-              <td class="px-4 py-3 dt-cell" data-col="@col.Key">
+              <div class="px-4 py-3 border-t border-gray-100 dt-cell flex items-center group-hover:bg-gray-50/50 transition-colors" data-col="@col.Key">
                 @if (col.Type == "url" && !string.IsNullOrEmpty(cellVal)) {
                   <a href="@cellVal" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline truncate block max-w-[200px]">@cellVal</a>
                 } else {
                   <span class="dt-cell-text">@cellVal</span>
                 }
-              </td>
+              </div>
             }
             @if (cfg.AllowEdit || cfg.AllowDelete) {
-              <td class="px-4 py-3 text-right">
+              <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-end group-hover:bg-gray-50/50 transition-colors">
                 <div class="inline-flex items-center gap-1">
                   @if (cfg.AllowEdit) {
                     <button type="button" class="dt-btn-edit p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" data-pk="@pkVal" data-target="@tid" title="Edit">
@@ -288,12 +300,12 @@
                     </button>
                   }
                 </div>
-              </td>
+              </div>
             }
-          </tr>
+          </div>
         }
-      </tbody>
-    </table>
+      </div>
+    </div>
   </div>
 
   <!-- Pagination -->
@@ -403,5 +415,52 @@
   </div>
 </div>
 
-<script src="@App.Folder.Url/js/datatable.js?v=4"></script>
+<script src="@App.Folder.Url/js/datatable.js?v=6"></script>
 <script>initDataTable('@tid')</script>
+
+<style>
+  .dt-check-all,
+  .dt-check-row {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.375rem;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .dt-check-all:hover,
+  .dt-check-row:hover {
+    border-color: #2563eb;
+  }
+  .dt-check-all:focus-visible,
+  .dt-check-row:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2563eb;
+  }
+  .dt-check-all:checked,
+  .dt-check-row:checked {
+    background: #2563eb;
+    border-color: #2563eb;
+  }
+  .dt-check-all:checked::after,
+  .dt-check-row:checked::after {
+    content: '';
+    width: 0.375rem;
+    height: 0.625rem;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translateY(-1px);
+  }
+  .dt-check-all:active,
+  .dt-check-row:active {
+    transform: scale(0.93);
+  }
+</style>

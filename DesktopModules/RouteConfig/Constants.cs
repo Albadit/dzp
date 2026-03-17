@@ -35,9 +35,14 @@ namespace DnnDev.Routing
         public static readonly HashSet<string> SystemPrefixes =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
+                // Physical / virtual directories
                 "portals", "desktopmodules", "providers", "resources",
                 "install", "api", "icons", "images", "js", "controls",
                 "bin", "app_data", "config",
+
+                // DNN system pages (no editable tab, handled by DNN internals)
+                "logoff", "login", "logon", "register",
+                "default", "keepalive", "error",
             };
 
         // ── DNN roles to ignore when resolving a user's display role ─────

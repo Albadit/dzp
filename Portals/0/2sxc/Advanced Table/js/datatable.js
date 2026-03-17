@@ -7,7 +7,7 @@ function initDataTable(tid) {
   var sortCol = null, sortDir = 'asc';
 
   var table  = root.querySelector('.dt-table');
-  var allRows  = Array.from(table.querySelectorAll('tbody .dt-row'));
+  var allRows  = Array.from(table.querySelectorAll('.dt-tbody .dt-row'));
   var filtered = allRows.slice();
 
   var searchInput  = root.querySelector('.dt-search');
@@ -93,6 +93,11 @@ function initDataTable(tid) {
         return sortDir === 'desc' ? -cmp : cmp;
       });
     }
+    // Reorder DOM nodes to match sorted order (CSS grid follows DOM order)
+    var tbody = table.querySelector('.dt-tbody');
+    if (tbody) {
+      filtered.forEach(function(row) { tbody.appendChild(row); });
+    }
     render();
   }
 
@@ -112,7 +117,7 @@ function initDataTable(tid) {
 
     allRows.forEach(function(r) { r.style.display = 'none'; });
     for (var i = start; i < Math.min(end, total); i++) {
-      filtered[i].style.display = '';
+      filtered[i].style.display = 'contents';
     }
 
     var emptyRow = table.querySelector('.dt-row-empty');

@@ -7,17 +7,17 @@
         ? new[] {
             new { Href = "/settings/profile",           Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
             new { Href = "/settings",                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
-            new { Href = "/logoff",                     Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
+            new { Href = "/Logoff.aspx",                Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
         }
         : new[] {
             new { Href = hdr.CommunityLink,             Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
             new { Href = "/settings/profile",           Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
             new { Href = "/settings",                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
-            new { Href = "/logoff",                     Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
+            new { Href = "/Logoff.aspx",                Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
         };
 %>
 
-<div class="flex h-17.5 p-3 border-b border-[#D9D9D9]">
+<div class="sticky top-0 z-50 bg-white flex h-17.5 p-3 border-b border-[#D9D9D9]">
     <div class="lg:w-[250px] mr-4 flex gap-2.5 shrink-0 items-center">
         <!-- Mobile hamburger -->
         <button type="button" id="sidebar-toggle" class="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors" aria-label="Toggle sidebar">
