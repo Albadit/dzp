@@ -139,6 +139,9 @@ _NCrunch*
 *[Ll][Oo][Gg]*
 **/[Ll][Oo][Gg]*/
 
+# App_Data folder
+App_Data/
+
 # =========================
 # Images
 # =========================
