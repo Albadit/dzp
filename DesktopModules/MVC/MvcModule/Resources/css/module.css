@@ -1,0 +1,84 @@
+/* MVC Module Styles */
+
+.mvc-module {
+    padding: 10px 0;
+    font-family: inherit;
+}
+
+.mvc-module h3 {
+    margin: 0 0 15px;
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Table */
+.mvc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.mvc-table th,
+.mvc-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.mvc-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    color: #555;
+}
+
+.mvc-table tr:hover {
+    background-color: #fafafa;
+}
+
+/* Form */
+.mvc-form-group {
+    margin-bottom: 15px;
+}
+
+.mvc-form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.mvc-input {
+    width: 100%;
+    max-width: 500px;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.mvc-input:focus {
+    outline: none;
+    border-color: #0078d4;
+    box-shadow: 0 0 3px rgba(0, 120, 212, 0.3);
+}
+
+textarea.mvc-input {
+    resize: vertical;
+}
+
+.mvc-form-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Validation */
+.field-validation-error {
+    color: #d32f2f;
+    font-size: 0.85em;
+    margin-top: 4px;
+    display: block;
+}

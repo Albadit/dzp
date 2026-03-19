@@ -1,0 +1,25 @@
+-- MVC Module Uninstall Script
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}MvcModule_GetItems]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}MvcModule_GetItems]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}MvcModule_GetItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}MvcModule_GetItem]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}MvcModule_AddItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}MvcModule_AddItem]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}MvcModule_UpdateItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}MvcModule_UpdateItem]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}MvcModule_DeleteItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}MvcModule_DeleteItem]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}MvcModule_Items]') AND type in (N'U'))
+    DROP TABLE {databaseOwner}[{objectQualifier}MvcModule_Items]
+GO

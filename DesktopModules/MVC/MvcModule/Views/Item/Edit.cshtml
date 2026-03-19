@@ -1,0 +1,177 @@
+@model MvcModule.Models.DataTableConfig
+
+@using DotNetNuke.Web.Mvc.Helpers
+
+<div id="EditConfig-@Dnn.ModuleContext.ModuleId">
+    <div class="dnnForm dnnEditBasicSettings" id="dnnEditBasicSettings">
+        <div class="dnnFormExpandContent dnnRight"><a href="#">Expand All</a></div>
+
+        <h2 id="dnnSitePanel-BasicSettings" class="dnnFormSectionHead dnnClear">
+            <a href="#" class="dnnSectionExpanded">Configure Data Table</a>
+        </h2>
+        <fieldset>
+            <div class="dnnFormItem">
+                <div><label for="Title">Title</label></div>
+                @Html.TextBoxFor(m => m.Title, new { maxlength = "256", placeholder = "Table title" })
+            </div>
+
+            <div class="dnnFormItem">
+                <div><label for="SqlSelect">SQL Select</label></div>
+                @Html.TextAreaFor(m => m.SqlSelect, new { rows = 4, placeholder = "SELECT * FROM MyTable", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+            </div>
+
+            <div class="dnnFormItem">
+                <div><label for="SqlInsert">SQL Insert</label></div>
+                @Html.TextAreaFor(m => m.SqlInsert, new { rows = 3, placeholder = "INSERT INTO MyTable (Col1, Col2) VALUES (@@Col1, @@Col2)", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+            </div>
+
+            <div class="dnnFormItem">
+                <div><label for="SqlUpdate">SQL Update</label></div>
+                @Html.TextAreaFor(m => m.SqlUpdate, new { rows = 3, placeholder = "UPDATE MyTable SET Col1=@@Col1 WHERE Id=@@pk", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+            </div>
+
+            <div class="dnnFormItem">
+                <div><label for="SqlDelete">SQL Delete</label></div>
+                @Html.TextAreaFor(m => m.SqlDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id=@@pk", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+            </div>
+
+            <div class="dnnFormItem">
+                <div><label for="SqlBulkDelete">SQL Bulk Delete</label></div>
+                @Html.TextAreaFor(m => m.SqlBulkDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id IN ({ids})", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+            </div>
+
+            <div class="dnnFormItem">
+                <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowCreate) Allow Create
+                </label>
+            </div>
+            <div class="dnnFormItem">
+                <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowEdit) Allow Edit
+                </label>
+            </div>
+            <div class="dnnFormItem">
+                <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowDelete) Allow Delete
+                </label>
+            </div>
+            <div class="dnnFormItem">
+                <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowBulkDelete) Allow Bulk Delete
+                </label>
+            </div>
+
+            <h2 id="dnnSitePanel-Columns" class="dnnFormSectionHead dnnClear" style="margin-top:20px;">
+                <a href="#" class="dnnSectionExpanded">Columns <small style="font-weight:normal;color:#888;">(leave empty to auto-detect from SQL)</small></a>
+            </h2>
+            <fieldset>
+                <div id="columnsContainer">
+                    @if (Model.Columns != null)
+                    {
+                        foreach (var col in Model.Columns)
+                        {
+                            <div class="column-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                                <input type="text" class="col-key" value="@col.Key" placeholder="Column Key (SQL name)" style="width:160px;padding:4px 8px;" />
+                                <input type="text" class="col-label" value="@col.Label" placeholder="Display Label" style="width:160px;padding:4px 8px;" />
+                                <select class="col-type" style="padding:4px 8px;">
+                                    <option value="text" @(col.Type == "text" ? "selected" : "")>Text</option>
+                                    <option value="readonly" @(col.Type == "readonly" ? "selected" : "")>Read Only</option>
+                                    <option value="hidden" @(col.Type == "hidden" ? "selected" : "")>Hidden</option>
+                                    <option value="number" @(col.Type == "number" ? "selected" : "")>Number</option>
+                                    <option value="email" @(col.Type == "email" ? "selected" : "")>Email</option>
+                                    <option value="url" @(col.Type == "url" ? "selected" : "")>URL</option>
+                                </select>
+                                <button type="button" class="remove-col dnnSecondaryAction" style="padding:2px 8px;">&#10005;</button>
+                            </div>
+                        }
+                    }
+                </div>
+                <button type="button" id="addColumn" class="dnnSecondaryAction" style="margin-top:8px;">+ Add Column</button>
+            </fieldset>
+
+            <input type="hidden" name="ColumnsJson" id="columnsJson" />
+        </fieldset>
+    </div>
+    <div style="margin-top:16px;">
+        <button type="submit" class="dnnPrimaryAction" id="btnSave">Save</button>
+        <a id="cancelEdit" href="#" class="dnnSecondaryAction">Cancel</a>
+    </div>
+</div>
+
+<script type="text/javascript">
+    (function ($, Sys) {
+        var container = document.getElementById('columnsContainer');
+
+        function createColumnRow(key, label, type) {
+            var row = document.createElement('div');
+            row.className = 'column-row';
+            row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
+            row.innerHTML =
+                '<input type="text" class="col-key" value="' + escHtml(key || '') + '" placeholder="Column Key (SQL name)" style="width:160px;padding:4px 8px;" />' +
+                '<input type="text" class="col-label" value="' + escHtml(label || '') + '" placeholder="Display Label" style="width:160px;padding:4px 8px;" />' +
+                '<select class="col-type" style="padding:4px 8px;">' +
+                '<option value="text"' + (type === 'text' ? ' selected' : '') + '>Text</option>' +
+                '<option value="readonly"' + (type === 'readonly' ? ' selected' : '') + '>Read Only</option>' +
+                '<option value="hidden"' + (type === 'hidden' ? ' selected' : '') + '>Hidden</option>' +
+                '<option value="number"' + (type === 'number' ? ' selected' : '') + '>Number</option>' +
+                '<option value="email"' + (type === 'email' ? ' selected' : '') + '>Email</option>' +
+                '<option value="url"' + (type === 'url' ? ' selected' : '') + '>URL</option>' +
+                '</select>' +
+                '<button type="button" class="remove-col dnnSecondaryAction" style="padding:2px 8px;">&#10005;</button>';
+            return row;
+        }
+
+        function escHtml(s) {
+            var d = document.createElement('div');
+            d.appendChild(document.createTextNode(s));
+            return d.innerHTML;
+        }
+
+        document.getElementById('addColumn').addEventListener('click', function () {
+            container.appendChild(createColumnRow('', '', 'text'));
+        });
+
+        container.addEventListener('click', function (e) {
+            if (e.target.classList.contains('remove-col')) {
+                e.target.closest('.column-row').remove();
+            }
+        });
+
+        document.getElementById('btnSave').addEventListener('click', function () {
+            var rows = container.querySelectorAll('.column-row');
+            var columns = [];
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i];
+                var key = row.querySelector('.col-key').value.trim();
+                var label = row.querySelector('.col-label').value.trim();
+                var type = row.querySelector('.col-type').value;
+                if (key) {
+                    columns.push({ Key: key, Label: label || key, Type: type, Required: false, Sortable: true, Filterable: true });
+                }
+            }
+            document.getElementById('columnsJson').value = columns.length > 0 ? JSON.stringify(columns) : '';
+        });
+
+        function initEditSettings() {
+            $('#dnnEditBasicSettings').dnnPanels();
+            $('#dnnEditBasicSettings .dnnFormExpandContent a').dnnExpandAll({
+                expandText: 'Expand All',
+                collapseText: 'Collapse All',
+                targetArea: '#dnnEditBasicSettings'
+            });
+        }
+
+        $(function () {
+            $('#cancelEdit').click(function () {
+                if (typeof dnnModal !== 'undefined') {
+                    dnnModal.closePopUp(false);
+                }
+            });
+            initEditSettings();
+            Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
+                initEditSettings();
+            });
+        });
+
+    }(jQuery, window.Sys));
+</script>

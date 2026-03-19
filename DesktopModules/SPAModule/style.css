@@ -1,0 +1,15 @@
+.spa-module-container {
+    padding: 15px;
+    font-family: inherit;
+}
+
+.spa-module-container h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.4em;
+}
+
+.spa-module-content,
+.spa-module-edit-content {
+    padding: 10px 0;
+}
