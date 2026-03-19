@@ -31,21 +31,18 @@ namespace DnnDev.Routing
         public static string ParamName(string pageName) =>
             pageName.Substring(1, pageName.Length - 2);
 
-        // ── System URL prefixes ─────────────────────────────────────────
-        // Physical/virtual directories and DNN internals that have no DNN tab.
-        // Everything else is resolved dynamically from the DNN page tree.
-        public static readonly HashSet<string> SystemPrefixes =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                // Physical / virtual directories
-                "portals", "desktopmodules", "providers", "resources",
-                "install", "api", "icons", "images", "js", "controls",
-                "bin", "app_data", "config",
-
-                // DNN system pages (no editable tab, handled by DNN internals)
-                "logoff", "login", "logon", "register", "admin",
-                "default", "keepalive", "error",
-            };
+        // ── System URL prefix detection ────────────────────────────────
+        // Auto-detects physical directories in the web root at runtime.
+        // No manual list needed — survives DNN updates and new folders.
+        // DNN system URLs (/login, /register, etc.) don't need to be listed
+        // here because they either live in a physical directory (admin/) or
+        // fail IsValidSlug and fall through to DNN's own URL handling.
+        public static bool IsSystemPrefix(string segment)
+        {
+            var dir = System.IO.Path.Combine(
+                System.Web.HttpRuntime.AppDomainAppPath, segment);
+            return System.IO.Directory.Exists(dir);
+        }
 
         // ── DNN roles to ignore when resolving a user's display role ─────
         public static readonly HashSet<string> GenericDnnRoles =

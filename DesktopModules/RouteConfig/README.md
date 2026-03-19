@@ -11,7 +11,7 @@ route segment.
 ## How It Works
 
 1. URL contains a file extension → **skip** (static file)
-2. First segment is a reserved DNN prefix → **skip**
+2. First segment is a physical directory on disk → **skip** (auto-detected)
 3. All segments resolve to real DNN pages → **skip** (let DNN handle it)
 4. First segment matches a non-dynamic root page but children don't resolve → **404**
 5. First segment is a child of a dynamic root page (standalone) → **rewrite** to parent
@@ -55,9 +55,13 @@ Rewritten path: `/[community]/[company]/dashboard`
 
 | File | Purpose |
 |------|---------|
-| `DesktopModules/RouteConfig/RouteConfig.cs` | `IHttpModule` — intercepts, validates, and rewrites URLs |
-| `DesktopModules/RouteConfig/Constants.cs` | `IsDynamic()` / `ParamName()` helpers, system prefixes |
-| `web.config` (modules section) | Module registration, placed **before** DNN's `UrlRewrite` |
+| `RouteConfig.cs` | `IHttpModule` — intercepts, validates, and rewrites URLs |
+| `RouteConfigFix.cs` | Companion `IHttpModule` — cancels DNN's 301 redirect for slug routes |
+| `Constants.cs` | `IsDynamic()` / `ParamName()` / `IsSystemPrefix()` helpers |
+| `Data/Community.cs` | `ISegment` implementation — slug validation, access control, template redirect |
+| `Data/ISegment.cs` | Interface for dynamic segment repositories |
+| `Models/DzpContext.cs` | Per-request state (lazy singleton via `HttpContext.Items`) |
+| `web.config` (modules section) | Module registration order: RouteConfig → UrlRewrite → RouteConfigFix |
 | `debug.csproj` (workspace root) | Compiles all `.cs` files into `bin/DnnDev.Debug.dll` |
 
 ## Prerequisites
@@ -83,7 +87,7 @@ Or press **Ctrl+Shift+B** in VS Code (runs the `build-debug` task).
 
 ### 3. Verify web.config Registration
 
-The module must be registered **before** DNN's `UrlRewrite` module:
+Three modules must be registered in this exact order:
 
 ```xml
 <modules>
@@ -93,10 +97,18 @@ The module must be registered **before** DNN's `UrlRewrite` module:
        type="DnnDev.Routing.RouteConfig, DnnDev.Debug"
        preCondition="managedHandler" />
   <add name="UrlRewrite" ... />
+  <add name="RouteConfigFix"
+       type="DnnDev.Routing.RouteConfigFix, DnnDev.Debug"
+       preCondition="managedHandler" />
 </modules>
 ```
 
-**Order matters.** The module must fire before `UrlRewrite` so DNN doesn't 404 first.
+**Order matters:**
+- **RouteConfig** fires first in `BeginRequest` — resolves slug URLs and rewrites to `TabId`
+- **UrlRewrite** (DNN) fires next — may 301-redirect because the canonical friendly URL
+  doesn't match the browser's URL (DNN strips brackets from `[param]` page names)
+- **RouteConfigFix** fires last — detects and cancels DNN's 301 redirect for slug routes,
+  re-applies the rewrite, and lets the pipeline continue normally
 
 ### 4. Recycle the App Pool
 
@@ -153,16 +165,16 @@ The sidebar resolves `[community]` to the actual slug at runtime.
 2. That's it — the module detects it automatically
 3. Read the value: `HttpContext.Current.Items["project"]`
 
-## Reserved Prefixes
+## Physical Directory Detection
 
-These first-segment values are blocked to protect DNN system paths:
+The routing module auto-detects physical directories in the web root at runtime
+using `Directory.Exists`. Any URL whose first segment matches a physical folder
+(e.g. `/portals/...`, `/api/...`, `/admin/...`) is skipped automatically.
 
-`portals`, `desktopmodules`, `providers`, `resources`,
-`install`, `api`, `icons`, `images`, `js`, `controls`,
-`bin`, `app_data`, `config`, `login`, `register`, `logoff`,
-`default`, `error`, `keepalive`
-
-Edit `Constants.SystemPrefixes` to add more.
+No manual list to maintain — new directories from DNN updates are detected
+automatically. DNN system URLs like `/login` and `/register` that have no
+physical directory are handled safely: they fail `IsValidSlug` and fall through
+to DNN's own URL handling.
 
 ## Debug Logging
 
@@ -181,6 +193,7 @@ Logs are written to `App_Data/RouteConfig.log`. Disable for production.
 | 404 on `/{slug}` | No dynamic page at root level | Create a `[param]` page in DNN |
 | 404 on `/{slug}/child` | Child page doesn't exist | Create it as a DNN child page under `[param]` |
 | Redirect on `/{slug}` | User not a member of the community | Add user to `UserCommunity` table |
+| Redirect loop to `/dashboard` | Browser cached old 301 | Clear browser cache or use incognito |
 | Existing page broken | Slug matches a real DNN page name | The module skips known DNN pages — check page name |
 | Changes not picked up | Old DLL cached by IIS | Rebuild + recycle app pool |
-| Module order wrong | DNN 404s before module fires | Ensure `RouteConfig` appears **before** `UrlRewrite` in web.config |
+| `RouteConfigFix` not intercepting | Module order wrong in web.config | Ensure order: RouteConfig → UrlRewrite → RouteConfigFix |

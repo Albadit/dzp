@@ -29,17 +29,11 @@ namespace DnnDev.Routing
         /// <summary>
         /// Set to true to write detailed routing info to App_Data\RouteConfig.log.
         /// </summary>
-        private const bool EnableLogging = true;
+        private const bool EnableLogging = false;
 
         // ── Dynamic segment handling is driven by Constants.Segments.Registry ──
         // Each ISegment provides validation, template resolution,
         // and access checking. No per-segment dictionaries needed here.
-
-        // ── Cache (refreshes every 30 seconds) ──────────────────────────
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, IList<TabInfo>>
-            AllTabsCache = new System.Collections.Concurrent.ConcurrentDictionary<int, IList<TabInfo>>();
-        private static DateTime _tabsCacheExpiry = DateTime.MinValue;
-        private static readonly object _tabsCacheLock = new object();
 
         public void Init(HttpApplication context)
         {
@@ -215,10 +209,10 @@ namespace DnnDev.Routing
             Log(path + " -> BEGIN routing (" + segments.Length + " segment(s): "
                 + string.Join("/", segments) + ")");
 
-            // 1. Skip physical/virtual system directories (no DNN tab for these)
-            if (Constants.SystemPrefixes.Contains(segments[0]))
+            // 1. Skip physical/virtual directories (auto-detected from disk)
+            if (Constants.IsSystemPrefix(segments[0]))
             {
-                Log(path + " -> skipped (system prefix '" + segments[0] + "')");
+                Log(path + " -> skipped (physical directory '" + segments[0] + "')");
                 return;
             }
 
@@ -234,20 +228,8 @@ namespace DnnDev.Routing
             if (portalId < 0)
                 return;
 
-            // 3. Get all tabs for the portal (cache refreshes every 30s)
-            if (DateTime.UtcNow > _tabsCacheExpiry)
-            {
-                lock (_tabsCacheLock)
-                {
-                    if (DateTime.UtcNow > _tabsCacheExpiry)
-                    {
-                        AllTabsCache.Clear();
-                        _tabsCacheExpiry = DateTime.UtcNow.AddSeconds(30);
-                    }
-                }
-            }
-            var allTabs = AllTabsCache.GetOrAdd(portalId, pid =>
-                TabController.Instance.GetTabsByPortal(pid).AsList());
+            // 3. Get all tabs for the portal (DNN caches these internally)
+            var allTabs = TabController.Instance.GetTabsByPortal(portalId).AsList();
 
             // 4. Try to resolve the ENTIRE URL as real DNN pages first.
             //    Walk segments against the page tree; if every segment matches
