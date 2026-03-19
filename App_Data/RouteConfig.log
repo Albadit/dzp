@@ -693,3 +693,334 @@
 21:06:47.470 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
 21:06:47.728 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
 21:06:47.731 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:41.975 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:33:42.042 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:33:42.150 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:42.150 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:44.545 /Admin/File-Management -> BEGIN routing (2 segment(s): Admin/File-Management)
+21:33:44.545 /Admin/File-Management -> skipped (physical directory 'Admin')
+21:33:45.330 /API/personaBar/MenuExtensions/GetExtensions -> BEGIN routing (4 segment(s): API/personaBar/MenuExtensions/GetExtensions)
+21:33:45.331 /API/personaBar/MenuExtensions/GetExtensions seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:45.502 /API/PersonaBar/Extensions/GetLanguagesList -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetLanguagesList)
+21:33:45.504 /API/PersonaBar/Extensions/GetLanguagesList seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:45.513 /API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks)
+21:33:45.516 /API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:45.527 /API/PersonaBar/Extensions/GetPackageTypes -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetPackageTypes)
+21:33:45.528 /API/PersonaBar/Extensions/GetPackageTypes seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:45.574 /API/personaBar/MenuExtensions/GetExtensions -> BEGIN routing (4 segment(s): API/personaBar/MenuExtensions/GetExtensions)
+21:33:45.576 /API/personaBar/MenuExtensions/GetExtensions seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:45.584 /API/PersonaBar/Extensions/GetInstalledPackages -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetInstalledPackages)
+21:33:45.586 /API/PersonaBar/Extensions/GetInstalledPackages seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:45.757 /API/PersonaBar/Pages/GetContentLocalizationEnabled -> BEGIN routing (4 segment(s): API/PersonaBar/Pages/GetContentLocalizationEnabled)
+21:33:45.757 /API/PersonaBar/Pages/GetPageList -> BEGIN routing (4 segment(s): API/PersonaBar/Pages/GetPageList)
+21:33:45.760 /API/PersonaBar/Pages/GetPageList seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:45.947 /API/PersonaBar/Pages/GetWorkflows -> BEGIN routing (4 segment(s): API/PersonaBar/Pages/GetWorkflows)
+21:33:45.950 /API/PersonaBar/Pages/GetWorkflows seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.545 /API/ResourceManager/Items/GetSettings -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetSettings)
+21:33:46.546 /API/ResourceManager/Items/GetSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.591 /API/ResourceManager/Items/CanManageFolderTypes -> BEGIN routing (4 segment(s): API/ResourceManager/Items/CanManageFolderTypes)
+21:33:46.593 /API/ResourceManager/Items/CanManageFolderTypes seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.610 /API/ResourceManager/Items/GetFolderMappings -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderMappings)
+21:33:46.612 /API/InternalServices/ItemListService/GetFolders seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.639 /API/ResourceManager/Items/GetAddFolderTypeUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetAddFolderTypeUrl)
+21:33:46.641 /API/ResourceManager/Items/GetAddFolderTypeUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.643 /API/ResourceManager/Items/GetFolderContent -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderContent)
+21:33:46.644 /API/ResourceManager/Items/GetFolderContent seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.743 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:33:46.745 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.781 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.783 /API/ResourceManager/Items/GetFolderItem seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.799 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.799 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.801 /API/ResourceManager/Items/GetFolderItem seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.809 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.809 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.810 /API/ResourceManager/Items/GetFolderItem seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.811 /API/ResourceManager/Items/GetFolderItem seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.816 /API/ResourceManager/Items/GetFolderIconUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderIconUrl)
+21:33:46.817 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.819 /API/ResourceManager/Items/GetFolderIconUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderIconUrl)
+21:33:46.820 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.832 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:33:46.834 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:33:46.835 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.843 /API/ResourceManager/Items/GetFolderIconUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderIconUrl)
+21:33:46.844 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.850 /API/ResourceManager/Items/GetFolderIconUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderIconUrl)
+21:33:46.851 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.852 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.853 /API/ResourceManager/Items/GetFolderItem seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.859 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.860 /API/ResourceManager/Items/GetFolderItem seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.861 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.862 /API/ResourceManager/Items/GetFolderItem seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.869 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.870 /API/ResourceManager/Items/GetFolderItem -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderItem)
+21:33:46.871 /API/ResourceManager/Items/GetFolderItem seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.871 /API/ResourceManager/Items/GetFolderItem seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.880 /API/ResourceManager/Items/GetFolderIconUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderIconUrl)
+21:33:46.880 /API/ResourceManager/Items/GetFolderIconUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderIconUrl)
+21:33:46.881 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.881 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.889 /API/ResourceManager/Items/GetFolderIconUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderIconUrl)
+21:33:46.890 /API/ResourceManager/Items/GetFolderIconUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderIconUrl)
+21:33:46.891 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.892 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:46.899 /API/ResourceManager/Items/GetFolderIconUrl -> BEGIN routing (4 segment(s): API/ResourceManager/Items/GetFolderIconUrl)
+21:33:46.901 /API/ResourceManager/Items/GetFolderIconUrl seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:47.259 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:33:47.263 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:47.340 /API/personaBar/MenuExtensions/GetExtensions -> BEGIN routing (4 segment(s): API/personaBar/MenuExtensions/GetExtensions)
+21:33:47.342 /API/personaBar/MenuExtensions/GetExtensions seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:47.371 /API/PersonaBar/Pages/GetContentLocalizationEnabled -> BEGIN routing (4 segment(s): API/PersonaBar/Pages/GetContentLocalizationEnabled)
+21:33:47.373 /API/PersonaBar/Pages/GetContentLocalizationEnabled seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:47.382 /API/PersonaBar/Pages/GetPageList -> BEGIN routing (4 segment(s): API/PersonaBar/Pages/GetPageList)
+21:33:47.384 /API/PersonaBar/Pages/GetPageList seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:47.405 /API/PersonaBar/Pages/GetWorkflows -> BEGIN routing (4 segment(s): API/PersonaBar/Pages/GetWorkflows)
+21:33:47.407 /API/PersonaBar/Pages/GetWorkflows seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:51.351 /API/PersonaBar/Pages/GetPageList -> BEGIN routing (4 segment(s): API/PersonaBar/Pages/GetPageList)
+21:33:51.354 /API/PersonaBar/Pages/GetPageList seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:54.241 /API/PersonaBar/Pages/GetPageDetails -> BEGIN routing (4 segment(s): API/PersonaBar/Pages/GetPageDetails)
+21:33:54.244 /API/PersonaBar/Pages/GetPageDetails seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:54.402 /API/PersonaBar/Tabs/GetPortalTab -> BEGIN routing (4 segment(s): API/PersonaBar/Tabs/GetPortalTab)
+21:33:54.406 /API/PersonaBar/Tabs/GetPortalTab seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:56.609 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:33:56.612 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:57.027 /community/home -> BEGIN routing (2 segment(s): community/home)
+21:33:57.027 /community/home seg[0] 'community' equals param name 'community', deferring to PostAuth
+21:33:57.033 /community/home -> param name 'community' used as URL, redirecting to /home (user: host)
+21:33:58.065 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:33:58.069 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:58.091 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:33:58.093 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:33:58.588 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:33:58.593 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:00.225 /test/home -> BEGIN routing (2 segment(s): test/home)
+21:34:00.226 /test/home seg[0] 'test' -> dynamic '[community]'
+21:34:00.226 /test/home seg[1] 'home' -> literal page
+21:34:00.228 /test/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=test]
+21:34:00.674 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:00.677 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:00.700 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:00.703 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:01.183 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:01.186 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:02.555 /dashboard -> BEGIN routing (1 segment(s): dashboard)
+21:34:02.556 /dashboard -> all segments match real DNN pages, skipping
+21:34:03.147 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:03.149 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:03.170 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:03.172 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:03.656 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:03.659 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:04.071 /spijkenisse/home -> BEGIN routing (2 segment(s): spijkenisse/home)
+21:34:04.072 /spijkenisse/home seg[0] 'spijkenisse' -> dynamic '[community]'
+21:34:04.073 /spijkenisse/home seg[1] 'home' -> literal page
+21:34:04.074 /spijkenisse/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=spijkenisse]
+21:34:04.461 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:04.463 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:04.488 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:04.490 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:04.993 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:04.997 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:12.541 /API/internalservices/controlBar/ToggleUserMode -> BEGIN routing (4 segment(s): API/internalservices/controlBar/ToggleUserMode)
+21:34:12.544 /API/internalservices/controlBar/ToggleUserMode seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:12.572 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:34:12.573 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:12.605 /spijkenisse/home -> BEGIN routing (2 segment(s): spijkenisse/home)
+21:34:12.606 /spijkenisse/home seg[0] 'spijkenisse' -> dynamic '[community]'
+21:34:12.607 /spijkenisse/home seg[1] 'home' -> literal page
+21:34:12.608 /spijkenisse/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=spijkenisse]
+21:34:13.146 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:13.152 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:13.166 /DesktopModules/editBar/common/API/localization/gettable -> BEGIN routing (6 segment(s): DesktopModules/editBar/common/API/localization/gettable)
+21:34:13.166 /DesktopModules/editBar/common/API/localization/gettable -> skipped (physical directory 'DesktopModules')
+21:34:13.174 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:13.176 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:13.670 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:13.673 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:18.657 /community/home/ctl/Edit/mid/411 -> BEGIN routing (6 segment(s): community/home/ctl/Edit/mid/411)
+21:34:18.657 /community/home/ctl/Edit/mid/411 -> skipped (ctl URL)
+21:34:19.102 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:19.106 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:19.130 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:19.134 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:19.615 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:19.619 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:21.654 /community/home/ctl/Edit/mid/411 -> BEGIN routing (6 segment(s): community/home/ctl/Edit/mid/411)
+21:34:21.655 /community/home/ctl/Edit/mid/411 -> skipped (ctl URL)
+21:34:21.754 /community/home -> BEGIN routing (2 segment(s): community/home)
+21:34:21.755 /community/home seg[0] 'community' equals param name 'community', deferring to PostAuth
+21:34:21.758 /community/home -> param name 'community' used as URL, redirecting to /home (user: host)
+21:34:22.153 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:22.158 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:22.178 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:22.180 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:22.675 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:22.678 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:28.857 /spijkenisse/home -> BEGIN routing (2 segment(s): spijkenisse/home)
+21:34:28.859 /spijkenisse/home seg[0] 'spijkenisse' -> dynamic '[community]'
+21:34:28.860 /spijkenisse/home seg[1] 'home' -> literal page
+21:34:28.861 /spijkenisse/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=spijkenisse]
+21:34:29.229 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:29.231 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:29.251 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:29.253 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:29.749 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:29.753 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:31.426 /API/internalservices/controlBar/ToggleUserMode -> BEGIN routing (4 segment(s): API/internalservices/controlBar/ToggleUserMode)
+21:34:31.429 /API/internalservices/controlBar/ToggleUserMode seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:31.451 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:34:31.453 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:31.484 /spijkenisse/home -> BEGIN routing (2 segment(s): spijkenisse/home)
+21:34:31.486 /spijkenisse/home seg[0] 'spijkenisse' -> dynamic '[community]'
+21:34:31.486 /spijkenisse/home seg[1] 'home' -> literal page
+21:34:31.487 /spijkenisse/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=spijkenisse]
+21:34:31.919 /DesktopModules/editBar/common/API/localization/gettable -> BEGIN routing (6 segment(s): DesktopModules/editBar/common/API/localization/gettable)
+21:34:31.919 /DesktopModules/editBar/common/API/localization/gettable -> skipped (physical directory 'DesktopModules')
+21:34:31.979 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:31.981 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:32.003 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:32.006 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:32.489 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:32.492 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:34.095 /community/home/ctl/Edit/mid/411 -> BEGIN routing (6 segment(s): community/home/ctl/Edit/mid/411)
+21:34:34.095 /community/home/ctl/Edit/mid/411 -> skipped (ctl URL)
+21:34:34.451 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:34.453 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:34.472 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:34.475 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:34.968 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:34.972 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:36.330 /community/home/ctl/Edit/mid/411 -> BEGIN routing (6 segment(s): community/home/ctl/Edit/mid/411)
+21:34:36.330 /community/home/ctl/Edit/mid/411 -> skipped (ctl URL)
+21:34:36.365 /community/home -> BEGIN routing (2 segment(s): community/home)
+21:34:36.366 /community/home seg[0] 'community' equals param name 'community', deferring to PostAuth
+21:34:36.370 /community/home -> param name 'community' used as URL, redirecting to /home (user: host)
+21:34:37.038 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:37.042 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:37.063 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:37.066 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:37.555 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:37.558 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:38.445 /spijkenisse/home -> BEGIN routing (2 segment(s): spijkenisse/home)
+21:34:38.447 /spijkenisse/home seg[0] 'spijkenisse' -> dynamic '[community]'
+21:34:38.447 /spijkenisse/home seg[1] 'home' -> literal page
+21:34:38.448 /spijkenisse/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=spijkenisse]
+21:34:38.785 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:34:38.787 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:38.813 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:34:38.815 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:39.307 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:34:39.310 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:57.112 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:34:57.115 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:57.659 /API/personaBar/MenuExtensions/GetExtensions -> BEGIN routing (4 segment(s): API/personaBar/MenuExtensions/GetExtensions)
+21:34:57.662 /API/personaBar/MenuExtensions/GetExtensions seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:57.794 /API/PersonaBar/SiteSettings/GetPortals -> BEGIN routing (4 segment(s): API/PersonaBar/SiteSettings/GetPortals)
+21:34:57.797 /API/PersonaBar/SiteSettings/GetPortals seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:57.823 /API/PersonaBar/SiteSettings/GetCultureList -> BEGIN routing (4 segment(s): API/PersonaBar/SiteSettings/GetCultureList)
+21:34:57.825 /API/PersonaBar/SiteSettings/GetCultureList seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:57.907 /API/InternalServices/FileUpload/loadimage -> BEGIN routing (4 segment(s): API/InternalServices/FileUpload/loadimage)
+21:34:57.907 /API/InternalServices/FileUpload/loadimage seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:59.703 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:34:59.707 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:59.711 /API/personaBar/MenuExtensions/GetExtensions -> BEGIN routing (4 segment(s): API/personaBar/MenuExtensions/GetExtensions)
+21:34:59.712 /API/personaBar/MenuExtensions/GetExtensions seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:59.764 /API/PersonaBar/Extensions/GetLanguagesList -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetLanguagesList)
+21:34:59.768 /API/PersonaBar/Extensions/GetLanguagesList seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:59.772 /API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks)
+21:34:59.772 /API/PersonaBar/Extensions/GetPackageTypes -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetPackageTypes)
+21:34:59.773 /API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:59.773 /API/PersonaBar/Extensions/GetPackageTypes seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:59.786 /API/PersonaBar/Extensions/GetInstalledPackages -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetInstalledPackages)
+21:34:59.787 /API/PersonaBar/Extensions/GetInstalledPackages seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:34:59.885 /API/PersonaBar/Extensions/GetInstalledPackages -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetInstalledPackages)
+21:34:59.887 /API/PersonaBar/Extensions/GetInstalledPackages seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:08.876 /API/PersonaBar/Extensions/ParsePackage -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/ParsePackage)
+21:35:08.879 /API/PersonaBar/Extensions/ParsePackage seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:18.696 /API/PersonaBar/Extensions/InstallPackage -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/InstallPackage)
+21:35:18.698 /API/PersonaBar/Extensions/InstallPackage seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:28.536 /API/PersonaBar/Extensions/GetInstalledPackages -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetInstalledPackages)
+21:35:28.578 /API/PersonaBar/Extensions/GetInstalledPackages seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:30.334 /spijkenisse/home -> BEGIN routing (2 segment(s): spijkenisse/home)
+21:35:30.337 /spijkenisse/home seg[0] 'spijkenisse' -> dynamic '[community]'
+21:35:30.337 /spijkenisse/home seg[1] 'home' -> literal page
+21:35:30.340 /spijkenisse/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=spijkenisse]
+21:35:39.037 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:35:39.040 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:39.094 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:35:39.098 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:39.581 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:35:39.583 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:39.618 /API/personaBar/MenuExtensions/GetExtensions -> BEGIN routing (4 segment(s): API/personaBar/MenuExtensions/GetExtensions)
+21:35:39.620 /API/personaBar/MenuExtensions/GetExtensions seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:39.653 /API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks)
+21:35:39.653 /API/PersonaBar/Extensions/GetLanguagesList -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetLanguagesList)
+21:35:39.655 /API/PersonaBar/Extensions/GetPackageTypes -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetPackageTypes)
+21:35:39.656 /API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:39.656 /API/PersonaBar/Extensions/GetLanguagesList seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:39.668 /API/PersonaBar/Extensions/GetPackageTypes seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:39.690 /API/PersonaBar/Extensions/GetInstalledPackages -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetInstalledPackages)
+21:35:39.693 /API/PersonaBar/Extensions/GetInstalledPackages seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:41.963 /administrator/communities -> BEGIN routing (2 segment(s): administrator/communities)
+21:35:41.963 /administrator/communities -> all segments match real DNN pages, skipping
+21:35:43.624 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:35:43.629 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:43.651 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:35:43.653 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:44.135 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:35:44.139 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:44.160 /API/personaBar/MenuExtensions/GetExtensions -> BEGIN routing (4 segment(s): API/personaBar/MenuExtensions/GetExtensions)
+21:35:44.161 /API/personaBar/MenuExtensions/GetExtensions seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:44.173 /API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetAllPackagesListExceptLangPacks)
+21:35:44.173 /API/PersonaBar/Extensions/GetPackageTypes -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetPackageTypes)
+21:35:44.174 /API/PersonaBar/Extensions/GetLanguagesList seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:44.189 /API/PersonaBar/Extensions/GetInstalledPackages -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetInstalledPackages)
+21:35:44.192 /API/PersonaBar/Extensions/GetInstalledPackages seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:44.296 /API/PersonaBar/Extensions/GetInstalledPackages -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetInstalledPackages)
+21:35:44.297 /API/PersonaBar/Extensions/GetInstalledPackages seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:44.411 /API/PersonaBar/Extensions/GetInstalledPackages -> BEGIN routing (4 segment(s): API/PersonaBar/Extensions/GetInstalledPackages)
+21:35:44.413 /API/PersonaBar/Extensions/GetInstalledPackages seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:46.976 /API/internalservices/controlBar/ToggleUserMode -> BEGIN routing (4 segment(s): API/internalservices/controlBar/ToggleUserMode)
+21:35:46.980 /API/internalservices/controlBar/ToggleUserMode seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:47.017 /API/personaBar/UserSettings/UpdateUserSettings -> BEGIN routing (4 segment(s): API/personaBar/UserSettings/UpdateUserSettings)
+21:35:47.018 /API/personaBar/UserSettings/UpdateUserSettings seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:47.052 /administrator/communities -> BEGIN routing (2 segment(s): administrator/communities)
+21:35:47.052 /administrator/communities -> all segments match real DNN pages, skipping
+21:35:48.086 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:35:48.089 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:48.125 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:35:48.128 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:48.250 /DesktopModules/editBar/common/API/localization/gettable -> BEGIN routing (6 segment(s): DesktopModules/editBar/common/API/localization/gettable)
+21:35:48.251 /DesktopModules/editBar/common/API/localization/gettable -> skipped (physical directory 'DesktopModules')
+21:35:48.593 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:35:48.597 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:51.549 /administrator/communities/ctl/Edit/mid/4416 -> BEGIN routing (6 segment(s): administrator/communities/ctl/Edit/mid/4416)
+21:35:51.550 /administrator/communities/ctl/Edit/mid/4416 -> skipped (ctl URL)
+21:35:51.929 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:35:51.932 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:51.953 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:35:51.955 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:52.444 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:35:52.447 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:59.591 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:35:59.595 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:59.630 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:35:59.632 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:35:59.651 /DesktopModules/editBar/common/API/localization/gettable -> BEGIN routing (6 segment(s): DesktopModules/editBar/common/API/localization/gettable)
+21:35:59.651 /DesktopModules/editBar/common/API/localization/gettable -> skipped (physical directory 'DesktopModules')
+21:36:00.112 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:36:00.117 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:36:09.339 /DesktopModules/editBar/common/API/Common/CheckAuthorized -> BEGIN routing (6 segment(s): DesktopModules/editBar/common/API/Common/CheckAuthorized)
+21:36:09.340 /DesktopModules/editBar/common/API/Common/CheckAuthorized -> skipped (physical directory 'DesktopModules')
+21:36:09.399 /DesktopModules/internalservices/API/controlBar/ToggleUserMode -> BEGIN routing (5 segment(s): DesktopModules/internalservices/API/controlBar/ToggleUserMode)
+21:36:09.399 /DesktopModules/internalservices/API/controlBar/ToggleUserMode -> skipped (physical directory 'DesktopModules')
+21:36:09.444 /administrator/communities -> BEGIN routing (2 segment(s): administrator/communities)
+21:36:09.444 /administrator/communities -> all segments match real DNN pages, skipping
+21:36:09.837 /API/personaBar/localization/gettable -> BEGIN routing (4 segment(s): API/personaBar/localization/gettable)
+21:36:09.840 /API/personaBar/localization/gettable seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:36:09.861 /API/personabar/serversummary/GetUpdateInfo -> BEGIN routing (4 segment(s): API/personabar/serversummary/GetUpdateInfo)
+21:36:09.864 /API/personabar/serversummary/GetUpdateInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it
+21:36:10.356 /API/personaBar/ServerSummary/GetServerInfo -> BEGIN routing (4 segment(s): API/personaBar/ServerSummary/GetServerInfo)
+21:36:10.359 /API/personaBar/ServerSummary/GetServerInfo seg[0] 'API' is not a valid community slug, not a route — letting DNN handle it

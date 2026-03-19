@@ -1,0 +1,366 @@
+@model AdvancedTable.Models.DataTableConfig
+
+@using DotNetNuke.Web.Mvc.Helpers
+
+<div id="EditConfig-@Dnn.ModuleContext.ModuleId">
+    <div class="dnnForm dnnEditBasicSettings" id="dnnEditBasicSettings">
+        <div class="dnnFormExpandContent dnnRight"><a href="#">Expand All</a></div>
+
+        <h2 id="dnnSitePanel-BasicSettings" class="dnnFormSectionHead dnnClear">
+            <a href="#" class="dnnSectionExpanded">Configure Data Table</a>
+        </h2>
+        <fieldset>
+            <div class="dnnFormItem">
+                <div><label for="Title">Title</label></div>
+                @Html.TextBoxFor(m => m.Title, new { maxlength = "256", placeholder = "Table title" })
+            </div>
+
+            <div class="dnnFormItem">
+                <div><label for="Mode">Data Source</label></div>
+                <select name="Mode" id="modeSelect" style="padding:4px 8px;">
+                    <option value="sql" @(Model.Mode != "api" ? "selected" : "")>SQL</option>
+                    <option value="api" @(Model.Mode == "api" ? "selected" : "")>API</option>
+                </select>
+            </div>
+
+            <!-- SQL Fields -->
+            <div id="sqlFields" style="@(Model.Mode == "api" ? "display:none;" : "")">
+                <div class="dnnFormItem">
+                    <div><label for="QuerySelect">Query Select</label></div>
+                    @Html.TextAreaFor(m => m.QuerySelect, new { rows = 4, placeholder = "SELECT * FROM MyTable", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+
+                <div class="dnnFormItem">
+                    <div><label for="QueryInsert">Query Insert</label></div>
+                    @Html.TextAreaFor(m => m.QueryInsert, new { rows = 3, placeholder = "INSERT INTO MyTable (Col1, Col2) VALUES (@@Col1, @@Col2)", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+
+                <div class="dnnFormItem">
+                    <div><label for="QueryUpdate">Query Update</label></div>
+                    @Html.TextAreaFor(m => m.QueryUpdate, new { rows = 3, placeholder = "UPDATE MyTable SET Col1=@@Col1 WHERE Id=@@pk", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+
+                <div class="dnnFormItem">
+                    <div><label for="QueryDelete">Query Delete</label></div>
+                    @Html.TextAreaFor(m => m.QueryDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id=@@pk", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+
+                <div class="dnnFormItem">
+                    <div><label for="QueryBulkDelete">Query Bulk Delete</label></div>
+                    @Html.TextAreaFor(m => m.QueryBulkDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id IN ({ids})", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+            </div>
+
+            <!-- API Fields -->
+            <div id="apiFields" style="@(Model.Mode != "api" ? "display:none;" : "")">
+                <div class="dnnFormItem">
+                    <div><label for="ApiBaseUrl">API Base URL</label></div>
+                    @Html.TextBoxFor(m => m.ApiBaseUrl, new { placeholder = "https://api.example.com", style = "width:100%;max-width:600px;" })
+                </div>
+
+                <div class="dnnFormItem">
+                    <div><label for="ApiHeaders">Headers <small style="font-weight:normal;color:#888;">(one per line: Key: Value)</small></label></div>
+                    @Html.TextAreaFor(m => m.ApiHeaders, new { rows = 3, placeholder = "Authorization: Bearer YOUR_TOKEN\nContent-Type: application/json", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+
+                <div class="dnnFormItem" style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div><label for="ApiSelectMethod">Select Method</label></div>
+                        <select name="ApiSelectMethod" style="padding:4px 8px;">
+                            <option value="GET" @(Model.ApiSelectMethod == "GET" ? "selected" : "")>GET</option>
+                            <option value="POST" @(Model.ApiSelectMethod == "POST" ? "selected" : "")>POST</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <div><label for="ApiSelectPath">Select Path</label></div>
+                        @Html.TextBoxFor(m => m.ApiSelectPath, new { placeholder = "/items", style = "width:100%;max-width:400px;" })
+                    </div>
+                </div>
+
+                <div class="dnnFormItem" style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div><label for="ApiInsertMethod">Insert Method</label></div>
+                        <select name="ApiInsertMethod" style="padding:4px 8px;">
+                            <option value="POST" @(Model.ApiInsertMethod == "POST" ? "selected" : "")>POST</option>
+                            <option value="PUT" @(Model.ApiInsertMethod == "PUT" ? "selected" : "")>PUT</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <div><label for="ApiInsertPath">Insert Path</label></div>
+                        @Html.TextBoxFor(m => m.ApiInsertPath, new { placeholder = "/items", style = "width:100%;max-width:400px;" })
+                    </div>
+                </div>
+
+                <div class="dnnFormItem" style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div><label for="ApiUpdateMethod">Update Method</label></div>
+                        <select name="ApiUpdateMethod" style="padding:4px 8px;">
+                            <option value="PUT" @(Model.ApiUpdateMethod == "PUT" ? "selected" : "")>PUT</option>
+                            <option value="PATCH" @(Model.ApiUpdateMethod == "PATCH" ? "selected" : "")>PATCH</option>
+                            <option value="POST" @(Model.ApiUpdateMethod == "POST" ? "selected" : "")>POST</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <div><label for="ApiUpdatePath">Update Path <small style="font-weight:normal;color:#888;">({pk} = primary key)</small></label></div>
+                        @Html.TextBoxFor(m => m.ApiUpdatePath, new { placeholder = "/items/{pk}", style = "width:100%;max-width:400px;" })
+                    </div>
+                </div>
+
+                <div class="dnnFormItem" style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div><label for="ApiDeleteMethod">Delete Method</label></div>
+                        <select name="ApiDeleteMethod" style="padding:4px 8px;">
+                            <option value="DELETE" @(Model.ApiDeleteMethod == "DELETE" ? "selected" : "")>DELETE</option>
+                            <option value="POST" @(Model.ApiDeleteMethod == "POST" ? "selected" : "")>POST</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <div><label for="ApiDeletePath">Delete Path <small style="font-weight:normal;color:#888;">({pk} = primary key)</small></label></div>
+                        @Html.TextBoxFor(m => m.ApiDeletePath, new { placeholder = "/items/{pk}", style = "width:100%;max-width:400px;" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="dnnFormItem">
+                <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowCreate) Allow Create
+                </label>
+            </div>
+            <div class="dnnFormItem">
+                <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowEdit) Allow Edit
+                </label>
+            </div>
+            <div class="dnnFormItem">
+                <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowDelete) Allow Delete
+                </label>
+            </div>
+            <div class="dnnFormItem">
+                <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowBulkDelete) Allow Bulk Delete
+                </label>
+            </div>
+
+            <h2 id="dnnSitePanel-Permissions" class="dnnFormSectionHead dnnClear" style="margin-top:20px;">
+                <a href="#" class="dnnSectionExpanded">Permissions <small style="font-weight:normal;color:#888;">(leave empty to use global Allow flags above)</small></a>
+            </h2>
+            <fieldset>
+                <div style="margin-bottom:6px;font-size:12px;color:#666;">
+                    When permission rules are defined, the Allow checkboxes above become defaults for users who match no rule.
+                    Each rule grants permissions to a specific role or user.
+                </div>
+                <div id="permissionsContainer">
+                    @if (Model.Permissions != null)
+                    {
+                        foreach (var perm in Model.Permissions)
+                        {
+                            <div class="perm-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+                                <select class="perm-type" style="padding:4px 8px;width:80px;">
+                                    <option value="role" @(perm.Type == "role" ? "selected" : "")>Role</option>
+                                    <option value="user" @(perm.Type == "user" ? "selected" : "")>User</option>
+                                </select>
+                                <input type="text" class="perm-name" value="@perm.Name" placeholder="Role name or username" style="width:180px;padding:4px 8px;" />
+                                <label style="display:inline-flex;align-items:center;gap:3px;font-size:13px;cursor:pointer;">
+                                    <input type="checkbox" class="perm-create" @(perm.AllowCreate ? "checked" : "") /> Create
+                                </label>
+                                <label style="display:inline-flex;align-items:center;gap:3px;font-size:13px;cursor:pointer;">
+                                    <input type="checkbox" class="perm-edit" @(perm.AllowEdit ? "checked" : "") /> Edit
+                                </label>
+                                <label style="display:inline-flex;align-items:center;gap:3px;font-size:13px;cursor:pointer;">
+                                    <input type="checkbox" class="perm-delete" @(perm.AllowDelete ? "checked" : "") /> Delete
+                                </label>
+                                <label style="display:inline-flex;align-items:center;gap:3px;font-size:13px;cursor:pointer;">
+                                    <input type="checkbox" class="perm-bulk" @(perm.AllowBulkDelete ? "checked" : "") /> Bulk Delete
+                                </label>
+                                <button type="button" class="remove-perm dnnSecondaryAction" style="padding:2px 8px;">&#10005;</button>
+                            </div>
+                        }
+                    }
+                </div>
+                <button type="button" id="addPermission" class="dnnSecondaryAction" style="margin-top:8px;">+ Add Permission Rule</button>
+            </fieldset>
+
+            <h2 id="dnnSitePanel-Columns" class="dnnFormSectionHead dnnClear" style="margin-top:20px;">
+                <a href="#" class="dnnSectionExpanded">Columns <small style="font-weight:normal;color:#888;">(leave empty to auto-detect)</small></a>
+            </h2>
+            <fieldset>
+                <div id="columnsContainer">
+                    @if (Model.Columns != null)
+                    {
+                        foreach (var col in Model.Columns)
+                        {
+                            <div class="column-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                                <input type="text" class="col-key" value="@col.Key" placeholder="Column Key" style="width:160px;padding:4px 8px;" />
+                                <input type="text" class="col-label" value="@col.Label" placeholder="Display Label" style="width:160px;padding:4px 8px;" />
+                                <select class="col-type" style="padding:4px 8px;">
+                                    <option value="text" @(col.Type == "text" ? "selected" : "")>Text</option>
+                                    <option value="readonly" @(col.Type == "readonly" ? "selected" : "")>Read Only</option>
+                                    <option value="hidden" @(col.Type == "hidden" ? "selected" : "")>Hidden</option>
+                                    <option value="number" @(col.Type == "number" ? "selected" : "")>Number</option>
+                                    <option value="email" @(col.Type == "email" ? "selected" : "")>Email</option>
+                                    <option value="url" @(col.Type == "url" ? "selected" : "")>URL</option>
+                                </select>
+                                <button type="button" class="remove-col dnnSecondaryAction" style="padding:2px 8px;">&#10005;</button>
+                            </div>
+                        }
+                    }
+                </div>
+                <button type="button" id="addColumn" class="dnnSecondaryAction" style="margin-top:8px;">+ Add Column</button>
+            </fieldset>
+
+            <input type="hidden" name="ColumnsJson" id="columnsJson" />
+            <input type="hidden" name="PermissionsJson" id="permissionsJson" />
+        </fieldset>
+    </div>
+    <div style="margin-top:16px;">
+        <button type="submit" class="dnnPrimaryAction" id="btnSave">Save</button>
+        <a id="cancelEdit" href="#" class="dnnSecondaryAction">Cancel</a>
+    </div>
+</div>
+
+<script type="text/javascript">
+    (function ($, Sys) {
+        var container = document.getElementById('columnsContainer');
+        var modeSelect = document.getElementById('modeSelect');
+        var sqlFields = document.getElementById('sqlFields');
+        var apiFields = document.getElementById('apiFields');
+
+        modeSelect.addEventListener('change', function () {
+            if (this.value === 'api') {
+                sqlFields.style.display = 'none';
+                apiFields.style.display = '';
+            } else {
+                sqlFields.style.display = '';
+                apiFields.style.display = 'none';
+            }
+        });
+
+        function createColumnRow(key, label, type) {
+            var row = document.createElement('div');
+            row.className = 'column-row';
+            row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
+            row.innerHTML =
+                '<input type="text" class="col-key" value="' + escHtml(key || '') + '" placeholder="Column Key" style="width:160px;padding:4px 8px;" />' +
+                '<input type="text" class="col-label" value="' + escHtml(label || '') + '" placeholder="Display Label" style="width:160px;padding:4px 8px;" />' +
+                '<select class="col-type" style="padding:4px 8px;">' +
+                '<option value="text"' + (type === 'text' ? ' selected' : '') + '>Text</option>' +
+                '<option value="readonly"' + (type === 'readonly' ? ' selected' : '') + '>Read Only</option>' +
+                '<option value="hidden"' + (type === 'hidden' ? ' selected' : '') + '>Hidden</option>' +
+                '<option value="number"' + (type === 'number' ? ' selected' : '') + '>Number</option>' +
+                '<option value="email"' + (type === 'email' ? ' selected' : '') + '>Email</option>' +
+                '<option value="url"' + (type === 'url' ? ' selected' : '') + '>URL</option>' +
+                '</select>' +
+                '<button type="button" class="remove-col dnnSecondaryAction" style="padding:2px 8px;">&#10005;</button>';
+            return row;
+        }
+
+        function escHtml(s) {
+            var d = document.createElement('div');
+            d.appendChild(document.createTextNode(s));
+            return d.innerHTML;
+        }
+
+        document.getElementById('addColumn').addEventListener('click', function () {
+            container.appendChild(createColumnRow('', '', 'text'));
+        });
+
+        container.addEventListener('click', function (e) {
+            if (e.target.classList.contains('remove-col')) {
+                e.target.closest('.column-row').remove();
+            }
+        });
+
+        // Permissions
+        var permContainer = document.getElementById('permissionsContainer');
+
+        function createPermRow(type, name, create, edit, del, bulk) {
+            var row = document.createElement('div');
+            row.className = 'perm-row';
+            row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
+            row.innerHTML =
+                '<select class="perm-type" style="padding:4px 8px;width:80px;">' +
+                '<option value="role"' + (type === 'role' ? ' selected' : '') + '>Role</option>' +
+                '<option value="user"' + (type === 'user' ? ' selected' : '') + '>User</option>' +
+                '</select>' +
+                '<input type="text" class="perm-name" value="' + escHtml(name || '') + '" placeholder="Role name or username" style="width:180px;padding:4px 8px;" />' +
+                '<label style="display:inline-flex;align-items:center;gap:3px;font-size:13px;cursor:pointer;"><input type="checkbox" class="perm-create"' + (create ? ' checked' : '') + ' /> Create</label>' +
+                '<label style="display:inline-flex;align-items:center;gap:3px;font-size:13px;cursor:pointer;"><input type="checkbox" class="perm-edit"' + (edit ? ' checked' : '') + ' /> Edit</label>' +
+                '<label style="display:inline-flex;align-items:center;gap:3px;font-size:13px;cursor:pointer;"><input type="checkbox" class="perm-delete"' + (del ? ' checked' : '') + ' /> Delete</label>' +
+                '<label style="display:inline-flex;align-items:center;gap:3px;font-size:13px;cursor:pointer;"><input type="checkbox" class="perm-bulk"' + (bulk ? ' checked' : '') + ' /> Bulk Delete</label>' +
+                '<button type="button" class="remove-perm dnnSecondaryAction" style="padding:2px 8px;">&#10005;</button>';
+            return row;
+        }
+
+        document.getElementById('addPermission').addEventListener('click', function () {
+            permContainer.appendChild(createPermRow('role', '', false, false, false, false));
+        });
+
+        permContainer.addEventListener('click', function (e) {
+            if (e.target.classList.contains('remove-perm')) {
+                e.target.closest('.perm-row').remove();
+            }
+        });
+
+        document.getElementById('btnSave').addEventListener('click', function () {
+            // Columns
+            var rows = container.querySelectorAll('.column-row');
+            var columns = [];
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i];
+                var key = row.querySelector('.col-key').value.trim();
+                var label = row.querySelector('.col-label').value.trim();
+                var type = row.querySelector('.col-type').value;
+                if (key) {
+                    columns.push({ Key: key, Label: label || key, Type: type, Required: false, Sortable: true, Filterable: true });
+                }
+            }
+            document.getElementById('columnsJson').value = columns.length > 0 ? JSON.stringify(columns) : '';
+
+            // Permissions
+            var permRows = permContainer.querySelectorAll('.perm-row');
+            var permissions = [];
+            for (var j = 0; j < permRows.length; j++) {
+                var pr = permRows[j];
+                var pName = pr.querySelector('.perm-name').value.trim();
+                if (pName) {
+                    permissions.push({
+                        Type: pr.querySelector('.perm-type').value,
+                        Name: pName,
+                        AllowCreate: pr.querySelector('.perm-create').checked,
+                        AllowEdit: pr.querySelector('.perm-edit').checked,
+                        AllowDelete: pr.querySelector('.perm-delete').checked,
+                        AllowBulkDelete: pr.querySelector('.perm-bulk').checked
+                    });
+                }
+            }
+            document.getElementById('permissionsJson').value = permissions.length > 0 ? JSON.stringify(permissions) : '';
+        });
+
+        function initEditSettings() {
+            $('#dnnEditBasicSettings').dnnPanels();
+            $('#dnnEditBasicSettings .dnnFormExpandContent a').dnnExpandAll({
+                expandText: 'Expand All',
+                collapseText: 'Collapse All',
+                targetArea: '#dnnEditBasicSettings'
+            });
+        }
+
+        $(function () {
+            $('#cancelEdit').click(function (e) {
+                e.preventDefault();
+                if (typeof dnnModal !== 'undefined' && dnnModal.closePopUp) {
+                    dnnModal.closePopUp(false);
+                } else {
+                    window.history.back();
+                }
+                return false;
+            });
+            initEditSettings();
+            Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
+                initEditSettings();
+            });
+        });
+
+    }(jQuery, window.Sys));
+</script>
