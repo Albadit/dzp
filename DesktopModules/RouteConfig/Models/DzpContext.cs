@@ -5,7 +5,6 @@ using System.Web;
 using DotNetNuke.Entities.Portals;
 using DotNetNuke.Entities.Tabs;
 using DotNetNuke.Entities.Users;
-using DnnDev.Routing.Data;
 
 namespace DnnDev.Routing.Models
 {
@@ -123,16 +122,17 @@ namespace DnnDev.Routing.Models
             // ── Page detection flags ─────────────────────────────────
             ctx.IsOnCommunityPage = ctx.Segments.Length > 0 && !ctx.FirstSegmentIsRealPage;
             ctx.IsOnDashboard = ctx.Segments.Length > 0
-                && ctx.Segments[0].Equals("dashboard", StringComparison.OrdinalIgnoreCase);
+                && ctx.Segments[0].Equals(Constants.PageDashboard, StringComparison.OrdinalIgnoreCase);
             ctx.IsOnSettings = ctx.Segments.Length > 0
-                && ctx.Segments[0].Equals("settings", StringComparison.OrdinalIgnoreCase);
+                && ctx.Segments[0].Equals(Constants.PageSettings, StringComparison.OrdinalIgnoreCase);
             ctx.IsOnCommunityRoot = ctx.Segments.Length == 1 && ctx.IsOnCommunityPage;
 
             // ── Community slug & name ────────────────────────────────
             var communitySlug = ctx.Segments.Length > 0 ? ctx.Segments[0] : null;
+            var communityRepo = Constants.Segments.Get(Constants.Segments.Community);
 
             // Only treat it as a community slug if it actually exists in the DB
-            var communityName = CommunityRepository.GetCommunityNameBySlug(communitySlug);
+            var communityName = communityRepo.GetNameBySlug(communitySlug);
             if (string.IsNullOrEmpty(communityName))
                 communitySlug = null;
 
@@ -155,7 +155,7 @@ namespace DnnDev.Routing.Models
                 if (lastCookie != null && !string.IsNullOrEmpty(lastCookie.Value))
                 {
                     communitySlug = lastCookie.Value;
-                    communityName = CommunityRepository.GetCommunityNameBySlug(communitySlug);
+                    communityName = communityRepo.GetNameBySlug(communitySlug);
 
                     // Invalid cookie — community no longer exists
                     if (string.IsNullOrEmpty(communityName))
@@ -173,11 +173,11 @@ namespace DnnDev.Routing.Models
                 // If still unresolved, fall back to DB
                 if (string.IsNullOrEmpty(communitySlug))
                 {
-                    var userSlugs = CommunityRepository.GetUserSlugsByUserId(user.UserID);
+                    var userSlugs = communityRepo.GetUserSlugsById(user.UserID);
                     if (userSlugs.Count > 0)
                     {
                         communitySlug = userSlugs[userSlugs.Count - 1];
-                        communityName = CommunityRepository.GetCommunityNameBySlug(communitySlug);
+                        communityName = communityRepo.GetNameBySlug(communitySlug);
                     }
                 }
             }
@@ -194,7 +194,7 @@ namespace DnnDev.Routing.Models
             // ── Dashboard visibility ─────────────────────────────────
             if (user != null && user.UserID > 0)
             {
-                ctx.ShowDashboardLink = CommunityRepository.GetUserCommunityCount(user.UserID, user.IsSuperUser) > 1;
+                ctx.ShowDashboardLink = communityRepo.GetUserEntityCount(user.UserID, user.IsSuperUser) > 1;
             }
 
             // ── Logo URL ─────────────────────────────────────────────
@@ -211,15 +211,16 @@ namespace DnnDev.Routing.Models
                 {
                     var val = HttpContext.Current.Items[key] as string;
                     if (!string.IsNullOrEmpty(val))
-                        ctx.Placeholders["{" + key + "}"] = val;
+                        ctx.Placeholders["[" + key + "]"] = val;
                 }
             }
 
-            // Ensure community-slug is in Placeholders for sidebar nav
+            // Ensure community is in Placeholders for sidebar nav
+            var communityKey = "[" + Constants.Segments.Community + "]";
             if (!string.IsNullOrEmpty(ctx.CommunitySlug)
-                && !ctx.Placeholders.ContainsKey("{community-slug}"))
+                && !ctx.Placeholders.ContainsKey(communityKey))
             {
-                ctx.Placeholders["{community-slug}"] = ctx.CommunitySlug;
+                ctx.Placeholders[communityKey] = ctx.CommunitySlug;
             }
 
             return ctx;
@@ -249,7 +250,7 @@ namespace DnnDev.Routing.Models
         {
             if (!string.IsNullOrEmpty(ctx.CommunitySlug))
             {
-                ctx.CommunityLink = "/" + ctx.CommunitySlug + "/home";
+                ctx.CommunityLink = "/" + ctx.CommunitySlug + "/" + Constants.PageHome;
                 ctx.SiteUrl = ctx.CommunityLink;
             }
             else

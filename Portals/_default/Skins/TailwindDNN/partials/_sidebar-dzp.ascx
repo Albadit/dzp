@@ -97,7 +97,7 @@
             var match = true;
             for (int i = 0; i < tplSegments.Length; i++) {
                 var tpl = tplSegments[i];
-                if (tpl.StartsWith("{") && tpl.EndsWith("}")) continue; // placeholder — skip
+                if (tpl.StartsWith("[") && tpl.EndsWith("]")) continue; // dynamic segment — skip
                 if (!tpl.Equals(urlSegments[i], StringComparison.OrdinalIgnoreCase)) { match = false; break; }
             }
             if (!match) continue;
@@ -105,7 +105,7 @@
             // Extract placeholder values from matched positions
             for (int i = 0; i < tplSegments.Length; i++) {
                 var tpl = tplSegments[i];
-                if (tpl.StartsWith("{") && tpl.EndsWith("}") && !ph.ContainsKey(tpl))
+                if (tpl.StartsWith("[") && tpl.EndsWith("]") && !ph.ContainsKey(tpl))
                     ph[tpl] = urlSegments[i];
             }
         }
@@ -136,8 +136,8 @@
         IList<DotNetNuke.Entities.Tabs.TabInfo> allTabs, UserInfo user) {
         var href = link.Href;
         foreach (var kv in placeholders) href = href.Replace(kv.Key, kv.Value);
-        // Strip braces from any unresolved placeholders: {foo} → foo
-        href = System.Text.RegularExpressions.Regex.Replace(href, @"\{([^}]+)\}", "$1");
+        // Strip brackets from any unresolved placeholders: [foo] → foo
+        href = System.Text.RegularExpressions.Regex.Replace(href, @"\[([^\]]+)\]", "$1");
 
         // Permission: match href to DNN tab via TabPath
         var tabPath = "//" + string.Join("//", href.Trim('/').Split('/'));
@@ -145,11 +145,10 @@
             t.TabPath.Equals(tabPath, StringComparison.OrdinalIgnoreCase) && !t.IsDeleted);
 
         // If resolved path didn't match (slugs replaced), try the original template path
-        // e.g. href="/keizerswaard/home" won't match, but template "/{community-slug}/home"
-        // maps to DNN tab //community-slug//home which does exist.
+        // e.g. href="/keizerswaard/home" won't match, but template "/[community]/home"
+        // maps to DNN tab //[community]//home which does exist.
         if (tab == null) {
-            var tplPath = "//" + string.Join("//", link.Href.Trim('/').Split('/')
-                .Select(s => s.StartsWith("{") && s.EndsWith("}") ? s.Trim('{', '}') : s));
+            var tplPath = "//" + string.Join("//", link.Href.Trim('/').Split('/'));
             tab = allTabs.FirstOrDefault(t =>
                 t.TabPath.Equals(tplPath, StringComparison.OrdinalIgnoreCase) && !t.IsDeleted);
         }
@@ -251,11 +250,12 @@
     var navGroups = BuildNavGroups(placeholders, sb.CurrentPath, sb.Portal.PortalId, sb.User);
 
     // Determine logo link (use resolved slug from route values)
-    var sbSlug = placeholders.ContainsKey("{community-slug}") ? placeholders["{community-slug}"] : null;
+    var communityKey = "[" + DnnDev.Routing.Constants.Segments.Community + "]";
+    var sbSlug = placeholders.ContainsKey(communityKey) ? placeholders[communityKey] : null;
     var sbLogoUrl = !string.IsNullOrEmpty(sbSlug)
-        ? "/" + sbSlug + "/home"
+        ? "/" + sbSlug + "/" + DnnDev.Routing.Constants.PageHome
         : (sb.IsOnCommunityPage
-            ? "/" + sb.Segments[0] + "/home"
+            ? "/" + sb.Segments[0] + "/" + DnnDev.Routing.Constants.PageHome
             : DnnDev.Routing.Constants.FallbackHomeUrl);
 %>
 
@@ -281,7 +281,7 @@
         <div class="mb-6">
             <ul class="space-y-1">
                 <li>
-                    <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors <%= sb.IsOnDashboard ? "bg-primary-50 text-primary-700 font-semibold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900" %>">
+                    <a href="<%= DnnDev.Routing.Constants.DashboardUrl %>" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors <%= sb.IsOnDashboard ? "bg-primary-50 text-primary-700 font-semibold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900" %>">
                         <i data-lucide="layout-dashboard" class="size-5 shrink-0"></i>
                         <span>Dashboard</span>
                     </a>
@@ -289,7 +289,7 @@
             </ul>
         </div>
         <% } %>
-        <% if (!sb.IsOnCommunityRoot) { %>
+        <% if (!sb.IsOnCommunityRoot && !sb.IsOnDashboard) { %>
         <% foreach (var group in navGroups) { %>
         <div class="mb-6">
             <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400"><%= group.Title %></h3>

@@ -1,0 +1,33 @@
+20:23:17.955 /community/home -> BEGIN routing (2 segment(s): community/home)
+20:23:17.956 /community/home seg[0] 'community' equals param name 'community', deferring to PostAuth
+20:23:17.959 /community/home -> param name 'community' used as URL, redirecting to /dashboard (user: dennis)
+20:23:17.968 /dashboard -> BEGIN routing (1 segment(s): dashboard)
+20:23:17.968 /dashboard -> all segments match real DNN pages, skipping
+20:23:41.262 /community/home -> BEGIN routing (2 segment(s): community/home)
+20:23:41.262 /community/home seg[0] 'community' equals param name 'community', deferring to PostAuth
+20:23:41.265 /community/home -> param name 'community' used as URL, redirecting to /dashboard (user: dennis)
+20:23:41.275 /dashboard -> BEGIN routing (1 segment(s): dashboard)
+20:23:41.275 /dashboard -> all segments match real DNN pages, skipping
+20:24:35.016 /dashboard -> BEGIN routing (1 segment(s): dashboard)
+20:24:35.070 /dashboard -> all segments match real DNN pages, skipping
+20:24:43.343 /hoeksche-waard/home -> BEGIN routing (2 segment(s): hoeksche-waard/home)
+20:24:43.343 /hoeksche-waard/home seg[0] 'hoeksche-waard' -> dynamic '[community]'
+20:24:43.343 /hoeksche-waard/home seg[1] 'home' -> literal page
+20:24:43.347 /hoeksche-waard/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=hoeksche-waard]
+20:24:43.369 /hoeksche-waard/home -> RouteConfigFix: cancelling 301 redirect
+20:25:02.595 /dashboard -> BEGIN routing (1 segment(s): dashboard)
+20:25:02.595 /dashboard -> all segments match real DNN pages, skipping
+20:25:03.321 /spijkenisse/home -> BEGIN routing (2 segment(s): spijkenisse/home)
+20:25:03.322 /spijkenisse/home seg[0] 'spijkenisse' -> dynamic '[community]'
+20:25:03.322 /spijkenisse/home seg[1] 'home' -> literal page
+20:25:03.323 /spijkenisse/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=spijkenisse]
+20:25:03.323 /spijkenisse/home -> RouteConfigFix: cancelling 301 redirect
+20:25:04.760 /dashboard -> BEGIN routing (1 segment(s): dashboard)
+20:25:04.760 /dashboard -> all segments match real DNN pages, skipping
+20:25:05.502 /hoeksche-waard/home -> BEGIN routing (2 segment(s): hoeksche-waard/home)
+20:25:05.503 /hoeksche-waard/home seg[0] 'hoeksche-waard' -> dynamic '[community]'
+20:25:05.504 /hoeksche-waard/home seg[1] 'home' -> literal page
+20:25:05.505 /hoeksche-waard/home -> REWRITE /Default.aspx?TabId=40 (/[community]/home) values=[community=hoeksche-waard]
+20:25:05.506 /hoeksche-waard/home -> RouteConfigFix: cancelling 301 redirect
+20:25:06.738 /dashboard -> BEGIN routing (1 segment(s): dashboard)
+20:25:06.738 /dashboard -> all segments match real DNN pages, skipping

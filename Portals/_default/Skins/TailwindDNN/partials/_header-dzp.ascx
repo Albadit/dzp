@@ -3,16 +3,19 @@
     var hdr = DnnDev.Routing.Models.DzpContext.Current;
 
     // User popup menu links
+    var settingsUrl  = "/" + DnnDev.Routing.Constants.PageSettings;
+    var dashboardUrl = DnnDev.Routing.Constants.DashboardUrl;
+
     var hdrPopupLinks = hdr.IsOnDashboard
         ? new[] {
-            new { Href = "/settings/profile",           Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
-            new { Href = "/settings",                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
+            new { Href = settingsUrl + "/profile",      Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
+            new { Href = settingsUrl,                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
             new { Href = "/Logoff.aspx",                Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
         }
         : new[] {
             new { Href = hdr.CommunityLink,             Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
-            new { Href = "/settings/profile",           Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
-            new { Href = "/settings",                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
+            new { Href = settingsUrl + "/profile",      Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
+            new { Href = settingsUrl,                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
             new { Href = "/Logoff.aspx",                Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
         };
 %>

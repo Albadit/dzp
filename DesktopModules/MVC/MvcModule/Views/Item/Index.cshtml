@@ -4,8 +4,8 @@
     var tid = Model.TableId;
 }
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+@* <script src="https://cdn.tailwindcss.com"></script> *@
+@* <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script> *@
 <link rel="stylesheet" href="/DesktopModules/MVC/MvcModule/Resources/css/datatable.css" />
 
 <div id="@tid" class="w-full max-w-5xl mx-auto flex flex-col gap-4 py-6" data-page-size="10" data-total="@Model.TotalRows">
@@ -39,7 +39,7 @@
     <!-- Toolbar -->
     <div class="flex flex-wrap justify-between items-center gap-3">
         <div class="relative flex-1 min-w-[200px] max-w-sm">
-            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none"></i>
+            <span class="absolute left-3 top-0 bottom-0 flex items-center pointer-events-none"><i data-lucide="search" class="size-4 text-gray-400"></i></span>
             <input type="text" placeholder="Search&#8230;"
                    class="dt-search w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                    data-target="@tid" />

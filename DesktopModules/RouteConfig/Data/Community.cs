@@ -8,9 +8,30 @@ namespace DnnDev.Routing.Data
     /// <summary>
     /// Centralized data access for Community and UserCommunity tables.
     /// All SQL queries go through this class — no raw SQL in views or routing code.
+    ///
+    /// Implements <see cref="ISegment"/> so RouteConfig can treat
+    /// [community] the same as any other dynamic segment ([company], etc.).
     /// </summary>
-    public static class CommunityRepository
+    public class Community : ISegment
     {
+        /// <summary>Singleton used by RouteConfig and Constants.Segments.</summary>
+        public static readonly Community Instance = new Community();
+
+        // ── ISegment ───────────────────────────────────────────
+
+        public string ParamName => Constants.Segments.Community;
+
+        public bool IsValidSlug(string slug) => IsValidCommunitySlug(slug);
+
+        public string ResolveTemplateRedirect(string username) => ResolveUserRedirect(username);
+
+        public string CheckAccess(string username, string slugValue) => CheckCommunityAccess(username, slugValue);
+
+        public string GetNameBySlug(string slug) => GetCommunityNameBySlug(slug);
+
+        public List<string> GetUserSlugsById(int userId) => GetUserSlugsByUserId(userId);
+
+        public int GetUserEntityCount(int userId, bool isSuperUser) => GetUserCommunityCount(userId, isSuperUser);
         // ── Connection helper ────────────────────────────────────────────
 
         private static string GetConnectionString()
@@ -206,6 +227,57 @@ namespace DnnDev.Routing.Data
                     return result != null && (bool)result;
                 }
             }
+        }
+
+        // ── High-level route helpers ──────────────────────────────────────
+
+        /// <summary>
+        /// Returns true when the slug corresponds to an existing community.
+        /// </summary>
+        public static bool IsValidCommunitySlug(string slug)
+        {
+            return !string.IsNullOrEmpty(GetCommunityNameBySlug(slug));
+        }
+
+        /// <summary>
+        /// Determine the correct redirect URL for an authenticated user entering
+        /// a community route.  Returns null when no redirect is needed.
+        ///
+        /// Rules:
+        ///   - Multi-community user → dashboard
+        ///   - Single-community user → /{slug}/home
+        ///   - No communities → fallback home
+        /// </summary>
+        public static string ResolveUserRedirect(string username)
+        {
+            if (string.IsNullOrEmpty(username)) return null;
+
+            var slugs = GetUserSlugsByUsername(username);
+            if (slugs.Count == 0) return Constants.FallbackHomeUrl;
+            if (slugs.Count > 1) return Constants.DashboardUrl;
+            return "/" + slugs[0] + "/" + Constants.PageHome;
+        }
+
+        /// <summary>
+        /// Check whether <paramref name="username"/> may access the community
+        /// identified by <paramref name="slug"/>.  Superusers always pass.
+        /// Returns null when access is allowed, or a redirect URL otherwise.
+        /// </summary>
+        public static string CheckCommunityAccess(string username, string slug)
+        {
+            if (string.IsNullOrEmpty(username)) return null; // anonymous — let DNN handle
+            if (IsSuperUser(username)) return null; // superusers can go anywhere
+
+            var userSlugs = GetUserSlugsByUsername(username);
+            if (userSlugs.Exists(s => s.Equals(slug, StringComparison.OrdinalIgnoreCase)))
+                return null; // member — allow
+
+            // Not a member — redirect to own community or dashboard
+            if (userSlugs.Count == 1)
+                return "/" + userSlugs[0] + "/" + Constants.PageHome;
+            if (userSlugs.Count > 1)
+                return Constants.DashboardUrl;
+            return Constants.FallbackHomeUrl;
         }
     }
 }

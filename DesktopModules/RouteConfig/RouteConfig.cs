@@ -11,17 +11,15 @@ namespace DnnDev.Routing
     /// <summary>
     /// HTTP Module that handles recursive slug-based routing for DNN.
     ///
-    /// Template pages are DNN pages listed in <see cref="Constants.TemplatePages"/>.
-    /// Any URL segment at a template position is accepted as a slug value.
-    /// The module walks the DNN page tree recursively, matching segments to
-    /// either literal child pages or template pages (which capture the value).
+    /// DNN pages named with brackets (e.g. [community], [company]) are
+    /// dynamic segments — Next.js convention. The module auto-detects them
+    /// from the page tree; no explicit registration needed.
     ///
     /// HttpContext.Items after /keizerswaard/bond/ardit:
-    ///   Items["community-slug"] = "keizerswaard"
-    ///   Items["company-slug"]   = "bond"
-    ///   Items["user-id"]        = "ardit"
-    ///   Items["RouteKeys"]      = string[] { "community-slug", "company-slug", "user-id" }
-    ///   Items["RouteActive"]    = true
+    ///   Items["community"] = "keizerswaard"
+    ///   Items["company"]   = "bond"
+    ///   Items["RouteKeys"] = string[] { "community", "company" }
+    ///   Items["RouteActive"]  = true
     ///
     /// Build:   dotnet build debug.csproj
     /// Result:  bin\DnnDev.Debug.dll
@@ -31,18 +29,11 @@ namespace DnnDev.Routing
         /// <summary>
         /// Set to true to write detailed routing info to App_Data\RouteConfig.log.
         /// </summary>
-        private const bool EnableLogging = false;
+        private const bool EnableLogging = true;
 
-        // ── Slug validators per template page ──────────────────────────
-        // Maps template page name → function that returns true if the slug exists.
-        // Templates without an entry are accepted without validation.
-        private static readonly Dictionary<string, Func<string, bool>> SlugValidators =
-            new Dictionary<string, Func<string, bool>>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["community-slug"] = slug =>
-                    CommunityRepository.GetAllSlugs()
-                        .Any(s => s.Equals(slug, StringComparison.OrdinalIgnoreCase)),
-            };
+        // ── Dynamic segment handling is driven by Constants.Segments.Registry ──
+        // Each ISegment provides validation, template resolution,
+        // and access checking. No per-segment dictionaries needed here.
 
         // ── Cache (refreshes every 30 seconds) ──────────────────────────
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, IList<TabInfo>>
@@ -62,8 +53,11 @@ namespace DnnDev.Routing
             var request = app.Context.Request;
             var path = request.Url.AbsolutePath;
 
-            // Store original path before DNN's URL rewriter changes it
-            app.Context.Items[Constants.ItemRawOriginalPath] = path;
+            // Store original path before DNN's URL rewriter changes it.
+            // Only write once — DNN may Server.Transfer to the 404 error page,
+            // restarting the pipeline. We need the FIRST path to survive.
+            if (app.Context.Items[Constants.ItemRawOriginalPath] == null)
+                app.Context.Items[Constants.ItemRawOriginalPath] = path;
 
             try
             {
@@ -101,63 +95,88 @@ namespace DnnDev.Routing
             try
             {
                 var username = app.Context.User?.Identity?.Name;
+
+                // ── Case 0: ProcessRoute detected a param name used as a URL value ──
+                // e.g. /community/home where "community" is the [community] param name.
+                // Redirect logged-in users to their actual slug, anonymous to fallback.
+                var resolveParam = app.Context.Items["_ResolveParamName"] as string;
+                if (resolveParam != null)
+                {
+                    var repo = Constants.Segments.Get(resolveParam);
+                    if (repo != null)
+                    {
+                        string redirect;
+                        if (!string.IsNullOrEmpty(username))
+                            redirect = repo.ResolveTemplateRedirect(username) ?? Constants.FallbackHomeUrl;
+                        else
+                            redirect = Constants.FallbackHomeUrl;
+
+                        Log(originalPath + " -> param name '" + resolveParam
+                            + "' used as URL, redirecting to " + redirect
+                            + " (user: " + (username ?? "anonymous") + ")");
+                        app.Context.Response.Redirect(redirect, false);
+                        app.Context.ApplicationInstance.CompleteRequest();
+                        return;
+                    }
+                }
+
                 if (string.IsNullOrEmpty(username))
                     return; // Anonymous — let DNN handle permissions
 
-                // ── Case 1: URL starts with literal template name "community-slug" ──
-                // Redirect to the user's actual community or dashboard
-                if (segments[0].Equals("community-slug", StringComparison.OrdinalIgnoreCase))
+                // ── Case 1: URL contains a literal template name at any depth ──
+                // e.g. /[community]/home or /keizerswaard/[company]/dashboard
+                // Redirect the authenticated user to their actual slug value.
+                for (int i = 0; i < segments.Length; i++)
                 {
-                    var communitySlugs = CommunityRepository.GetUserSlugsByUsername(username);
-                    if (communitySlugs.Count == 0)
-                        return;
+                    if (!Constants.IsDynamic(segments[i]))
+                        continue;
 
-                    string newPath;
-                    if (communitySlugs.Count == 1)
-                    {
-                        segments[0] = communitySlugs[0];
-                        newPath = "/" + string.Join("/", segments) + "/home";
-                    }
-                    else
-                    {
-                        newPath = "/dashboard";
-                    }
+                    var paramName = Constants.ParamName(segments[i]);
+                    var repo = Constants.Segments.Get(paramName);
+                    if (repo == null)
+                        continue;
 
-                    Log(originalPath + " -> community redirect to " + newPath + " for user '" + username + "'");
-                    app.Context.Response.Redirect(newPath, false);
+                    var redirect = repo.ResolveTemplateRedirect(username);
+                    if (redirect == null)
+                        continue;
+
+                    Log(originalPath + " -> template [" + paramName
+                        + "] at depth " + i + ", redirecting to " + redirect
+                        + " for user '" + username + "'");
+                    app.Context.Response.Redirect(redirect, false);
                     app.Context.ApplicationInstance.CompleteRequest();
                     return;
                 }
 
-                // ── Case 2: URL starts with a community slug — verify membership ──
-                var allSlugs = CommunityRepository.GetAllSlugs();
-                if (allSlugs.Count == 0 || !allSlugs.Any(s =>
-                    s.Equals(segments[0], StringComparison.OrdinalIgnoreCase)))
-                    return; // Not a community URL — let DNN handle it
+                // ── Case 2: Check access for every matched dynamic segment ──
+                // ProcessRoute (BeginRequest) already captured the route values.
+                // Walk them all — works for [community] at root, [company] at
+                // depth 2, or any other dynamic segment at any layer.
+                var routeKeys = app.Context.Items[Constants.ItemRouteKeys] as string[];
+                if (routeKeys != null)
+                {
+                    foreach (var key in routeKeys)
+                    {
+                        var repo = Constants.Segments.Get(key);
+                        if (repo == null)
+                            continue;
 
-                // Superusers can access any community
-                if (CommunityRepository.IsSuperUser(username))
-                    return;
+                        var slugValue = app.Context.Items[key] as string;
+                        if (string.IsNullOrEmpty(slugValue))
+                            continue;
 
-                // Check if user belongs to this community
-                var userSlugs = CommunityRepository.GetUserSlugsByUsername(username);
-                if (userSlugs.Any(s =>
-                    s.Equals(segments[0], StringComparison.OrdinalIgnoreCase)))
-                    return; // User belongs — allow
+                        var accessRedirect = repo.CheckAccess(username, slugValue);
+                        if (accessRedirect == null)
+                            continue; // allowed
 
-                // User does NOT belong to this community — redirect to their own
-                string redirectPath;
-                if (userSlugs.Count == 1)
-                    redirectPath = "/" + userSlugs[0] + "/home";
-                else if (userSlugs.Count > 1)
-                    redirectPath = Constants.DashboardUrl;
-                else
-                    redirectPath = "/";
-
-                Log(originalPath + " -> ACCESS DENIED for '" + username
-                    + "', not a member of '" + segments[0] + "', redirecting to " + redirectPath);
-                app.Context.Response.Redirect(redirectPath, false);
-                app.Context.ApplicationInstance.CompleteRequest();
+                        Log(originalPath + " -> ACCESS DENIED for '" + username
+                            + "' on [" + key + "]='" + slugValue
+                            + "', redirecting to " + accessRedirect);
+                        app.Context.Response.Redirect(accessRedirect, false);
+                        app.Context.ApplicationInstance.CompleteRequest();
+                        return;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -167,8 +186,8 @@ namespace DnnDev.Routing
 
         private static void Log(string msg)
         {
-            if (!EnableLogging) return;
             #pragma warning disable CS0162
+            if (!EnableLogging) return;
             try
             {
                 var logFile = System.IO.Path.Combine(
@@ -193,13 +212,22 @@ namespace DnnDev.Routing
             if (segments.Length == 0)
                 return;
 
+            Log(path + " -> BEGIN routing (" + segments.Length + " segment(s): "
+                + string.Join("/", segments) + ")");
+
             // 1. Skip physical/virtual system directories (no DNN tab for these)
             if (Constants.SystemPrefixes.Contains(segments[0]))
+            {
+                Log(path + " -> skipped (system prefix '" + segments[0] + "')");
                 return;
+            }
 
             // 1b. Skip DNN control URLs (e.g. /page/ctl/Edit/mid/418)
             if (segments.Any(s => s.Equals("ctl", StringComparison.OrdinalIgnoreCase)))
+            {
+                Log(path + " -> skipped (ctl URL)");
                 return;
+            }
 
             // 2. Resolve portal
             int portalId = ResolvePortalId(request);
@@ -257,60 +285,46 @@ namespace DnnDev.Routing
                 //     DNN would silently show the parent page — force a 404 instead.
                 var firstRootPage = allTabs.FirstOrDefault(t =>
                     t.ParentId == -1 && !t.IsDeleted
-                    && !Constants.TemplatePages.ContainsKey(t.TabName)
+                    && !Constants.IsDynamic(t.TabName)
                     && t.TabName.Equals(segments[0], StringComparison.OrdinalIgnoreCase));
                 if (firstRootPage != null)
                 {
                     Log(path + " -> first segment '" + segments[0]
                         + "' is a real page but remaining segments unresolved, rewriting to 404");
-                    var errorPage = allTabs.FirstOrDefault(t =>
-                        !t.IsDeleted && t.TabName.Equals("404 Error Page", StringComparison.OrdinalIgnoreCase));
-                    if (errorPage != null)
-                    {
-                        app.Context.Items[Constants.ItemRouteActive] = true;
-                        app.Context.RewritePath("/" + errorPage.TabName);
-                        app.Context.Response.StatusCode = 404;
-                    }
+                    RewriteTo404(app, allTabs);
                     return;
                 }
             }
 
-            // 4c. Standalone template pages (e.g. /dashboard).
-            //     These are single-segment-only routes defined in TemplatePages values.
-            //     If the first segment matches a standalone page, allow only exact match;
-            //     extra segments after it → 404.
-            //     Since standalone pages are children of a template page in the DNN tree,
-            //     we must rewrite the URL to the template parent path.
-            foreach (var kvp in Constants.TemplatePages)
+            // 4c. Standalone pages: first segment matches a child of a dynamic root page.
+            //     e.g. /dashboard exists under [community] in DNN, so rewrite
+            //     /dashboard → /[community]/dashboard.
+            //     Auto-detected from the page tree — no static config needed.
+            var dynamicRoots = allTabs
+                .Where(t => t.ParentId == -1 && !t.IsDeleted && Constants.IsDynamic(t.TabName))
+                .ToList();
+            foreach (var dynRoot in dynamicRoots)
             {
-                foreach (var standalone in kvp.Value)
+                var childMatch = allTabs.FirstOrDefault(t =>
+                    t.ParentId == dynRoot.TabID && !t.IsDeleted
+                    && t.TabName.Equals(segments[0], StringComparison.OrdinalIgnoreCase));
+                if (childMatch == null)
+                    continue;
+
+                if (segments.Length == 1)
                 {
-                    if (!segments[0].Equals(standalone, StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    if (segments.Length == 1)
-                    {
-                        // Rewrite /dashboard → /community-slug/dashboard so DNN finds the page
-                        var rewritten = "/" + kvp.Key + "/" + standalone;
-                        Log(path + " -> standalone page '" + standalone + "', rewriting to " + rewritten);
-                        app.Context.Items[Constants.ItemRouteActive] = true;
-                        app.Context.Items[Constants.ItemOriginalPath] = path;
-                        app.Context.RewritePath(rewritten);
-                        return;
-                    }
-
-                    // Extra segments after standalone page → 404
-                    Log(path + " -> standalone page '" + standalone + "' with extra segments, rewriting to 404");
-                    var err404 = allTabs.FirstOrDefault(t =>
-                        !t.IsDeleted && t.TabName.Equals("404 Error Page", StringComparison.OrdinalIgnoreCase));
-                    if (err404 != null)
-                    {
-                        app.Context.Items[Constants.ItemRouteActive] = true;
-                        app.Context.RewritePath("/" + err404.TabName);
-                        app.Context.Response.StatusCode = 404;
-                    }
+                    Log(path + " -> standalone page '" + segments[0] + "' (TabId=" + childMatch.TabID + ")");
+                    app.Context.Items[Constants.ItemRouteActive] = true;
+                    app.Context.Items[Constants.ItemOriginalPath] = path;
+                    app.Context.Items["_DeferredTabId"] = childMatch.TabID;
+                    app.Context.RewritePath("/Default.aspx", "", "TabId=" + childMatch.TabID);
                     return;
                 }
+
+                // Extra segments after standalone page → 404
+                Log(path + " -> standalone page '" + segments[0] + "' with extra segments, rewriting to 404");
+                RewriteTo404(app, allTabs);
+                return;
             }
 
             // 5. Slug routing: walk URL segments against the DNN page tree.
@@ -319,6 +333,7 @@ namespace DnnDev.Routing
             //      b) Template match: a child page in SlugTemplates whose values contain the segment
             //    If neither matches → fall through → DNN 404.
             var resolvedPath = "";
+            var extraPathInfo = ""; // friendly-URL params beyond the last matched tab
             var routeValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             int currentParent = -1; // root (top-level tabs have ParentId == -1)
             bool firstSegmentMatched = false;
@@ -330,10 +345,10 @@ namespace DnnDev.Routing
                     .Where(t => t.ParentId == currentParent && !t.IsDeleted)
                     .ToList();
 
-                // a) Literal match — non-template child page
+                // a) Literal match — non-dynamic child page
                 var literalMatch = children.FirstOrDefault(t =>
                     t.TabName.Equals(segment, StringComparison.OrdinalIgnoreCase)
-                    && !Constants.TemplatePages.ContainsKey(t.TabName));
+                    && !Constants.IsDynamic(t.TabName));
 
                 if (literalMatch != null)
                 {
@@ -343,50 +358,84 @@ namespace DnnDev.Routing
                     continue;
                 }
 
-                // b) Template match — accept ANY value for the first template child found
-                var templateChild = children.FirstOrDefault(t => Constants.TemplatePages.ContainsKey(t.TabName));
-                if (templateChild != null)
+                // b) Dynamic match — accept ANY value for the first [param] child found
+                var dynamicChild = children.FirstOrDefault(t => Constants.IsDynamic(t.TabName));
+                if (dynamicChild != null)
                 {
-                    resolvedPath += "/" + templateChild.TabName;
-                    routeValues[templateChild.TabName] = segment;
-                    currentParent = templateChild.TabID;
+                    var dynParamName = Constants.ParamName(dynamicChild.TabName);
+
+                    // If the URL value equals the param name itself (e.g. "community"
+                    // for [community]), the user typed the template name as a URL.
+                    // Flag it for PostAuth — we can't redirect here because we don't
+                    // have auth info yet.
+                    if (segment.Equals(dynParamName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        app.Context.Items["_ResolveParamName"] = dynParamName;
+                        Log(path + " seg[" + segIndex + "] '" + segment
+                            + "' equals param name '" + dynParamName
+                            + "', deferring to PostAuth");
+                        return;
+                    }
+
+                    // For the FIRST segment, validate immediately.
+                    // If the slug doesn't exist in the DB, this URL isn't a
+                    // slug route at all (e.g. /dashboard, /something-random).
+                    // Return and let DNN handle it (404 or whatever it does).
+                    if (segIndex == 0)
+                    {
+                        var repo = Constants.Segments.Get(dynParamName);
+                        if (repo != null && !repo.IsValidSlug(segment))
+                        {
+                            Log(path + " seg[0] '" + segment
+                                + "' is not a valid " + dynParamName
+                                + " slug, not a route — letting DNN handle it");
+                            return;
+                        }
+                    }
+
+                    resolvedPath += "/" + dynamicChild.TabName;
+                    routeValues[dynParamName] = segment;
+                    currentParent = dynamicChild.TabID;
                     if (segIndex == 0) firstSegmentMatched = true;
                     Log(path + " seg[" + segIndex + "] '" + segment
-                        + "' -> template '" + templateChild.TabName + "'");
+                        + "' -> dynamic '" + dynamicChild.TabName + "'");
                     continue;
                 }
 
-                // c) No match — if we already matched a template, treat the
+                // c) No match — if we already matched a dynamic segment, treat the
                 //    remaining segments as DNN friendly-URL parameters
-                //    (e.g. /author/Daniel%20Metter after /community-slug/timeline).
+                //    (e.g. /author/Daniel%20Metter after /[community]/timeline).
                 if (firstSegmentMatched)
                 {
                     for (int r = segIndex; r < segments.Length; r++)
+                    {
                         resolvedPath += "/" + segments[r];
+                        extraPathInfo += "/" + segments[r];
+                    }
                     Log(path + " seg[" + segIndex + "] '" + segment
                         + "' -> no child page, appending remaining as friendly-URL params");
                     break;
                 }
 
-                // No template matched yet → not a slug URL
+                // No dynamic segment matched yet → not a slug URL
                 Log(path + " seg[" + segIndex + "] '" + segment + "' -> no match, returning");
                 return;
             }
 
-            // The first segment MUST match a template (otherwise it's not a slug URL)
+            // The first segment MUST match a dynamic segment (otherwise it's not a slug URL)
             if (!firstSegmentMatched)
                 return;
 
             // 5b. Validate captured slug values against the database.
-            //     Each template page can have a registered validator in SlugValidators.
+            //     Each dynamic segment can have a registered validator in SlugValidators.
             //     If validation fails, redirect to the previous page or fallback.
             foreach (var kvp in routeValues)
             {
-                Func<string, bool> validator;
-                if (!SlugValidators.TryGetValue(kvp.Key, out validator))
-                    continue; // No validator registered — accept any value
+                var repo = Constants.Segments.Get(kvp.Key);
+                if (repo == null)
+                    continue; // No repository registered — accept any value
 
-                if (!validator(kvp.Value))
+                if (!repo.IsValidSlug(kvp.Value))
                 {
                     Log(path + " -> " + kvp.Key + " value '" + kvp.Value + "' not found in DB, redirecting back");
                     var referer = request.Headers["Referer"];
@@ -397,30 +446,29 @@ namespace DnnDev.Routing
                 }
             }
 
-            // 6. Store all route values in HttpContext.Items keyed by template name
+            // 6. Store all route values in HttpContext.Items keyed by param name
             foreach (var kvp in routeValues)
                 app.Context.Items[kvp.Key] = kvp.Value;
 
-            // Store the list of matched template keys so Razor can discover them
+            // Store the list of matched param keys so Razor can discover them
             app.Context.Items[Constants.ItemRouteKeys] = routeValues.Keys.ToArray();
             app.Context.Items[Constants.ItemRouteActive] = true;
 
-            // Backward-compat: RouteSlug / RouteTemplate = first template matched
-            if (routeValues.Count > 0)
-            {
-                var first = routeValues.First();
-                app.Context.Items[Constants.ItemRouteSlug] = first.Value;
-                app.Context.Items[Constants.ItemRouteTemplate] = first.Key;
-            }
-
-            Log(path + " -> REWRITE " + resolvedPath + " values=["
+            Log(path + " -> REWRITE /Default.aspx?TabId=" + currentParent
+                + " (" + resolvedPath + ") values=["
                 + string.Join(", ", routeValues.Select(kv => kv.Key + "=" + kv.Value))
                 + "]");
 
             // Store the original path so skin partials can read the real URL
             app.Context.Items[Constants.ItemOriginalPath] = path;
 
-            app.Context.RewritePath(resolvedPath);
+            // Rewrite to DNN's internal format. DNN's UrlRewrite (next in the
+            // pipeline) will resolve this and may 301-redirect because the
+            // canonical friendly URL doesn't match the browser's URL.
+            // RouteConfigFix (registered after UrlRewrite) intercepts the 301.
+            app.Context.Items["_DeferredTabId"] = currentParent;
+            app.Context.Items["_DeferredExtraPath"] = extraPathInfo;
+            app.Context.RewritePath("/Default.aspx", extraPathInfo, "TabId=" + currentParent);
         }
 
         /// <summary>
@@ -451,6 +499,19 @@ namespace DnnDev.Routing
             }
 
             return 0; // fallback to default portal
+        }
+
+        /// <summary>Rewrite to the site's 404 error page (if one exists).</summary>
+        private static void RewriteTo404(HttpApplication app, IList<TabInfo> allTabs)
+        {
+            var errorPage = allTabs.FirstOrDefault(t =>
+                !t.IsDeleted && t.TabName.Equals(Constants.Page404, StringComparison.OrdinalIgnoreCase));
+            if (errorPage != null)
+            {
+                app.Context.Items[Constants.ItemRouteActive] = true;
+                app.Context.RewritePath("/" + errorPage.TabName);
+                app.Context.Response.StatusCode = 404;
+            }
         }
 
         public void Dispose() { }

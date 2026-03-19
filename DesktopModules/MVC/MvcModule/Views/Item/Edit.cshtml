@@ -16,28 +16,109 @@
             </div>
 
             <div class="dnnFormItem">
-                <div><label for="SqlSelect">SQL Select</label></div>
-                @Html.TextAreaFor(m => m.SqlSelect, new { rows = 4, placeholder = "SELECT * FROM MyTable", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                <div><label for="Mode">Data Source</label></div>
+                <select name="Mode" id="modeSelect" style="padding:4px 8px;">
+                    <option value="sql" @(Model.Mode != "api" ? "selected" : "")>SQL</option>
+                    <option value="api" @(Model.Mode == "api" ? "selected" : "")>API</option>
+                </select>
             </div>
 
-            <div class="dnnFormItem">
-                <div><label for="SqlInsert">SQL Insert</label></div>
-                @Html.TextAreaFor(m => m.SqlInsert, new { rows = 3, placeholder = "INSERT INTO MyTable (Col1, Col2) VALUES (@@Col1, @@Col2)", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+            <!-- SQL Fields -->
+            <div id="sqlFields" style="@(Model.Mode == "api" ? "display:none;" : "")">
+                <div class="dnnFormItem">
+                    <div><label for="QuerySelect">Query Select</label></div>
+                    @Html.TextAreaFor(m => m.QuerySelect, new { rows = 4, placeholder = "SELECT * FROM MyTable", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+
+                <div class="dnnFormItem">
+                    <div><label for="QueryInsert">Query Insert</label></div>
+                    @Html.TextAreaFor(m => m.QueryInsert, new { rows = 3, placeholder = "INSERT INTO MyTable (Col1, Col2) VALUES (@@Col1, @@Col2)", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+
+                <div class="dnnFormItem">
+                    <div><label for="QueryUpdate">Query Update</label></div>
+                    @Html.TextAreaFor(m => m.QueryUpdate, new { rows = 3, placeholder = "UPDATE MyTable SET Col1=@@Col1 WHERE Id=@@pk", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+
+                <div class="dnnFormItem">
+                    <div><label for="QueryDelete">Query Delete</label></div>
+                    @Html.TextAreaFor(m => m.QueryDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id=@@pk", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
+
+                <div class="dnnFormItem">
+                    <div><label for="QueryBulkDelete">Query Bulk Delete</label></div>
+                    @Html.TextAreaFor(m => m.QueryBulkDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id IN ({ids})", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
             </div>
 
-            <div class="dnnFormItem">
-                <div><label for="SqlUpdate">SQL Update</label></div>
-                @Html.TextAreaFor(m => m.SqlUpdate, new { rows = 3, placeholder = "UPDATE MyTable SET Col1=@@Col1 WHERE Id=@@pk", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
-            </div>
+            <!-- API Fields -->
+            <div id="apiFields" style="@(Model.Mode != "api" ? "display:none;" : "")">
+                <div class="dnnFormItem">
+                    <div><label for="ApiBaseUrl">API Base URL</label></div>
+                    @Html.TextBoxFor(m => m.ApiBaseUrl, new { placeholder = "https://api.example.com", style = "width:100%;max-width:600px;" })
+                </div>
 
-            <div class="dnnFormItem">
-                <div><label for="SqlDelete">SQL Delete</label></div>
-                @Html.TextAreaFor(m => m.SqlDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id=@@pk", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
-            </div>
+                <div class="dnnFormItem">
+                    <div><label for="ApiHeaders">Headers <small style="font-weight:normal;color:#888;">(one per line: Key: Value)</small></label></div>
+                    @Html.TextAreaFor(m => m.ApiHeaders, new { rows = 3, placeholder = "Authorization: Bearer YOUR_TOKEN\nContent-Type: application/json", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                </div>
 
-            <div class="dnnFormItem">
-                <div><label for="SqlBulkDelete">SQL Bulk Delete</label></div>
-                @Html.TextAreaFor(m => m.SqlBulkDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id IN ({ids})", style = "width:100%;max-width:600px;font-family:monospace;font-size:13px;" })
+                <div class="dnnFormItem" style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div><label for="ApiSelectMethod">Select Method</label></div>
+                        <select name="ApiSelectMethod" style="padding:4px 8px;">
+                            <option value="GET" @(Model.ApiSelectMethod == "GET" ? "selected" : "")>GET</option>
+                            <option value="POST" @(Model.ApiSelectMethod == "POST" ? "selected" : "")>POST</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <div><label for="ApiSelectPath">Select Path</label></div>
+                        @Html.TextBoxFor(m => m.ApiSelectPath, new { placeholder = "/items", style = "width:100%;max-width:400px;" })
+                    </div>
+                </div>
+
+                <div class="dnnFormItem" style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div><label for="ApiInsertMethod">Insert Method</label></div>
+                        <select name="ApiInsertMethod" style="padding:4px 8px;">
+                            <option value="POST" @(Model.ApiInsertMethod == "POST" ? "selected" : "")>POST</option>
+                            <option value="PUT" @(Model.ApiInsertMethod == "PUT" ? "selected" : "")>PUT</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <div><label for="ApiInsertPath">Insert Path</label></div>
+                        @Html.TextBoxFor(m => m.ApiInsertPath, new { placeholder = "/items", style = "width:100%;max-width:400px;" })
+                    </div>
+                </div>
+
+                <div class="dnnFormItem" style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div><label for="ApiUpdateMethod">Update Method</label></div>
+                        <select name="ApiUpdateMethod" style="padding:4px 8px;">
+                            <option value="PUT" @(Model.ApiUpdateMethod == "PUT" ? "selected" : "")>PUT</option>
+                            <option value="PATCH" @(Model.ApiUpdateMethod == "PATCH" ? "selected" : "")>PATCH</option>
+                            <option value="POST" @(Model.ApiUpdateMethod == "POST" ? "selected" : "")>POST</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <div><label for="ApiUpdatePath">Update Path <small style="font-weight:normal;color:#888;">({pk} = primary key)</small></label></div>
+                        @Html.TextBoxFor(m => m.ApiUpdatePath, new { placeholder = "/items/{pk}", style = "width:100%;max-width:400px;" })
+                    </div>
+                </div>
+
+                <div class="dnnFormItem" style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div><label for="ApiDeleteMethod">Delete Method</label></div>
+                        <select name="ApiDeleteMethod" style="padding:4px 8px;">
+                            <option value="DELETE" @(Model.ApiDeleteMethod == "DELETE" ? "selected" : "")>DELETE</option>
+                            <option value="POST" @(Model.ApiDeleteMethod == "POST" ? "selected" : "")>POST</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <div><label for="ApiDeletePath">Delete Path <small style="font-weight:normal;color:#888;">({pk} = primary key)</small></label></div>
+                        @Html.TextBoxFor(m => m.ApiDeletePath, new { placeholder = "/items/{pk}", style = "width:100%;max-width:400px;" })
+                    </div>
+                </div>
             </div>
 
             <div class="dnnFormItem">
@@ -62,7 +143,7 @@
             </div>
 
             <h2 id="dnnSitePanel-Columns" class="dnnFormSectionHead dnnClear" style="margin-top:20px;">
-                <a href="#" class="dnnSectionExpanded">Columns <small style="font-weight:normal;color:#888;">(leave empty to auto-detect from SQL)</small></a>
+                <a href="#" class="dnnSectionExpanded">Columns <small style="font-weight:normal;color:#888;">(leave empty to auto-detect)</small></a>
             </h2>
             <fieldset>
                 <div id="columnsContainer">
@@ -71,7 +152,7 @@
                         foreach (var col in Model.Columns)
                         {
                             <div class="column-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-                                <input type="text" class="col-key" value="@col.Key" placeholder="Column Key (SQL name)" style="width:160px;padding:4px 8px;" />
+                                <input type="text" class="col-key" value="@col.Key" placeholder="Column Key" style="width:160px;padding:4px 8px;" />
                                 <input type="text" class="col-label" value="@col.Label" placeholder="Display Label" style="width:160px;padding:4px 8px;" />
                                 <select class="col-type" style="padding:4px 8px;">
                                     <option value="text" @(col.Type == "text" ? "selected" : "")>Text</option>
@@ -101,13 +182,26 @@
 <script type="text/javascript">
     (function ($, Sys) {
         var container = document.getElementById('columnsContainer');
+        var modeSelect = document.getElementById('modeSelect');
+        var sqlFields = document.getElementById('sqlFields');
+        var apiFields = document.getElementById('apiFields');
+
+        modeSelect.addEventListener('change', function () {
+            if (this.value === 'api') {
+                sqlFields.style.display = 'none';
+                apiFields.style.display = '';
+            } else {
+                sqlFields.style.display = '';
+                apiFields.style.display = 'none';
+            }
+        });
 
         function createColumnRow(key, label, type) {
             var row = document.createElement('div');
             row.className = 'column-row';
             row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
             row.innerHTML =
-                '<input type="text" class="col-key" value="' + escHtml(key || '') + '" placeholder="Column Key (SQL name)" style="width:160px;padding:4px 8px;" />' +
+                '<input type="text" class="col-key" value="' + escHtml(key || '') + '" placeholder="Column Key" style="width:160px;padding:4px 8px;" />' +
                 '<input type="text" class="col-label" value="' + escHtml(label || '') + '" placeholder="Display Label" style="width:160px;padding:4px 8px;" />' +
                 '<select class="col-type" style="padding:4px 8px;">' +
                 '<option value="text"' + (type === 'text' ? ' selected' : '') + '>Text</option>' +
@@ -162,10 +256,14 @@
         }
 
         $(function () {
-            $('#cancelEdit').click(function () {
-                if (typeof dnnModal !== 'undefined') {
+            $('#cancelEdit').click(function (e) {
+                e.preventDefault();
+                if (typeof dnnModal !== 'undefined' && dnnModal.closePopUp) {
                     dnnModal.closePopUp(false);
+                } else {
+                    window.history.back();
                 }
+                return false;
             });
             initEditSettings();
             Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {

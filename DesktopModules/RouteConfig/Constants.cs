@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DnnDev.Routing.Data;
 
 namespace DnnDev.Routing
 {
@@ -12,22 +13,23 @@ namespace DnnDev.Routing
         public const string ItemOriginalPath = "RouteOriginalPath";
         public const string ItemRouteKeys = "RouteKeys";
         public const string ItemRouteActive = "RouteActive";
-        public const string ItemRouteSlug = "RouteSlug";
-        public const string ItemRouteTemplate = "RouteTemplate";
         public const string ItemDzpContext = "DzpContext";
 
         /// <summary>Internal key used by RouteConfig to save the raw path before DNN rewrites.</summary>
         internal const string ItemRawOriginalPath = "_OriginalPath";
 
-        // ── Template page names ──────────────────────────────────────────
-        // DNN pages whose name is in this set act as slug templates.
-        // Value = standalone pages that resolve as single-segment routes only.
-        public static readonly Dictionary<string, string[]> TemplatePages =
-            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "community-slug", new[] { "dashboard" } },
-                { "company-slug", Array.Empty<string>() },
-            };
+        // ── Dynamic segments (Next.js convention) ────────────────────────
+        // DNN pages named [param] are dynamic route segments.
+        // No explicit registration needed — brackets are self-identifying.
+
+        /// <summary>True if the page name is a dynamic segment, e.g. "[community]".</summary>
+        public static bool IsDynamic(string pageName) =>
+            pageName != null && pageName.Length > 2
+            && pageName[0] == '[' && pageName[pageName.Length - 1] == ']';
+
+        /// <summary>Extracts the param name: "[community]" → "community".</summary>
+        public static string ParamName(string pageName) =>
+            pageName.Substring(1, pageName.Length - 2);
 
         // ── System URL prefixes ─────────────────────────────────────────
         // Physical/virtual directories and DNN internals that have no DNN tab.
@@ -41,7 +43,7 @@ namespace DnnDev.Routing
                 "bin", "app_data", "config",
 
                 // DNN system pages (no editable tab, handled by DNN internals)
-                "logoff", "login", "logon", "register",
+                "logoff", "login", "logon", "register", "admin",
                 "default", "keepalive", "error",
             };
 
@@ -52,10 +54,50 @@ namespace DnnDev.Routing
                 "Registered Users", "Subscribers", "All Users", "Unverified Users"
             };
 
+        // ── Well-known dynamic segment names ──────────────────────────────
+        // Each constant maps to a DNN page named [param].
+        // Add new entries here when new dynamic pages are created.
+        // The Repository property links the segment to its ISegment.
+        public static class Segments
+        {
+            public const string Community = "community";
+            // public const string Company = "company";
+
+            /// <summary>
+            /// Registry of all dynamic segments and their repositories.
+            /// Keyed by param name (case-insensitive). RouteConfig iterates this
+            /// for validation, template resolution, and access checking at any page depth.
+            ///
+            /// To add a new segment:
+            ///   1. Add a const above (e.g. Company = "company")
+            ///   2. Create a class implementing ISegment
+            ///   3. Add an entry here: [Company] = CompanyRepository.Instance
+            /// </summary>
+            public static readonly Dictionary<string, ISegment> Registry =
+                new Dictionary<string, ISegment>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [Community] = Data.Community.Instance,
+                    // [Company] = Data.Company.Instance,
+                };
+
+            /// <summary>Look up the repository for a param name. Returns null if unregistered.</summary>
+            public static ISegment Get(string paramName)
+            {
+                ISegment repo;
+                return Registry.TryGetValue(paramName, out repo) ? repo : null;
+            }
+        }
+
+        // ── Well-known page names ──────────────────────────────────────────
+        public const string PageHome         = "home";
+        public const string PageDashboard    = "dashboard";
+        public const string PageSettings     = "settings";
+        public const string Page404          = "404 Error Page";
+
         // ── Defaults ─────────────────────────────────────────────────────
         public const string DefaultRoleLabel = "Lid";
-        public const string FallbackHomeUrl = "/home";
-        public const string DashboardUrl = "/dashboard";
+        public const string FallbackHomeUrl  = "/" + PageHome;
+        public const string DashboardUrl     = "/" + PageDashboard;
         public const string ConnectionStringName = "SiteSqlServer";
     }
 }
