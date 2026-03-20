@@ -1,2 +1,0 @@
-System.register([],(function(n){"use strict";return{execute:function(){n("D",t);function t(n){if(n===void 0){n=500}return function(t,r,e){var i=e.value;var u;e.value=function(){var t=this;var r=[];for(var e=0;e<arguments.length;e++){r[e]=arguments[e]}clearTimeout(u);return new Promise((function(e){u=setTimeout((function(){e(i.apply(t,r))}),n)}))}}}}}}));
-//# sourceMappingURL=p-Bb3LSJ_X.system.js.map
