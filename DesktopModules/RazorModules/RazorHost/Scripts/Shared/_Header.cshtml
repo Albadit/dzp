@@ -2,12 +2,17 @@
 @{
     var isLoggedIn = HttpContext.Current.Request.IsAuthenticated;
 
-    var hdr = DnnDev.Routing.Models.DzpContext.Current;
-    var communitySlug = hdr.CommunitySlug;
+    // Derive community slug from URL segments
+    var segs = HttpContext.Current.Request.Url.AbsolutePath
+        .Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    var isOnDash = segs.Length > 0 && segs[0].Equals("dashboard", StringComparison.OrdinalIgnoreCase);
+    var isOnSettings = segs.Length > 0 && segs[0].Equals("settings", StringComparison.OrdinalIgnoreCase);
+    var communitySlug = (segs.Length >= 2 && !isOnDash && !isOnSettings
+        && !segs[0].Equals("administrator", StringComparison.OrdinalIgnoreCase)) ? segs[0] : "";
 
     var dashboardUrl = !string.IsNullOrEmpty(communitySlug)
         ? "/" + communitySlug + "/home"
-        : (hdr.ShowDashboardLink ? "/dashboard" : "/");
+        : "/dashboard";
     var logo = new { Href = "/", Label = "DZP Connect" };
     var cta  = isLoggedIn
         ? new { Href = dashboardUrl,  Label = "Dashboard" }

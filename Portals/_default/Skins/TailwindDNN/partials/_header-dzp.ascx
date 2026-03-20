@@ -1,19 +1,48 @@
 <%
-    // ── All state is precomputed in DzpContext (one instance per request) ──
-    var hdr = DnnDev.Routing.Models.DzpContext.Current;
+    // ── Derive all state from URL segments + DNN APIs ──
+    var _ps   = DotNetNuke.Entities.Portals.PortalSettings.Current;
+    var _user = _ps != null ? _ps.UserInfo : null;
+    var _req  = HttpContext.Current.Request;
+    var _path = _req.RawUrl.Split('?')[0];
+    var _segs = _path.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    var _auth = _req.IsAuthenticated;
 
-    // User popup menu links
-    var settingsUrl  = "/" + DnnDev.Routing.Constants.PageSettings;
-    var dashboardUrl = DnnDev.Routing.Constants.DashboardUrl;
+    var _isOnDashboard = _segs.Length > 0 && _segs[0].Equals("dashboard", StringComparison.OrdinalIgnoreCase);
+    var _isOnSettings  = _segs.Length > 0 && _segs[0].Equals("settings",  StringComparison.OrdinalIgnoreCase);
+    var _communitySlug = (_segs.Length >= 2 && !_isOnDashboard && !_isOnSettings
+                          && !_segs[0].Equals("administrator", StringComparison.OrdinalIgnoreCase))
+                         ? _segs[0] : "";
+    var _communityLink = !string.IsNullOrEmpty(_communitySlug) ? "/" + _communitySlug + "/home" : "/dashboard";
+    var _communityName = "";
+    if (!string.IsNullOrEmpty(_communitySlug)) {
+        try {
+            var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
+            using (var conn = new System.Data.SqlClient.SqlConnection(connStr))
+            using (var cmd  = new System.Data.SqlClient.SqlCommand("SELECT Name FROM Community WHERE Slug = @slug", conn)) {
+                cmd.Parameters.AddWithValue("@slug", _communitySlug);
+                conn.Open();
+                var result = cmd.ExecuteScalar();
+                if (result != null) _communityName = result.ToString();
+            }
+        } catch { }
+    }
+    var _logoUrl       = (_ps != null && !string.IsNullOrEmpty(_ps.LogoFile)) ? _ps.HomeDirectory + _ps.LogoFile : "";
+    var _profileImg    = (_user != null && _user.UserID > 0)
+                         ? "/DnnImageHandler.ashx?mode=profilepic&userId=" + _user.UserID + "&h=64&w=64" : "";
+    var _displayName   = _user != null ? (_user.DisplayName ?? "") : "";
+    var _email         = _user != null ? (_user.Email ?? "") : "";
 
-    var hdrPopupLinks = hdr.IsOnDashboard
+    var settingsUrl  = "/settings";
+    var dashboardUrl = "/dashboard";
+
+    var hdrPopupLinks = _isOnDashboard
         ? new[] {
             new { Href = settingsUrl + "/profile",      Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
             new { Href = settingsUrl,                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
             new { Href = "/Logoff.aspx",                Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
         }
         : new[] {
-            new { Href = hdr.CommunityLink,             Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
+            new { Href = _communityLink,                Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
             new { Href = settingsUrl + "/profile",      Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
             new { Href = settingsUrl,                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
             new { Href = "/Logoff.aspx",                Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
@@ -27,18 +56,18 @@
             <i data-lucide="menu" class="size-5"></i>
         </button>
         <!-- Logo -->
-        <a href="<%= hdr.SiteUrl %>" class="lg:block hidden self-stretch">
-            <img src="<%= hdr.LogoUrl %>" alt="<%= hdr.Portal.PortalName %>" class="h-full"/>
+        <a href="/" class="lg:block hidden self-stretch">
+            <img src="<%= _logoUrl %>" alt="<%= _ps != null ? _ps.PortalName : "" %>" class="h-full"/>
         </a>
     </div>
     <div class="w-full flex justify-between">
-        <div class="flex gap-2.5 <%= string.IsNullOrEmpty(hdr.CommunityName) ? "invisible" : "" %>">
+        <div class="flex gap-2.5 <%= string.IsNullOrEmpty(_communityName) ? "invisible" : "" %>">
             <div class="sm:flex hidden h-full aspect-square object-cover rounded-xs bg-gray-200 justify-center items-center font-bold">Logo</div>
             <div class="lg:w-80 w-45 flex flex-col lg:justify-between justify-center">
-                <span class="lg:text-base text-sm font-bold w-full text-ellipsis overflow-hidden whitespace-nowrap"><%= hdr.CommunityName %></span>
+                <span class="lg:text-base text-sm font-bold w-full text-ellipsis overflow-hidden whitespace-nowrap"><%= _communityName %></span>
                 <div class="flex gap-2 items-center">
                     <i data-lucide="coffee" class="size-3 shrink-0"></i>
-                    <span class="lg:text-base w-full text-xs text-ellipsis overflow-hidden whitespace-nowrap"><%= hdr.UserRole %></span>
+                    <span class="lg:text-base w-full text-xs text-ellipsis overflow-hidden whitespace-nowrap"></span>
                 </div>
             </div>
         </div>
@@ -46,10 +75,10 @@
             <i data-lucide="bell" class="lg:block hidden size-5.5 shrink-0"></i>
             <i data-lucide="search" class="lg:block hidden size-5.5 shrink-0"></i>
             <div id="user-menu-trigger" class="flex gap-2.5 items-center self-stretch relative cursor-pointer">
-                <img src="<%= hdr.ProfileImageUrl %>" alt="<%= hdr.UserDisplayName %>" class="h-full shrink-0 aspect-square object-cover rounded-full">
+                <img src="<%= _profileImg %>" alt="<%= _displayName %>" class="h-full shrink-0 aspect-square object-cover rounded-full">
                 <div class="lg:flex hidden flex-col max-w-32 leading-none">
-                    <span class="w-full font-bold text-ellipsis overflow-hidden whitespace-nowrap"><%= hdr.UserDisplayName %></span>
-                    <span class="w-full text-sm text-ellipsis overflow-hidden whitespace-nowrap"><%= hdr.UserEmail %></span>
+                    <span class="w-full font-bold text-ellipsis overflow-hidden whitespace-nowrap"><%= _displayName %></span>
+                    <span class="w-full text-sm text-ellipsis overflow-hidden whitespace-nowrap"><%= _email %></span>
                 </div>
 
                 <!-- User Popup -->

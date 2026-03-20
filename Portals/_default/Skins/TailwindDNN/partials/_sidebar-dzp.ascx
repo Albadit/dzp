@@ -234,29 +234,47 @@
 </script>
 
 <%
-    var sb = DnnDev.Routing.Models.DzpContext.Current;
+    // ── Derive all state from URL segments + DNN APIs ──
+    var _sbPs   = DotNetNuke.Entities.Portals.PortalSettings.Current;
+    var _sbUser = _sbPs != null ? _sbPs.UserInfo : null;
+    var _sbReq  = HttpContext.Current.Request;
+    var _sbPath = _sbReq.RawUrl.Split('?')[0];
+    var _sbSegs = _sbPath.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    var _sbAuth = _sbReq.IsAuthenticated;
+
+    var _sbIsOnDash     = _sbSegs.Length > 0 && _sbSegs[0].Equals("dashboard",     StringComparison.OrdinalIgnoreCase);
+    var _sbIsOnSettings = _sbSegs.Length > 0 && _sbSegs[0].Equals("settings",      StringComparison.OrdinalIgnoreCase);
+    var _sbIsOnAdmin    = _sbSegs.Length > 0 && _sbSegs[0].Equals("administrator", StringComparison.OrdinalIgnoreCase);
+    var _sbHasCommunity = _sbSegs.Length >= 2 && !_sbIsOnDash && !_sbIsOnSettings && !_sbIsOnAdmin;
+    var _sbSlug         = _sbHasCommunity ? _sbSegs[0] : "";
+    var _sbCommunityName = "";
+    if (!string.IsNullOrEmpty(_sbSlug)) {
+        try {
+            var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
+            using (var conn = new System.Data.SqlClient.SqlConnection(connStr))
+            using (var cmd  = new System.Data.SqlClient.SqlCommand("SELECT Name FROM Community WHERE Slug = @slug", conn)) {
+                cmd.Parameters.AddWithValue("@slug", _sbSlug);
+                conn.Open();
+                var result = cmd.ExecuteScalar();
+                if (result != null) _sbCommunityName = result.ToString();
+                else _sbHasCommunity = false;
+            }
+        } catch { _sbHasCommunity = false; }
+    }
+    var _sbLogoUrl      = (_sbPs != null && !string.IsNullOrEmpty(_sbPs.LogoFile)) ? _sbPs.HomeDirectory + _sbPs.LogoFile : "";
 
     // Extract template placeholders from NavSections + current URL segments
-    var placeholders = ExtractPlaceholders(sb.Segments);
-
-    // Merge route values from DzpContext (set by RouteConfig)
-    foreach (var kv in sb.Placeholders)
-    {
-        if (!placeholders.ContainsKey(kv.Key))
-            placeholders[kv.Key] = kv.Value;
-    }
+    var placeholders = ExtractPlaceholders(_sbSegs);
 
     // Build nav with active-state + permission checks
-    var navGroups = BuildNavGroups(placeholders, sb.CurrentPath, sb.Portal.PortalId, sb.User);
+    var navGroups = BuildNavGroups(placeholders, _sbPath, _sbPs.PortalId, _sbUser);
 
-    // Determine logo link (use resolved slug from route values)
-    var communityKey = "[" + DnnDev.Routing.Constants.Segments.Community + "]";
-    var sbSlug = placeholders.ContainsKey(communityKey) ? placeholders[communityKey] : null;
-    var sbLogoUrl = !string.IsNullOrEmpty(sbSlug)
-        ? "/" + sbSlug + "/" + DnnDev.Routing.Constants.PageHome
-        : (sb.IsOnCommunityPage
-            ? "/" + sb.Segments[0] + "/" + DnnDev.Routing.Constants.PageHome
-            : DnnDev.Routing.Constants.FallbackHomeUrl);
+    // Determine logo link: community home if slug present, otherwise /dashboard
+    var communityKey = "[community]";
+    var resolvedSlug = placeholders.ContainsKey(communityKey) ? placeholders[communityKey] : _sbSlug;
+    var sbLogoUrl = !string.IsNullOrEmpty(resolvedSlug)
+        ? "/" + resolvedSlug + "/home"
+        : "/dashboard";
 %>
 
 <!-- Overlay for mobile -->
@@ -268,7 +286,7 @@
     <!-- Header (mobile only) -->
     <div class="h-17.5 flex items-center justify-between px-4 py-3 border-b border-gray-200 lg:hidden shrink-0">
         <a href="<%= sbLogoUrl %>" class="self-stretch">
-            <img src="<%= sb.LogoUrl %>" alt="<%= sb.Portal.PortalName %>" class="h-full"/>
+            <img src="<%= _sbLogoUrl %>" alt="<%= _sbPs != null ? _sbPs.PortalName : "" %>" class="h-full"/>
         </a>
         <button type="button" id="sidebar-close" class="p-1 rounded-md hover:bg-gray-100 transition-colors" aria-label="Close sidebar">
             <i data-lucide="x" class="size-5 text-gray-500"></i>
@@ -277,11 +295,11 @@
 
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto px-3 py-4">
-        <% if (sb.ShowDashboardLink && !sb.IsOnSettings) { %>
+        <% if (_sbAuth && !_sbIsOnSettings) { %>
         <div class="mb-6">
             <ul class="space-y-1">
                 <li>
-                    <a href="<%= DnnDev.Routing.Constants.DashboardUrl %>" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors <%= sb.IsOnDashboard ? "bg-primary-50 text-primary-700 font-semibold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900" %>">
+                    <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors <%= _sbIsOnDash ? "bg-primary-50 text-primary-700 font-semibold" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900" %>">
                         <i data-lucide="layout-dashboard" class="size-5 shrink-0"></i>
                         <span>Dashboard</span>
                     </a>
@@ -289,7 +307,7 @@
             </ul>
         </div>
         <% } %>
-        <% if (!sb.IsOnCommunityRoot && !sb.IsOnDashboard) { %>
+        <% if ((_sbHasCommunity || _sbIsOnSettings) && !_sbIsOnDash) { %>
         <% foreach (var group in navGroups) { %>
         <div class="mb-6">
             <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400"><%= group.Title %></h3>
