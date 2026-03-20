@@ -1,0 +1,118 @@
+﻿@using System.Web
+@{
+    var isLoggedIn = HttpContext.Current.Request.IsAuthenticated;
+
+    var hdr = DnnDev.Routing.Models.DzpContext.Current;
+    var communitySlug = hdr.CommunitySlug;
+
+    var dashboardUrl = !string.IsNullOrEmpty(communitySlug)
+        ? "/" + communitySlug + "/home"
+        : (hdr.ShowDashboardLink ? "/dashboard" : "/");
+    var logo = new { Href = "/", Label = "DZP Connect" };
+    var cta  = isLoggedIn
+        ? new { Href = dashboardUrl,  Label = "Dashboard" }
+        : new { Href = "/signin",     Label = "Login" };
+
+    var navItems = new[] {
+        new { Href = "#product",           Label = "Product" },
+        new { Href = "#voor-wie",          Label = "Voor wie" },
+        new { Href = "#functionaliteiten", Label = "Functionaliteiten" },
+        new { Href = "#privacy",           Label = "Beveiliging & Privacy" },
+        new { Href = "#pakketten",         Label = "Pakketten" },
+        new { Href = "#contact",           Label = "Contact" },
+    };
+}
+
+<style>
+    /* Mobile menu slide animation */
+    #dzp-mobile-menu {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+        opacity: 0;
+        padding-bottom: 0;
+    }
+    #dzp-mobile-menu.open {
+        max-height: 500px;
+        opacity: 1;
+        padding-bottom: 1rem;
+    }
+    /* Hamburger → X animation */
+    .dzp-hamburger span {
+        display: block;
+        width: 1.25rem;
+        height: 2px;
+        background: currentColor;
+        border-radius: 1px;
+        transition: transform 0.3s ease, opacity 0.2s ease;
+    }
+    .dzp-hamburger.active span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+    }
+    .dzp-hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+    .dzp-hamburger.active span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+    }
+</style>
+
+<script>
+    function dzpToggleMenu() {
+        var menu = document.getElementById('dzp-mobile-menu');
+        var btn = document.getElementById('dzp-hamburger-btn');
+        menu.classList.toggle('open');
+        btn.classList.toggle('active');
+    }
+    function dzpCloseMenu() {
+        var menu = document.getElementById('dzp-mobile-menu');
+        var btn = document.getElementById('dzp-hamburger-btn');
+        menu.classList.remove('open');
+        btn.classList.remove('active');
+    }
+</script>
+
+<!-- DZP Connect Header -->
+<header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <!-- Logo -->
+            <a href="@logo.Href" class="flex items-center space-x-2">
+                <i data-lucide="users" class="size-8 shrink-0 text-indigo-600"></i>
+                <span class="text-xl font-bold text-gray-900">@logo.Label</span>
+            </a>
+
+            <!-- Desktop nav -->
+            <nav class="hidden lg:flex items-center space-x-8 text-sm font-medium text-gray-600">
+                @foreach (var item in navItems) {
+                    <a href="@item.Href" class="hover:text-indigo-600 transition">@item.Label</a>
+                }
+            </nav>
+
+            <!-- CTA + Hamburger -->
+            <div class="flex items-center space-x-4">
+                <a href="@cta.Href"
+                   class="hidden lg:inline-flex items-center px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition shadow">
+                    @cta.Label
+                </a>
+                <button type="button" id="dzp-hamburger-btn"
+                        class="dzp-hamburger lg:hidden flex flex-col justify-center items-center gap-[5px] p-2 text-gray-600 hover:text-indigo-600 cursor-pointer"
+                        onclick="dzpToggleMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile menu -->
+        <div id="dzp-mobile-menu" class="space-y-2">
+            @foreach (var item in navItems) {
+                <a href="@item.Href" class="block px-3 py-2 rounded text-gray-700 hover:bg-indigo-50"
+                   onclick="dzpCloseMenu()">@item.Label</a>
+            }
+            <a href="@cta.Href" class="block px-3 py-2 rounded bg-indigo-600 text-white text-center font-semibold"
+               onclick="dzpCloseMenu()">@cta.Label</a>
+        </div>
+    </div>
+</header>

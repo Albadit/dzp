@@ -1,0 +1,98 @@
+@using System.Configuration
+@using System.Data.SqlClient
+@using System.Web
+
+@{
+    var communities = new List<dynamic>();
+    var user = Dnn.User;
+
+    if (user != null && user.UserID > 0)
+    {
+        var connStr = ConfigurationManager.ConnectionStrings["SiteSqlServer"]?.ConnectionString;
+        if (!string.IsNullOrEmpty(connStr))
+        {
+            using (var conn = new SqlConnection(connStr))
+            {
+                conn.Open();
+                using (var cmd = conn.CreateCommand())
+                {
+                    if (user.IsSuperUser)
+                    {
+                        cmd.CommandText = "SELECT CommunityId, Slug, Name FROM Community ORDER BY Name";
+                    }
+                    else
+                    {
+                        cmd.CommandText = @"
+                            SELECT c.CommunityId, c.Slug, c.Name
+                            FROM Community c
+                            INNER JOIN UserCommunity uc ON c.CommunityId = uc.CommunityId
+                            WHERE uc.UserId = @userId
+                            ORDER BY c.Name";
+                        cmd.Parameters.AddWithValue("@userId", user.UserID);
+                    }
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            communities.Add(new {
+                                Id   = (int)reader["CommunityId"],
+                                Slug = reader["Slug"] as string,
+                                Name = reader["Name"] as string
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+<section class="w-full py-12 flex flex-col">
+    <div class="px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Mijn communities</h1>
+        <p class="text-gray-500 mb-8">
+            @if (user != null && user.IsSuperUser)
+            {
+                <span>Je ziet alle communities (superuser).</span>
+            }
+            else
+            {
+                <span>Communities waar je lid van bent.</span>
+            }
+        </p>
+
+        @if (communities.Count == 0)
+        {
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-4">
+                <p class="text-sm text-yellow-800">Je bent nog niet gekoppeld aan een community.</p>
+            </div>
+        }
+        else
+        {
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach (var c in communities)
+                {
+                    <a href="/@c.Slug/home"
+                       class="group block rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition">
+                        <div class="flex items-center gap-4">
+                            <div class="flex size-12 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 font-bold text-lg shrink-0">
+                                @(((string)c.Name).Substring(0, 1).ToUpper())
+                            </div>
+                            <div class="min-w-0">
+                                <h2 class="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition truncate">
+                                    @c.Name
+                                </h2>
+                                <p class="text-sm text-gray-400 font-mono truncate">/@c.Slug</p>
+                            </div>
+                            <i data-lucide="chevron-right" class="size-5 text-gray-300 group-hover:text-indigo-400 ml-auto shrink-0 transition"></i>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+
+

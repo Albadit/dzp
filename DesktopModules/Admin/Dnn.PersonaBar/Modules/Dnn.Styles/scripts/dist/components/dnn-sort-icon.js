@@ -1,0 +1,62 @@
+import { proxyCustomElement, HTMLElement, createEvent, h, Host } from '@stencil/core/internal/client';
+
+const dnnSortIconCss = ":host{--color:#888;--color-sorted:var(--dnn-color-primary, rgb(2,139,255));--color-hover:var(--dnn-color-primary-light, #36a1ff);display:inline-block}button{cursor:pointer;outline:none;border:none;margin:0;padding:0;background-color:transparent;outline:none;display:inline-block;line-height:1em;position:relative;top:0.25em}button svg{height:1.5em;width:auto;fill:var(--color)}button.active svg{fill:var(--color-sorted)}button:hover svg,button:focus-visible svg{fill:var(--color-hover)}";
+
+const DnnSortIcon$1 = /*@__PURE__*/ proxyCustomElement(class DnnSortIcon extends HTMLElement {
+    constructor(registerHost) {
+        super();
+        if (registerHost !== false) {
+            this.__registerHost();
+        }
+        this.__attachShadow();
+        this.sortChanged = createEvent(this, "sortChanged", 7);
+        /** Defines the current sort direction */
+        this.sortDirection = "none";
+        this.focused = false;
+    }
+    changeSort() {
+        switch (this.sortDirection) {
+            case "asc":
+                this.sortDirection = "desc";
+                break;
+            case "desc":
+                this.sortDirection = "asc";
+                break;
+            case "none":
+                this.sortDirection = "asc";
+                break;
+        }
+        this.sortChanged.emit(this.sortDirection);
+    }
+    render() {
+        return (h(Host, { key: '65ef040e304f6a5296b8e97e365348aba01e05fd', tabIndex: this.focused ? -1 : 0, onFocus: () => this.button.focus(), onBlur: () => this.button.blur() }, h("button", { key: 'a69d64e0d6229b6365f3a739f2091bcc03846ece', ref: el => this.button = el, class: { "active": this.sortDirection != "none" }, onClick: () => this.changeSort(), onFocus: () => this.focused = true, onBlur: () => this.focused = false }, this.sortDirection == "none" &&
+            h("svg", { key: 'c4f728e89eb6d7a4a4cf24a7546aff15f0190b89', xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 12 16" }, h("path", { key: '2dd7f732cdff8a657ae4bc1440e3fb559750d7fc', d: "M 0 7 H 12 L 6 0 Z M 0 9 H 12 L 6 16 Z" })), this.sortDirection == "asc" &&
+            h("svg", { key: 'f1858da394bac3453ff97bc63a4d4f50c6d6f62a', xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 12 16" }, h("path", { key: '8e0b8442dfc610cfb1d966cd03ee35386f6507b5', d: "M 0 7 H 12 L 6 0 Z" })), this.sortDirection == "desc" &&
+            h("svg", { key: 'bea8e991559951ff15374120af5429c7c661d7aa', xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 12 16" }, h("path", { key: '42e2146d8fc9579ac95b02d2268142f8a4f87a8e', d: "M 0 9 H 12 L 6 16 Z" })))));
+    }
+    static get style() { return dnnSortIconCss; }
+}, [257, "dnn-sort-icon", {
+        "sortDirection": [1025, "sort-direction"],
+        "focused": [32]
+    }]);
+function defineCustomElement$1() {
+    if (typeof customElements === "undefined") {
+        return;
+    }
+    const components = ["dnn-sort-icon"];
+    components.forEach(tagName => { switch (tagName) {
+        case "dnn-sort-icon":
+            if (!customElements.get(tagName)) {
+                customElements.define(tagName, DnnSortIcon$1);
+            }
+            break;
+    } });
+}
+
+const DnnSortIcon = DnnSortIcon$1;
+const defineCustomElement = defineCustomElement$1;
+
+export { DnnSortIcon, defineCustomElement };
+//# sourceMappingURL=dnn-sort-icon.js.map
+
+//# sourceMappingURL=dnn-sort-icon.js.map

@@ -1,0 +1,114 @@
+-- MVC Module Install Script v01.00.00
+-- Uses {databaseOwner} and {objectQualifier} tokens for DNN compatibility.
+
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}AdvancedTable_Items]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE {databaseOwner}[{objectQualifier}AdvancedTable_Items] (
+        ItemId              INT IDENTITY(1,1)   NOT NULL,
+        ModuleId            INT                 NOT NULL,
+        Title               NVARCHAR(256)       NOT NULL,
+        Description         NVARCHAR(MAX)       NULL,
+        CreatedByUserId     INT                 NOT NULL,
+        CreatedOnDate       DATETIME            NOT NULL DEFAULT GETDATE(),
+        LastModifiedByUserId INT                NULL,
+        LastModifiedOnDate  DATETIME            NULL,
+        CONSTRAINT PK_{objectQualifier}AdvancedTable_Items PRIMARY KEY (ItemId)
+    )
+END
+GO
+
+-- GetItems
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}AdvancedTable_GetItems]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_GetItems]
+GO
+
+CREATE PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_GetItems]
+    @ModuleId INT
+AS
+BEGIN
+    SELECT ItemId, ModuleId, Title, [Description],
+           CreatedByUserId, CreatedOnDate,
+           LastModifiedByUserId, LastModifiedOnDate
+    FROM {databaseOwner}[{objectQualifier}AdvancedTable_Items]
+    WHERE ModuleId = @ModuleId
+    ORDER BY CreatedOnDate DESC
+END
+GO
+
+-- GetItem
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}AdvancedTable_GetItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_GetItem]
+GO
+
+CREATE PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_GetItem]
+    @ItemId   INT,
+    @ModuleId INT
+AS
+BEGIN
+    SELECT ItemId, ModuleId, Title, [Description],
+           CreatedByUserId, CreatedOnDate,
+           LastModifiedByUserId, LastModifiedOnDate
+    FROM {databaseOwner}[{objectQualifier}AdvancedTable_Items]
+    WHERE ItemId = @ItemId AND ModuleId = @ModuleId
+END
+GO
+
+-- AddItem
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}AdvancedTable_AddItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_AddItem]
+GO
+
+CREATE PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_AddItem]
+    @ModuleId        INT,
+    @Title           NVARCHAR(256),
+    @Description     NVARCHAR(MAX),
+    @CreatedByUserId INT,
+    @CreatedOnDate   DATETIME
+AS
+BEGIN
+    INSERT INTO {databaseOwner}[{objectQualifier}AdvancedTable_Items]
+        (ModuleId, Title, [Description], CreatedByUserId, CreatedOnDate)
+    VALUES
+        (@ModuleId, @Title, @Description, @CreatedByUserId, @CreatedOnDate)
+
+    SELECT SCOPE_IDENTITY()
+END
+GO
+
+-- UpdateItem
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}AdvancedTable_UpdateItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_UpdateItem]
+GO
+
+CREATE PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_UpdateItem]
+    @ItemId                 INT,
+    @ModuleId               INT,
+    @Title                  NVARCHAR(256),
+    @Description            NVARCHAR(MAX),
+    @LastModifiedByUserId   INT,
+    @LastModifiedOnDate     DATETIME
+AS
+BEGIN
+    UPDATE {databaseOwner}[{objectQualifier}AdvancedTable_Items]
+    SET Title                  = @Title,
+        [Description]          = @Description,
+        LastModifiedByUserId   = @LastModifiedByUserId,
+        LastModifiedOnDate     = @LastModifiedOnDate
+    WHERE ItemId = @ItemId AND ModuleId = @ModuleId
+END
+GO
+
+-- DeleteItem
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}AdvancedTable_DeleteItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_DeleteItem]
+GO
+
+CREATE PROCEDURE {databaseOwner}[{objectQualifier}AdvancedTable_DeleteItem]
+    @ItemId   INT,
+    @ModuleId INT
+AS
+BEGIN
+    DELETE FROM {databaseOwner}[{objectQualifier}AdvancedTable_Items]
+    WHERE ItemId = @ItemId AND ModuleId = @ModuleId
+END
+GO

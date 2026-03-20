@@ -1,0 +1,10 @@
+{
+  "tailwindCSS.includeLanguages": {
+    "aspnetcorerazor": "html",
+    "razor": "html",
+    "cshtml": "html",
+    "html": "html",
+    "xml": "html"
+  },
+  "tailwindCSS.emmetCompletions": true
+}

@@ -1,0 +1,45 @@
+@using System.Web
+
+@{
+    var isRouted  = HttpContext.Current.Items["RouteActive"] != null;
+    var rawUrl    = HttpContext.Current.Request.Url.AbsolutePath;
+    var routeKeys = HttpContext.Current.Items["RouteKeys"] as string[];
+}
+
+<div class="w-full max-w-md flex flex-col">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Route Info</h2>
+
+    @if (isRouted && routeKeys != null)
+    {
+        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+            <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+                <p class="text-sm text-gray-500">URL: <span class="font-mono text-gray-800">@rawUrl</span></p>
+            </div>
+            <ul class="divide-y divide-gray-100">
+                @foreach (var key in routeKeys)
+                {
+                    var val = HttpContext.Current.Items[key] as string;
+                    if (!string.IsNullOrEmpty(val))
+                    {
+                        <li class="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
+                            <span class="text-sm font-mono text-gray-500">[@key]</span>
+                            <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">@val</span>
+                        </li>
+                    }
+                }
+                <li class="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
+                    <span class="text-sm font-medium text-gray-500">Tab</span>
+                    <span class="text-sm text-gray-700">@Dnn.Tab.TabName <span class="text-gray-400">(#@Dnn.Tab.TabID)</span></span>
+                </li>
+            </ul>
+        </div>
+    }
+    else
+    {
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-4">
+            <p class="text-sm text-yellow-800">This page was <strong>not</strong> loaded via slug routing.</p>
+            <p class="text-sm text-yellow-600 mt-1 font-mono">@rawUrl</p>
+        </div>
+    }
+</div>
+

@@ -1,0 +1,424 @@
+@inherits Custom.Hybrid.RazorTyped
+@using System.Configuration
+@using System.Data.SqlClient
+@using System.Text.RegularExpressions
+@using DnnDev.Routing.Models
+
+@functions {
+  static string SafeId(string raw) {
+    return Regex.Replace(raw ?? "", @"[^a-zA-Z0-9_-]", "");
+  }
+
+  static string ConnStr() {
+    return ConfigurationManager.ConnectionStrings["SiteSqlServer"]?.ConnectionString ?? "";
+  }
+}
+
+@{
+  // ── Config ────────────────────────────────────────────────────
+  var cfg = new DataTableConfig
+  {
+    TableId     = "dt-communities",
+    Title       = "Communities",
+    AllowCreate   = true,
+    AllowEdit     = true,
+    AllowDelete   = true,
+    AllowBulkDelete = true,
+    SqlSelect     = "SELECT * FROM Community ORDER BY CommunityID",
+    SqlInsert     = "INSERT INTO Community (Name, Slug) VALUES (@Name, @Slug)",
+    SqlUpdate     = "UPDATE Community SET Name = @Name, Slug = @Slug WHERE CommunityID = @pk",
+    SqlDelete     = "DELETE FROM Community WHERE CommunityID = @pk",
+    SqlBulkDelete = "DELETE FROM Community WHERE CommunityID IN ({ids})",
+  };
+
+  var tid = SafeId(cfg.TableId);
+  var connStr = ConnStr();
+  var errorMsg = "";
+  var successMsg = "";
+  var rows = new List<Dictionary<string, object>>();
+
+  // ── Discover columns from query ───────────────────────────────
+  if (!string.IsNullOrEmpty(connStr)) {
+    try {
+      using (var conn = new SqlConnection(connStr)) {
+        conn.Open();
+        using (var cmd = conn.CreateCommand()) {
+          cmd.CommandText = cfg.SqlSelect;
+          using (var reader = cmd.ExecuteReader(System.Data.CommandBehavior.SchemaOnly)) {
+            var colNames = Enumerable.Range(0, reader.FieldCount).Select(i => reader.GetName(i)).ToList();
+            cfg.PrimaryKey = colNames.First();
+            cfg.Columns = colNames.Select(c => new DataTableColumn {
+              Key = c, Label = c,
+              Type = c == cfg.PrimaryKey ? "readonly" : "text"
+            }).ToArray();
+          }
+        }
+      }
+    } catch (Exception ex) {
+      errorMsg = "Failed to discover columns: " + ex.Message;
+    }
+  }
+
+  var editableColumns = (cfg.Columns ?? new DataTableColumn[0]).Where(c => c.Type != "readonly" && c.Type != "hidden").ToArray();
+  var visibleColumns  = (cfg.Columns ?? new DataTableColumn[0]).Where(c => c.Type != "hidden").ToArray();
+
+  // ── POST actions ──────────────────────────────────────────────
+  var httpCtx = System.Web.HttpContext.Current;
+  var isPost = httpCtx != null && httpCtx.Request.HttpMethod == "POST";
+
+  if (isPost && httpCtx.Request["_dt_id"] == tid) {
+    var action = httpCtx.Request["_dt_action"] ?? "";
+    try {
+      using (var conn = new SqlConnection(connStr)) {
+        conn.Open();
+
+        if (action == "create") {
+          var cmd = conn.CreateCommand();
+          foreach (var col in editableColumns) {
+            var val = (httpCtx.Request["_dt_new_" + col.Key] ?? "").Trim();
+            if (col.Required && string.IsNullOrEmpty(val)) {
+              errorMsg = col.Label + " is required.";
+              break;
+            }
+            cmd.Parameters.AddWithValue("@" + col.Key, (object)val ?? DBNull.Value);
+          }
+          if (string.IsNullOrEmpty(errorMsg)) {
+            cmd.CommandText = cfg.SqlInsert;
+            cmd.ExecuteNonQuery();
+            successMsg = "Row created.";
+          }
+        }
+        else if (action == "update") {
+          var pkVal = httpCtx.Request["_dt_edit_pk"] ?? "";
+          if (!string.IsNullOrEmpty(pkVal)) {
+            var cmd = conn.CreateCommand();
+            foreach (var col in editableColumns) {
+              var val = (httpCtx.Request["_dt_edit_" + col.Key] ?? "").Trim();
+              if (col.Required && string.IsNullOrEmpty(val)) {
+                errorMsg = col.Label + " is required.";
+                break;
+              }
+              cmd.Parameters.AddWithValue("@" + col.Key, (object)val ?? DBNull.Value);
+            }
+            if (string.IsNullOrEmpty(errorMsg)) {
+              cmd.Parameters.AddWithValue("@pk", pkVal);
+              cmd.CommandText = cfg.SqlUpdate;
+              cmd.ExecuteNonQuery();
+              successMsg = "Row updated.";
+            }
+          }
+        }
+        else if (action == "delete") {
+          var pkVal = httpCtx.Request["_dt_del_pk"] ?? "";
+          if (!string.IsNullOrEmpty(pkVal)) {
+            var cmd = conn.CreateCommand();
+            cmd.Parameters.AddWithValue("@pk", pkVal);
+            cmd.CommandText = cfg.SqlDelete;
+            cmd.ExecuteNonQuery();
+            successMsg = "Row deleted.";
+          }
+        }
+        else if (action == "bulkdelete") {
+          var ids = (httpCtx.Request["_dt_bulk_ids"] ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+          if (ids.Length > 0) {
+            var cmd = conn.CreateCommand();
+            var placeholders = new List<string>();
+            for (int i = 0; i < ids.Length; i++) {
+              placeholders.Add("@id" + i);
+              cmd.Parameters.AddWithValue("@id" + i, ids[i].Trim());
+            }
+            cmd.CommandText = cfg.SqlBulkDelete.Replace("{ids}", string.Join(",", placeholders));
+            var count = cmd.ExecuteNonQuery();
+            successMsg = count + " row(s) deleted.";
+          }
+        }
+      }
+    } catch (SqlException ex) {
+      if (ex.Number == 2627 || ex.Number == 2601) {
+        errorMsg = "A record with that value already exists (duplicate key).";
+      } else {
+        errorMsg = "Error: " + ex.Message;
+      }
+    } catch (Exception ex) {
+      errorMsg = "Error: " + ex.Message;
+    }
+  }
+
+  // ── Load data ─────────────────────────────────────────────────
+  try {
+    if (!string.IsNullOrEmpty(connStr)) {
+      using (var conn = new SqlConnection(connStr)) {
+        conn.Open();
+        using (var cmd = conn.CreateCommand()) {
+          cmd.CommandText = cfg.SqlSelect;
+          using (var reader = cmd.ExecuteReader()) {
+            while (reader.Read()) {
+              var row = new Dictionary<string, object>();
+              for (int i = 0; i < reader.FieldCount; i++) {
+                row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+              }
+              rows.Add(row);
+            }
+          }
+        }
+      }
+    } else {
+      errorMsg = "No database connection available.";
+    }
+  } catch (Exception ex) {
+    errorMsg = "Failed to load data: " + ex.Message;
+  }
+
+  var totalRows = rows.Count;
+
+  // Build grid-template-columns: optional checkbox + data columns + optional actions
+  var colParts = new List<string>();
+  if (cfg.AllowBulkDelete) { colParts.Add("2.5rem"); }
+  foreach (var col in visibleColumns) {
+    colParts.Add(col.Type == "readonly" ? "auto" : "1fr");
+  }
+  if (cfg.AllowEdit || cfg.AllowDelete) { colParts.Add("6rem"); }
+  var gridCols = string.Join(" ", colParts);
+}
+
+<div id="@tid" class="w-full max-w-5xl mx-auto flex flex-col gap-4 py-6" data-page-size="10" data-total="@totalRows">
+
+  @if (!string.IsNullOrEmpty(cfg.Title)) {
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-900">@cfg.Title</h2>
+    </div>
+  }
+
+  @{
+    var alertMsg = !string.IsNullOrEmpty(successMsg) ? successMsg : errorMsg;
+    var isSuccess = !string.IsNullOrEmpty(successMsg);
+  }
+  @if (!string.IsNullOrEmpty(alertMsg)) {
+    <div class="fixed bottom-4 right-5 flex items-center gap-2 rounded-lg px-4 py-3 text-sm dt-alert @(isSuccess ? "bg-green-50 border border-green-200 text-green-800" : "bg-red-50 border border-red-200 text-red-800")" @if (isSuccess) { <text>data-auto-dismiss="4000"</text> }>
+      @if (isSuccess) {
+        <i data-lucide="circle-check"></i>  
+      } else {
+        <i data-lucide="circle-x"></i>
+      }
+      @alertMsg
+    </div>
+  }
+
+  <!-- Toolbar -->
+  <div class="flex flex-wrap justify-between items-center gap-3">
+    <div class="relative flex-1 min-w-[200px] max-w-sm">
+      <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none"></i>
+      <input type="text" placeholder="Search…"
+           class="dt-search w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+           data-target="@tid" />
+    </div>
+    <div class="flex gap-2">
+      @if (cfg.AllowBulkDelete) {
+        <button type="button" class="dt-btn-bulk-del hidden items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition" data-target="@tid">
+          <i data-lucide="trash-2" class="size-4"></i>
+          Delete <span class="dt-bulk-count"></span>
+        </button>
+      }
+
+      @if (cfg.AllowCreate) {
+        <button type="button" class="dt-btn-add inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition" data-target="@tid">
+          <i data-lucide="plus" class="size-4"></i>
+          New
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Table (div-based) -->
+  <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div class="dt-table min-w-full text-sm" data-id="@tid" style="display:grid; grid-template-columns: @gridCols;">
+
+      @* ── Header ── *@
+      @if (cfg.AllowBulkDelete) {
+        <div class="bg-gray-50 px-3 py-3 flex items-center">
+          <input type="checkbox" class="dt-check-all size-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-target="@tid" />
+        </div>
+      }
+      @foreach (var col in visibleColumns) {
+        if (col.Sortable) {
+        <div class="bg-gray-50 px-4 py-3 text-left font-semibold text-gray-700 select-none flex items-center cursor-pointer dt-sort"
+          data-col="@col.Key" data-dir="" data-target="@tid">
+          <span class="inline-flex items-center gap-1">
+            @col.Label
+            <span class="inline-flex items-center gap-0.5">
+              <span class="dt-sort-icon-wrap"><i data-lucide="arrow-down-up" class="size-3.5 opacity-40"></i></span>
+              <span class="dt-sort-num text-xs font-bold text-blue-500 hidden"></span>
+            </span>
+          </span>
+        </div>
+        } else {
+        <div class="bg-gray-50 px-4 py-3 text-left font-semibold text-gray-700 select-none flex items-center">
+          <span class="inline-flex items-center gap-1">@col.Label</span>
+        </div>
+        }
+      }
+      @if (cfg.AllowEdit || cfg.AllowDelete) {
+        <div class="bg-gray-50 px-4 py-3 text-right font-semibold text-gray-700 flex items-center justify-end">Actions</div>
+      }
+
+      @* ── Body ── *@
+      <div class="dt-tbody contents">
+        @if (rows.Count == 0 && string.IsNullOrEmpty(errorMsg)) {
+          <div class="dt-row-empty" style="grid-column: 1 / -1;">
+            <div class="px-4 py-12 text-center text-gray-400">
+              <i data-lucide="inbox" class="size-8 mx-auto mb-2 opacity-40"></i>
+              <p>No data found.</p>
+            </div>
+          </div>
+        }
+        @foreach (var row in rows) {
+          var pkVal = row.ContainsKey(cfg.PrimaryKey) ? row[cfg.PrimaryKey]?.ToString() : "";
+          <div class="dt-row contents group" data-pk="@pkVal">
+            @if (cfg.AllowBulkDelete) {
+              <div class="px-3 py-3 border-t border-gray-100 flex items-center group-hover:bg-gray-50/50 transition-colors">
+                <input type="checkbox" class="dt-check-row size-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" value="@pkVal" data-target="@tid" />
+              </div>
+            }
+            @foreach (var col in visibleColumns) {
+              var cellVal = row.ContainsKey(col.Key) ? (row[col.Key]?.ToString() ?? "") : "";
+              <div class="px-4 py-3 border-t border-gray-100 dt-cell flex items-center group-hover:bg-gray-50/50 transition-colors" data-col="@col.Key">
+                @if (col.Type == "url" && !string.IsNullOrEmpty(cellVal)) {
+                  <a href="@cellVal" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline truncate block max-w-[200px]">@cellVal</a>
+                } else {
+                  <span class="dt-cell-text">@cellVal</span>
+                }
+              </div>
+            }
+            @if (cfg.AllowEdit || cfg.AllowDelete) {
+              <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-end group-hover:bg-gray-50/50 transition-colors">
+                <div class="inline-flex items-center gap-1">
+                  @if (cfg.AllowEdit) {
+                    <button type="button" class="dt-btn-edit p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" data-pk="@pkVal" data-target="@tid" title="Edit">
+                      <i data-lucide="square-pen" class="size-4"></i>
+                    </button>
+                  }
+                  @if (cfg.AllowDelete) {
+                    <button type="button" class="dt-btn-del p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition" data-pk="@pkVal" data-target="@tid" title="Delete">
+                      <i data-lucide="trash-2" class="size-4"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="flex flex-wrap items-center justify-end gap-3 text-sm text-gray-600">
+    <span class="dt-row-count inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full">Rows <span class="dt-row-count-num font-semibold text-gray-900"></span></span>
+    <div class="inline-flex items-center gap-1 dt-pagination">
+      <button type="button" class="dt-page-prev p-1.5 rounded-md transition text-gray-600 hover:bg-gray-100 cursor-pointer disabled:text-gray-300 disabled:cursor-not-allowed disabled:hover:bg-transparent" data-target="@tid">
+        <i data-lucide="chevron-left"></i>  
+      </button>
+      <input type="number" min="1" value="1" class="dt-page-input w-14 text-center px-1 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" data-target="@tid" />
+      <span class="dt-page-total text-sm text-gray-500"></span>
+      <button type="button" class="dt-page-next p-1.5 rounded-md transition text-gray-600 hover:bg-gray-100 cursor-pointer disabled:text-gray-300 disabled:cursor-not-allowed disabled:hover:bg-transparent" data-target="@tid">
+        <i data-lucide="chevron-right"></i>  
+      </button>
+    </div>
+    <select class="dt-page-size px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" data-target="@tid">
+      <option value="10">10</option>
+      <option value="25">25</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+    </select>
+  </div>
+
+
+</div>
+
+<!-- Edit modal -->
+<div id="@(tid)-modal" class="dt-modal hidden fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+      <h3 class="font-semibold text-gray-900">Edit row</h3>
+      <button type="button" class="dt-modal-close p-1 rounded-md hover:bg-gray-100 transition text-gray-400 hover:text-gray-600" data-target="@tid">
+        <i data-lucide="x" class="size-5"></i>
+      </button>
+    </div>
+    <div class="px-5 py-4 space-y-4">
+      @foreach (var col in editableColumns) {
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">
+            @col.Label @if (col.Required) { <span class="text-red-500">*</span> }
+          </label>
+          <input type="@(col.Type == "slug" ? "text" : col.Type)"
+               class="dt-modal-input w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+               data-col="@col.Key"
+               @if (col.Required) { <text>required</text> }
+               @if (col.MaxLength.HasValue) { <text>maxlength="@col.MaxLength"</text> }
+               @if (!string.IsNullOrEmpty(col.Pattern)) { <text>pattern="@col.Pattern" title="@(col.PatternMessage ?? "")"</text> } />
+        </div>
+      }
+    </div>
+    <div class="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 bg-gray-50">
+      <button type="button" class="dt-modal-close px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition" data-target="@tid">Cancel</button>
+      <button type="button" class="dt-modal-save px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition" data-target="@tid">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create modal -->
+@if (cfg.AllowCreate) {
+<div id="@(tid)-create-modal" class="dt-create-modal hidden fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+      <h3 class="font-semibold text-gray-900">Add new item</h3>
+      <button type="button" class="dt-create-modal-close p-1 rounded-md hover:bg-gray-100 transition text-gray-400 hover:text-gray-600" data-target="@tid">
+        <i data-lucide="x" class="size-5"></i>
+      </button>
+    </div>
+    <div class="dt-create-form">
+      <div class="px-5 py-4 space-y-4">
+        @foreach (var col in editableColumns) {
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+              @col.Label @if (col.Required) { <span class="text-red-500">*</span> }
+            </label>
+            <input type="@(col.Type == "slug" ? "text" : col.Type)"
+                 data-col="@col.Key"
+                 placeholder="@(col.Placeholder ?? col.Label)"
+                 @if (col.Required) { <text>required</text> }
+                 @if (col.MaxLength.HasValue) { <text>maxlength="@col.MaxLength"</text> }
+                 @if (!string.IsNullOrEmpty(col.Pattern)) { <text>pattern="@col.Pattern" title="@(col.PatternMessage ?? "")"</text> }
+                 class="dt-create-input w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+          </div>
+        }
+      </div>
+      <div class="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 bg-gray-50">
+        <button type="button" class="dt-create-modal-close px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition" data-target="@tid">Cancel</button>
+        <button type="button" class="dt-create-save px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Delete confirm modal -->
+<div id="@(tid)-del-modal" class="dt-del-modal hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+    <div class="px-5 py-6 text-center">
+      <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-red-100 mb-4">
+        <i data-lucide="triangle-alert" class="size-6 text-red-600"></i>
+      </div>
+      <h3 class="font-semibold text-gray-900 mb-1">Are you sure?</h3>
+      <p class="text-sm text-gray-500 dt-del-msg">This item will be permanently deleted.</p>
+    </div>
+    <div class="flex gap-2 px-5 py-4 border-t border-gray-200 bg-gray-50 justify-end">
+      <button type="button" class="dt-del-cancel px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition" data-target="@tid">Cancel</button>
+      <button type="button" class="dt-del-confirm px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition" data-target="@tid">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="@App.Folder.Url/js/datatable.js?v=6"></script>
+<script>initDataTable('@tid')</script>
+<link rel="stylesheet" href="@App.Folder.Url/css/datatable.css?v=1" />

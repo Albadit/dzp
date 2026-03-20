@@ -1,0 +1,489 @@
+/* ==========================================================================
+   Edit.cshtml – module-specific overrides & additions
+   Extends the base .dnnEditBasicSettings design system below.
+   ========================================================================== */
+
+/* ---- API method + path row ---- */
+.dnnEditBasicSettings .edit-method-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex-direction: row !important;
+  align-items: flex-end !important;
+}
+
+.dnnEditBasicSettings .edit-method-row > div:last-child {
+  flex: 1;
+}
+
+/* ---- Section head spacing ---- */
+.dnnEditBasicSettings .edit-section-head {
+  margin-top: 1.25rem;
+}
+
+/* ---- Checkbox label (Allow Create, etc.) ---- */
+.dnnEditBasicSettings .edit-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--default-700);
+}
+
+/* ---- Permission info text ---- */
+.dnnEditBasicSettings .edit-perm-info {
+  margin-bottom: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--default-400);
+}
+
+/* ---- Permission Row ---- */
+.dnnEditBasicSettings .perm-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.375rem 0;
+  flex-wrap: wrap;
+}
+
+/* Permission type & name selects */
+.dnnEditBasicSettings .perm-type {
+  width: 6.5rem;
+  flex: 0 0 auto;
+}
+
+.dnnEditBasicSettings .perm-name {
+  width: 13rem;
+  flex: 0 0 auto;
+}
+
+/* Permission checkbox labels */
+.dnnEditBasicSettings .perm-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--default-700);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Remove buttons (permission rows) */
+.dnnEditBasicSettings .perm-row .remove-perm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--default-400);
+  background: transparent;
+  border: 1px solid var(--default-200);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.dnnEditBasicSettings .perm-row .remove-perm:hover {
+  color: #dc2626;
+  border-color: #fca5a5;
+  background-color: #fef2f2;
+}
+
+/* ---- Add Permission Button ---- */
+.dnnEditBasicSettings #addPermission {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--primary-600);
+  background: transparent;
+  border: 1px dashed var(--primary-300);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  margin-top: 0.5rem;
+}
+
+.dnnEditBasicSettings #addPermission:hover {
+  background-color: var(--primary-50);
+  border-color: var(--primary-500);
+}
+
+/* ---- Action bar ---- */
+.dnnEditBasicSettings + .edit-actions {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--default-200);
+  margin-top: 1.25rem;
+}
+
+/* ==========================================================================
+   DNN Edit Basic Settings (Module Config Forms)
+   Clean card-based layout for .dnnEditBasicSettings configuration panels.
+   ========================================================================== */
+
+/* ---- Form Container ---- */
+.dnnEditBasicSettings {
+  max-width: 44rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ---- Expand All Link ---- */
+.dnnEditBasicSettings .dnnFormExpandContent {
+  text-align: right;
+  margin-bottom: 0.25rem;
+}
+
+.dnnEditBasicSettings .dnnFormExpandContent a {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--primary-600);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.dnnEditBasicSettings .dnnFormExpandContent a:hover {
+  color: var(--primary-700);
+  text-decoration: underline;
+}
+
+/* ---- Section Headings (Accordion Panels) ---- */
+.dnnEditBasicSettings h2.dnnFormSectionHead {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--default-200);
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: normal;
+}
+
+.dnnEditBasicSettings h2.dnnFormSectionHead a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--default-800);
+  text-decoration: none;
+  background: none !important;
+  transition: color 0.15s ease;
+}
+
+.dnnEditBasicSettings h2.dnnFormSectionHead a::before {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--default-400);
+  border-bottom: 2px solid var(--default-400);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.dnnEditBasicSettings h2.dnnFormSectionHead a.dnnSectionExpanded::before {
+  transform: rotate(-135deg);
+}
+
+.dnnEditBasicSettings h2.dnnFormSectionHead a:hover {
+  color: var(--primary-600);
+  background: none !important;
+}
+
+.dnnEditBasicSettings h2.dnnFormSectionHead a small {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--default-400);
+}
+
+/* ---- Fieldset ---- */
+.dnnEditBasicSettings fieldset {
+  border: none;
+  margin: 0;
+  padding: 0.75rem 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ---- Form Items ---- */
+.dnnEditBasicSettings .dnnFormItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+/* ---- Labels ---- */
+.dnnEditBasicSettings .dnnFormItem > div > label,
+.dnnEditBasicSettings .dnnFormItem label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--default-700);
+}
+
+.dnnEditBasicSettings .dnnFormItem label small {
+  font-weight: 400;
+  color: var(--default-400);
+}
+
+/* ---- Text Inputs ---- */
+.dnnEditBasicSettings input[type="text"],
+.dnnEditBasicSettings input[type="email"],
+.dnnEditBasicSettings input[type="url"],
+.dnnEditBasicSettings input[type="number"] {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--default-900);
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+
+.dnnEditBasicSettings input[type="text"]:focus,
+.dnnEditBasicSettings input[type="email"]:focus,
+.dnnEditBasicSettings input[type="url"]:focus,
+.dnnEditBasicSettings input[type="number"]:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
+}
+
+/* ---- Select ---- */
+.dnnEditBasicSettings select {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--default-900);
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+  cursor: pointer;
+}
+
+.dnnEditBasicSettings select:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
+}
+
+/* ---- Textarea ---- */
+.dnnEditBasicSettings textarea {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.6;
+  color: var(--default-900);
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+  resize: vertical;
+  min-height: 2.75rem;
+}
+
+.dnnEditBasicSettings textarea:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
+}
+
+.dnnEditBasicSettings textarea::placeholder {
+  color: var(--default-400);
+}
+
+/* ---- Checkboxes ---- */
+.dnnEditBasicSettings input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: static !important;
+  z-index: auto !important;
+  opacity: 1 !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  margin: 0 !important;
+  cursor: pointer;
+  background-color: white;
+  border: 1px solid var(--default-300);
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dnnEditBasicSettings input[type="checkbox"]:checked {
+  background-color: var(--primary-600);
+  border-color: var(--primary-600);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Hide DNN's fake checkbox */
+.dnnEditBasicSettings .dnnCheckbox {
+  display: none !important;
+}
+
+.dnnEditBasicSettings .dnnBoxLabel {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--default-700);
+  cursor: pointer;
+}
+
+/* ---- Column Row (dynamic column editor) ---- */
+.dnnEditBasicSettings .column-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.375rem 0;
+}
+
+.dnnEditBasicSettings .column-row input[type="text"] {
+  width: auto !important;
+  max-width: none !important;
+  flex: 0 0 auto;
+}
+
+.dnnEditBasicSettings .column-row select {
+  flex: 0 0 auto;
+}
+
+.dnnEditBasicSettings .column-row .remove-col {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--default-400);
+  background: transparent;
+  border: 1px solid var(--default-200);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.dnnEditBasicSettings .column-row .remove-col:hover {
+  color: #dc2626;
+  border-color: #fca5a5;
+  background-color: #fef2f2;
+}
+
+/* ---- Inline Flex Rows (API method+path pairs) ---- */
+.dnnEditBasicSettings .dnnFormItem[style*="display:flex"],
+.dnnEditBasicSettings .dnnFormItem[style*="display: flex"] {
+  flex-direction: row !important;
+  align-items: flex-end !important;
+  gap: 0.75rem !important;
+  flex-wrap: wrap !important;
+}
+
+/* ---- Primary Action (Save Button) ---- */
+.dnnEditBasicSettings ~ div .dnnPrimaryAction,
+#EditConfig .dnnPrimaryAction,
+.dnnEditBasicSettings + div .dnnPrimaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  background-color: var(--primary-600);
+  border: none;
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+}
+
+.dnnEditBasicSettings ~ div .dnnPrimaryAction:hover,
+#EditConfig .dnnPrimaryAction:hover,
+.dnnEditBasicSettings + div .dnnPrimaryAction:hover {
+  background-color: var(--primary-700);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  color: white;
+}
+
+/* ---- Secondary Action (Cancel Link) ---- */
+.dnnEditBasicSettings ~ div .dnnSecondaryAction,
+#EditConfig .dnnSecondaryAction,
+.dnnEditBasicSettings + div .dnnSecondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--default-600);
+  background-color: transparent;
+  border: 1px solid var(--default-300);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  text-decoration: none;
+}
+
+.dnnEditBasicSettings ~ div .dnnSecondaryAction:hover,
+#EditConfig .dnnSecondaryAction:hover,
+.dnnEditBasicSettings + div .dnnSecondaryAction:hover {
+  background-color: var(--default-50);
+  border-color: var(--default-400);
+  color: var(--default-700);
+  text-decoration: none;
+}
+
+/* ---- Action Button Row ---- */
+.dnnEditBasicSettings ~ div,
+.dnnEditBasicSettings + div {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--default-200);
+  margin-top: 1.25rem;
+}
+
+/* ---- Add Column Button ---- */
+.dnnEditBasicSettings #addColumn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--primary-600);
+  background: transparent;
+  border: 1px dashed var(--primary-300);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dnnEditBasicSettings #addColumn:hover {
+  background-color: var(--primary-50);
+  border-color: var(--primary-500);
+}
