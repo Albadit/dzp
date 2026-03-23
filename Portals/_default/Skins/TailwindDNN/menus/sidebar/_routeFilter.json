@@ -1,0 +1,57 @@
+[
+  {
+    "label": null,
+    "page": ["dashboard"],
+    "icons": { "dashboard": "layout-dashboard" },
+    "level": 0,
+    "context": "!settings"
+  },
+  {
+    "label": "Community",
+    "page": ["[community]/home", "[community]/timeline", "[community]/discover"],
+    "icons": {
+      "[community]/home": "home",
+      "[community]/timeline": "message-square-text",
+      "[community]/discover": "library-big"
+    },
+    "level": 0,
+    "context": "community"
+  },
+  {
+    "label": "Management",
+    "page": [
+      "[community]/manage/users",
+      "[community]/manage/company",
+      "[community]/manage/managers",
+      "[community]/manage/groups",
+      "[community]/manage/newsletter"
+    ],
+    "icons": {
+      "[community]/manage/users": "users",
+      "[community]/manage/company": "building-2",
+      "[community]/manage/managers": "handshake",
+      "[community]/manage/groups": "component",
+      "[community]/manage/newsletter": "newspaper"
+    },
+    "level": 0,
+    "context": "community"
+  },
+  {
+    "label": "Admin",
+    "page": ["administrator/communities"],
+    "icons": { "administrator/communities": "plus-circle" },
+    "level": 0,
+    "context": "admin"
+  },
+  {
+    "label": "Instellingen",
+    "page": ["settings/profile", "settings/password", "settings/notifications"],
+    "icons": {
+      "settings/profile": "user",
+      "settings/password": "key-round",
+      "settings/notifications": "bell"
+    },
+    "level": 0,
+    "context": "settings"
+  }
+]

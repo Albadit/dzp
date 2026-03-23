@@ -43,25 +43,23 @@
         }
     }
     var _logoUrl       = (_ps != null && !string.IsNullOrEmpty(_ps.LogoFile)) ? _ps.HomeDirectory + _ps.LogoFile : "";
-    var _profileImg    = (_user != null && _user.UserID > 0)
-                         ? "/DnnImageHandler.ashx?mode=profilepic&userId=" + _user.UserID + "&h=64&w=64" : "";
+    var _profileImg    = (_user != null && _user.UserID > 0) ? "/DnnImageHandler.ashx?mode=profilepic&userId=" + _user.UserID + "&h=64&w=64" : "";
     var _displayName   = _user != null ? (_user.DisplayName ?? "") : "";
     var _email         = _user != null ? (_user.Email ?? "") : "";
 
     var settingsUrl  = "/settings";
-    var dashboardUrl = "/dashboard";
 
     var hdrPopupLinks = _isOnDashboard
         ? new[] {
-            new { Href = settingsUrl + "/profile",      Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
-            new { Href = settingsUrl,                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
-            new { Href = "/Logoff.aspx",                Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
+            new { Href = settingsUrl + "/profile",  Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
+            new { Href = settingsUrl,               Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
+            new { Href = "/Logoff",                 Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
         }
         : new[] {
-            new { Href = _communityLink,                Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
-            new { Href = settingsUrl + "/profile",      Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
-            new { Href = settingsUrl,                   Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
-            new { Href = "/Logoff.aspx",                Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
+            new { Href = _communityLink,            Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
+            new { Href = settingsUrl + "/profile",  Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
+            new { Href = settingsUrl,               Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
+            new { Href = "/Logoff",                 Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
         };
 %>
 

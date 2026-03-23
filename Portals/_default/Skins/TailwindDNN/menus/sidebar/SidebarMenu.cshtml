@@ -1,0 +1,120 @@
+@using DotNetNuke.Web.DDRMenu
+@inherits DotNetNuke.Web.Razor.DotNetNukeWebPage<dynamic>
+
+@helper RenderItem(dynamic node, string slug, string currentPath) {
+    string href = (string)node.Url;
+    if (!string.IsNullOrEmpty(slug) && href.StartsWith("/community", StringComparison.OrdinalIgnoreCase)) {
+        href = "/" + slug + href.Substring("/community".Length);
+    }
+
+    bool active = currentPath.Equals(href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+    string icon = node.Icon != null ? (string)node.Icon : "";
+    bool hasIcon = icon.Length > 0 && icon.IndexOf('/') < 0 && icon.IndexOf('.') < 0;
+    string cls = active
+        ? "bg-primary-50 text-primary-700 font-semibold"
+        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
+
+    <li>
+        <a href="@href" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors @cls">
+            @if (hasIcon) { <i data-lucide="@icon" class="size-5 shrink-0"></i> }
+            <span>@node.Text</span>
+        </a>
+    </li>
+}
+
+@{
+    var req          = HttpContext.Current.Request;
+    var currentPath  = req.RawUrl.Split('?')[0].TrimEnd('/');
+    var segs         = currentPath.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    var seg0         = segs.Length > 0 ? segs[0] : "";
+
+    var onDash     = seg0.Equals("dashboard",     StringComparison.OrdinalIgnoreCase);
+    var onSettings = seg0.Equals("settings",      StringComparison.OrdinalIgnoreCase);
+    var onAdmin    = seg0.Equals("administrator", StringComparison.OrdinalIgnoreCase);
+
+    var slug         = (segs.Length >= 2 && !onDash && !onSettings && !onAdmin) ? seg0 : "";
+    var hasCommunity = !string.IsNullOrEmpty(slug)
+                       && HttpContext.Current.Items.Contains("dzp:CommunityValid")
+                       && (bool)HttpContext.Current.Items["dzp:CommunityValid"];
+}
+
+@foreach (var root in Model.Source.root.Children)
+{
+    string rootUrl   = ((string)root.Url ?? "").TrimEnd('/');
+    bool isCommunity = rootUrl.StartsWith("/community",     StringComparison.OrdinalIgnoreCase);
+    bool isSettings  = rootUrl.StartsWith("/settings",      StringComparison.OrdinalIgnoreCase);
+    bool isAdmin     = rootUrl.StartsWith("/administrator", StringComparison.OrdinalIgnoreCase);
+    bool isDash      = rootUrl.Equals("/dashboard",         StringComparison.OrdinalIgnoreCase);
+
+    // Dashboard: render as standalone link (not a section)
+    if (isDash)
+    {
+        if (!onSettings)
+        {
+            string dashCls = onDash
+                ? "bg-primary-50 text-primary-700 font-semibold"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
+            <div class="mb-6">
+                <ul class="space-y-1">
+                    <li>
+                        <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors @dashCls">
+                            <i data-lucide="layout-dashboard" class="size-5 shrink-0"></i>
+                            <span>@root.Text</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        }
+        continue;
+    }
+
+    // Context filtering — only show sections relevant to the current page
+    if (hasCommunity           && !isCommunity && !isAdmin) { continue; }
+    if (onSettings             && !isSettings)              { continue; }
+    if ((onDash || onAdmin)    && !isAdmin)                 { continue; }
+    if (!hasCommunity && !onSettings && !onDash && !onAdmin) { continue; }
+
+    if (!root.HasChildren()) { continue; }
+
+    // Separate direct leaf items from sub-section nodes (children with their own children)
+    bool hasFlatItems   = false;
+    bool hasSubSections = false;
+    foreach (var child in root.Children)
+    {
+        if (child.HasChildren()) { hasSubSections = true; }
+        else                     { hasFlatItems   = true; }
+    }
+
+    // Leaf children → root's own section
+    if (hasFlatItems)
+    {
+        <div class="mb-6">
+            <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">@root.Text</h3>
+            <ul class="space-y-1">
+                @foreach (var child in root.Children)
+                {
+                    if (child.HasChildren()) { continue; }
+                    @RenderItem(child, slug, currentPath)
+                }
+            </ul>
+        </div>
+    }
+
+    // Children that have their own children → separate sub-sections
+    if (hasSubSections)
+    {
+        foreach (var sub in root.Children)
+        {
+            if (!sub.HasChildren()) { continue; }
+            <div class="mb-6">
+                <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">@sub.Text</h3>
+                <ul class="space-y-1">
+                    @foreach (var grandchild in sub.Children)
+                    {
+                        @RenderItem(grandchild, slug, currentPath)
+                    }
+                </ul>
+            </div>
+        }
+    }
+}

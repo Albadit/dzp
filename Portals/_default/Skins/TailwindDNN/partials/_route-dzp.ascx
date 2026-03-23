@@ -1,20 +1,19 @@
 <script runat="server">
-// -- Define sidebar sections here --
-static readonly SidebarSection[] NavSections = {
-    new SidebarSection("Community",
-        N("/[community]/home",       "home"),
-        N("/[community]/timeline",   "message-square-text"),
-        N("/[community]/discover",   "library-big")
+static readonly DZP.RouteContext.SidebarSection[] NavSections = {
+    new DZP.RouteContext.SidebarSection("Community",
+        DZP.RouteContext.SidebarHelper.N("/[community]/home",       "home"),
+        DZP.RouteContext.SidebarHelper.N("/[community]/timeline",   "message-square-text"),
+        DZP.RouteContext.SidebarHelper.N("/[community]/discover",   "library-big")
     ),
-    new SidebarSection("Management",
-        N("/[community]/manage/users",     "users"),
-        N("/[community]/manage/company",   "building-2"),
-        N("/[community]/manage/managers",   "handshake"),
-        N("/[community]/manage/groups",     "component"),
-        N("/[community]/manage/newsletter", "newspaper")
+    new DZP.RouteContext.SidebarSection("Management",
+        DZP.RouteContext.SidebarHelper.N("/[community]/manage/users",     "users"),
+        DZP.RouteContext.SidebarHelper.N("/[community]/manage/company",   "building-2"),
+        DZP.RouteContext.SidebarHelper.N("/[community]/manage/managers",   "handshake"),
+        DZP.RouteContext.SidebarHelper.N("/[community]/manage/groups",     "component"),
+        DZP.RouteContext.SidebarHelper.N("/[community]/manage/newsletter", "newspaper")
     ),
-    new SidebarSection("Admin",
-        N("/administrator/communities", "plus-circle")
+    new DZP.RouteContext.SidebarSection("Admin",
+        DZP.RouteContext.SidebarHelper.N("/administrator/communities", "plus-circle")
     ),
 };
 </script>

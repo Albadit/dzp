@@ -4,7 +4,6 @@
 <!-- Main Content -->
 <!--#include file="partials/_header-dzp.ascx" -->
 <div class="flex min-h-[calc(100dvh-70px)]">
-    <!--#include file="partials/_route-dzp-settings.ascx" -->
     <!--#include file="partials/_sidebar-dzp.ascx" -->
     <main class="flex-1 flex p-8">
         <div id="BannerPane" runat="server"></div>

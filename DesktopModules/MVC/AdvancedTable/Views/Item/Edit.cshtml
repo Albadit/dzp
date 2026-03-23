@@ -5,6 +5,22 @@
 @using System.Linq
 @using System.Collections.Generic
 
+@* // ── Config ────────────────────────────────────────────────────
+var cfg = new DataTableConfig
+{
+TableId     = "dt-communities",
+Title       = "Communities",
+AllowCreate   = true,
+AllowEdit     = true,
+AllowDelete   = true,
+AllowBulkDelete = true,
+SqlSelect     = "SELECT * FROM Community ORDER BY CommunityID",
+SqlInsert     = "INSERT INTO Community (Name, Slug) VALUES (@Name, @Slug)",
+SqlUpdate     = "UPDATE Community SET Name = @Name, Slug = @Slug WHERE CommunityID = @pk",
+SqlDelete     = "DELETE FROM Community WHERE CommunityID = @pk",
+SqlBulkDelete = "DELETE FROM Community WHERE CommunityID IN ({ids})",
+}; *@
+
 <link rel="stylesheet" href="/DesktopModules/MVC/AdvancedTable/Resources/css/edit.css" />
 
 <div id="EditConfig-@Dnn.ModuleContext.ModuleId">
