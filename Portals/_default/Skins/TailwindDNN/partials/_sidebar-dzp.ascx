@@ -1,18 +1,32 @@
 <%
-    var _sbPs   = DotNetNuke.Entities.Portals.PortalSettings.Current;
-    var _sbReq  = HttpContext.Current.Request;
-    var _sbPath = _sbReq.RawUrl.Split('?')[0];
-    var _sbSegs = _sbPath.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    var _sbPs      = DotNetNuke.Entities.Portals.PortalSettings.Current;
+    var _sbReq     = HttpContext.Current.Request;
+    var _sbPath    = _sbReq.RawUrl.Split('?')[0];
+    var _sbSegs    = _sbPath.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    var _sbCtx     = HttpContext.Current.Items;
 
-    var _sbSeg0         = _sbSegs.Length > 0 ? _sbSegs[0] : "";
-    var _sbIsOnDash     = _sbSeg0.Equals("dashboard",     StringComparison.OrdinalIgnoreCase);
-    var _sbIsOnSettings = _sbSeg0.Equals("settings",      StringComparison.OrdinalIgnoreCase);
-    var _sbIsOnAdmin    = _sbSeg0.Equals("administrator", StringComparison.OrdinalIgnoreCase);
-    var _sbSlug         = (_sbSegs.Length >= 2 && !_sbIsOnDash && !_sbIsOnSettings && !_sbIsOnAdmin) ? _sbSeg0 : "";
+    // Derive community slug using sidebar JSON contexts (no hardcoded segments)
+    var _sbSlug = "";
+    if (_sbSegs.Length >= 2) {
+        var _sbCacheKey = "dzp:routeFilter";
+        var _sbConfig = _sbCtx[_sbCacheKey] as System.Collections.Generic.Dictionary<string, object>;
+        if (_sbConfig == null) {
+            var _sbJsonPath = Server.MapPath("~/Portals/_default/Skins/TailwindDNN/menus/sidebar/SidebarRoute.json");
+            var _sbJson = System.IO.File.ReadAllText(_sbJsonPath);
+            _sbConfig = new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string, object>>(_sbJson);
+            _sbCtx[_sbCacheKey] = _sbConfig;
+        }
+        var _sbContexts = _sbConfig["contexts"] as System.Collections.Generic.Dictionary<string, object>;
+        bool _sbKnown = false;
+        foreach (var _kv in _sbContexts) {
+            if (_sbSegs[0].Equals(_kv.Key, StringComparison.OrdinalIgnoreCase)) { _sbKnown = true; break; }
+        }
+        if (!_sbKnown) { _sbSlug = _sbSegs[0]; }
+    }
 
     var _sbHasCommunity = !string.IsNullOrEmpty(_sbSlug)
-        && HttpContext.Current.Items.Contains("dzp:CommunityValid")
-        && (bool)HttpContext.Current.Items["dzp:CommunityValid"];
+        && _sbCtx.Contains("dzp:CommunityValid")
+        && (bool)_sbCtx["dzp:CommunityValid"];
 
     var _sbLogoUrl = (_sbPs != null && !string.IsNullOrEmpty(_sbPs.LogoFile)) ? _sbPs.HomeDirectory + _sbPs.LogoFile : "";
     var sbLogoUrl  = _sbHasCommunity ? "/" + _sbSlug + "/home" : "/dashboard";

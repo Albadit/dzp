@@ -7,16 +7,28 @@
     var _segs = _path.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
     var _auth = _req.IsAuthenticated;
 
-    var _isOnDashboard = _segs.Length > 0 && _segs[0].Equals("dashboard", StringComparison.OrdinalIgnoreCase);
-    var _isOnSettings  = _segs.Length > 0 && _segs[0].Equals("settings",  StringComparison.OrdinalIgnoreCase);
-    var _communitySlug = (_segs.Length >= 2 && !_isOnDashboard && !_isOnSettings
-                          && !_segs[0].Equals("administrator", StringComparison.OrdinalIgnoreCase))
-                         ? _segs[0] : "";
-    var _communityLink = !string.IsNullOrEmpty(_communitySlug) ? "/" + _communitySlug + "/home" : "/dashboard";
+    var _communitySlug = "";
+    var _ctxItems = HttpContext.Current.Items;
+    if (_segs.Length >= 2) {
+        // Check if seg0 is a known non-community segment via the header route config
+        var _hdrJsonPath = Server.MapPath("~/Portals/_default/Skins/TailwindDNN/menus/header/_routeFilter.json");
+        var _hdrCacheKey = "dzp:headerRoute";
+        var _hdrConfig = _ctxItems[_hdrCacheKey] as System.Collections.Generic.Dictionary<string, object>;
+        if (_hdrConfig == null) {
+            var _hdrJson = System.IO.File.ReadAllText(_hdrJsonPath);
+            _hdrConfig = new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string, object>>(_hdrJson);
+            _ctxItems[_hdrCacheKey] = _hdrConfig;
+        }
+        var _hdrContexts = _hdrConfig["contexts"] as System.Collections.Generic.Dictionary<string, object>;
+        bool _knownSeg = false;
+        foreach (var _kv in _hdrContexts) {
+            if (_segs[0].Equals(_kv.Key, StringComparison.OrdinalIgnoreCase)) { _knownSeg = true; break; }
+        }
+        if (!_knownSeg) { _communitySlug = _segs[0]; }
+    }
 
     // Reuse sidebar's cached query (or run it once if header renders first)
     var _communityName = "";
-    var _ctxItems = HttpContext.Current.Items;
     if (!string.IsNullOrEmpty(_communitySlug)) {
         if (_ctxItems.Contains("dzp:CommunityValid")) {
             if ((bool)_ctxItems["dzp:CommunityValid"] && _ctxItems.Contains("dzp:CommunityName"))
@@ -46,21 +58,6 @@
     var _profileImg    = (_user != null && _user.UserID > 0) ? "/DnnImageHandler.ashx?mode=profilepic&userId=" + _user.UserID + "&h=64&w=64" : "";
     var _displayName   = _user != null ? (_user.DisplayName ?? "") : "";
     var _email         = _user != null ? (_user.Email ?? "") : "";
-
-    var settingsUrl  = "/settings";
-
-    var hdrPopupLinks = _isOnDashboard
-        ? new[] {
-            new { Href = settingsUrl + "/profile",  Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
-            new { Href = settingsUrl,               Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
-            new { Href = "/Logoff",                 Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
-        }
-        : new[] {
-            new { Href = _communityLink,            Label = "Community",                    Css = "text-gray-700", Separator = "border-b border-gray-200" },
-            new { Href = settingsUrl + "/profile",  Label = "Gebruikersprofiel bewerken",   Css = "text-gray-700", Separator = "" },
-            new { Href = settingsUrl,               Label = "Mijn instellingen",            Css = "text-gray-700", Separator = "" },
-            new { Href = "/Logoff",                 Label = "Uitloggen",                    Css = "text-red-600",  Separator = "border-t border-gray-200" },
-        };
 %>
 
 <div class="sticky top-0 z-50 bg-white flex h-17.5 p-3 border-b border-[#D9D9D9]">
@@ -97,46 +94,11 @@
 
                 <!-- User Popup -->
                 <div id="user-popup" class="hidden absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-2">
-                    <ul class="flex flex-col">
-                        <% foreach (var link in hdrPopupLinks) { %>
-                        <li class="<%= link.Separator %>"><a href="<%= link.Href %>" class="block px-4 py-2 text-sm <%= link.Css %> hover:bg-gray-100"><%= link.Label %></a></li>
-                        <% } %>
-                    </ul>
+                    <dnn:MENU runat="server" id="headerMenu" MenuStyle="menus/header" NodeSelector="*,0,1" />
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    var sidebar = document.getElementById('sidebar');
-    var overlay = document.getElementById('sidebar-overlay');
-    var toggle  = document.getElementById('sidebar-toggle');
-    var popup   = document.getElementById('user-popup');
-    var trigger = document.getElementById('user-menu-trigger');
-
-    // Toggle sidebar from header hamburger
-    if (toggle) {
-      toggle.addEventListener('click', function () {
-        sidebar.classList.toggle('-translate-x-full');
-        overlay.classList.toggle('hidden');
-      });
-    }
-
-    // Toggle user popup menu
-    if (trigger && popup) {
-      trigger.addEventListener('click', function (e) {
-        e.stopPropagation();
-        popup.classList.toggle('hidden');
-      });
-    }
-
-    // Close user popup on outside click
-    document.addEventListener('click', function (e) {
-      if (popup && trigger && !trigger.contains(e.target)) {
-        popup.classList.add('hidden');
-      }
-    });
-  });
-</script>
+<script src="<%= SkinPath %>js/header.js"></script>

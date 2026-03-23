@@ -1,0 +1,52 @@
+{
+  "contexts": {
+    "dashboard": "dashboard",
+    "settings": "settings",
+    "administrator": "admin"
+  },
+  "sections": [
+    {
+      "label": null,
+      "pages": [
+        { "page": "dashboard", "icon": "layout-dashboard" }
+      ],
+      "context": ["!settings"]
+    },
+    {
+      "label": "Community",
+      "pages": [
+        { "page": "[community]/home", "icon": "home" },
+        { "page": "[community]/timeline", "icon": "message-square-text" },
+        { "page": "[community]/discover", "icon": "library-big" }
+      ],
+      "context": ["community"]
+    },
+    {
+      "label": "Management",
+      "pages": [
+        { "page": "[community]/manage/users", "icon": "users" },
+        { "page": "[community]/manage/company", "icon": "building-2" },
+        { "page": "[community]/manage/managers", "icon": "handshake" },
+        { "page": "[community]/manage/groups", "icon": "component" },
+        { "page": "[community]/manage/newsletter", "icon": "newspaper" }
+      ],
+      "context": ["community"]
+    },
+    {
+      "label": "Admin",
+      "pages": [
+        { "page": "administrator/communities", "icon": "plus-circle" }
+      ],
+      "context": ["admin", "dashboard", "community"]
+    },
+    {
+      "label": "Instellingen",
+      "pages": [
+        { "page": "settings/profile", "icon": "user" },
+        { "page": "settings/password", "icon": "key-round" },
+        { "page": "settings/notifications", "icon": "bell" }
+      ],
+      "context": ["settings"]
+    }
+  ]
+}
