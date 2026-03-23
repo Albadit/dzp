@@ -13,18 +13,34 @@
                           && !_segs[0].Equals("administrator", StringComparison.OrdinalIgnoreCase))
                          ? _segs[0] : "";
     var _communityLink = !string.IsNullOrEmpty(_communitySlug) ? "/" + _communitySlug + "/home" : "/dashboard";
+
+    // Reuse sidebar's cached query (or run it once if header renders first)
     var _communityName = "";
+    var _ctxItems = HttpContext.Current.Items;
     if (!string.IsNullOrEmpty(_communitySlug)) {
-        try {
-            var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
-            using (var conn = new System.Data.SqlClient.SqlConnection(connStr))
-            using (var cmd  = new System.Data.SqlClient.SqlCommand("SELECT Name FROM Community WHERE Slug = @slug", conn)) {
-                cmd.Parameters.AddWithValue("@slug", _communitySlug);
-                conn.Open();
-                var result = cmd.ExecuteScalar();
-                if (result != null) _communityName = result.ToString();
+        if (_ctxItems.Contains("dzp:CommunityValid")) {
+            if ((bool)_ctxItems["dzp:CommunityValid"] && _ctxItems.Contains("dzp:CommunityName"))
+                _communityName = _ctxItems["dzp:CommunityName"].ToString();
+        } else {
+            try {
+                var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
+                using (var conn = new System.Data.SqlClient.SqlConnection(connStr))
+                using (var cmd  = new System.Data.SqlClient.SqlCommand("SELECT Name FROM Community WHERE Slug = @slug", conn)) {
+                    cmd.Parameters.AddWithValue("@slug", _communitySlug);
+                    conn.Open();
+                    var result = cmd.ExecuteScalar();
+                    if (result != null) {
+                        _communityName = result.ToString();
+                        _ctxItems["dzp:CommunityName"] = _communityName;
+                        _ctxItems["dzp:CommunityValid"] = true;
+                    } else {
+                        _ctxItems["dzp:CommunityValid"] = false;
+                    }
+                }
+            } catch {
+                _ctxItems["dzp:CommunityValid"] = false;
             }
-        } catch { }
+        }
     }
     var _logoUrl       = (_ps != null && !string.IsNullOrEmpty(_ps.LogoFile)) ? _ps.HomeDirectory + _ps.LogoFile : "";
     var _profileImg    = (_user != null && _user.UserID > 0)

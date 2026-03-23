@@ -1,6 +1,7 @@
 <%@ Import Namespace="System.Collections.Generic" %>
 <%@ Import Namespace="System.Linq" %>
 <%@ Import Namespace="System.Text" %>
+<%@ Import Namespace="System.Text.RegularExpressions" %>
 <%@ Import Namespace="System.Web" %>
 <%@ Import Namespace="DotNetNuke.Entities.Portals" %>
 <%@ Import Namespace="DotNetNuke.Entities.Tabs" %>
@@ -50,6 +51,68 @@
         { return new SidebarLink(href, "", children); }
 
     // ══════════════════════════════════════
+    //  Static caches (computed once per app domain)
+    // ══════════════════════════════════════
+
+    static readonly Regex BracketRegex = new Regex(@"\[([^\]]+)\]", RegexOptions.Compiled);
+
+    // Pre-split href templates: each entry is { original href, segments[] }
+    static readonly List<KeyValuePair<string, string[]>> HrefTemplates = BuildHrefTemplates();
+    static List<KeyValuePair<string, string[]>> BuildHrefTemplates() {
+        var list = new List<KeyValuePair<string, string[]>>();
+        CollectHrefs(null, list);
+        return list;
+    }
+    static void CollectHrefs(SidebarLink[] links, List<KeyValuePair<string, string[]>> list) {
+        if (links == null) {
+            foreach (var section in NavSections)
+                CollectHrefs(section.Items, list);
+            return;
+        }
+        foreach (var link in links) {
+            list.Add(new KeyValuePair<string, string[]>(
+                link.Href,
+                link.Href.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)));
+            if (link.Children != null && link.Children.Length > 0)
+                CollectHrefs(link.Children, list);
+        }
+    }
+
+    // ══════════════════════════════════════
+    //  Shared per-request state (HttpContext.Items)
+    // ══════════════════════════════════════
+
+    const string CacheKey_CommunityName = "dzp:CommunityName";
+    const string CacheKey_CommunityValid = "dzp:CommunityValid";
+
+    /// <summary>Validates a community slug, caching result in HttpContext.Items so
+    /// the header and sidebar don't each run their own SQL query.</summary>
+    static bool ValidateCommunitySlug(string slug) {
+        var items = HttpContext.Current.Items;
+        if (items.Contains(CacheKey_CommunityValid))
+            return (bool)items[CacheKey_CommunityValid];
+
+        var valid = false;
+        if (!string.IsNullOrEmpty(slug)) {
+            try {
+                var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
+                using (var conn = new System.Data.SqlClient.SqlConnection(connStr))
+                using (var cmd  = new System.Data.SqlClient.SqlCommand("SELECT Name FROM Community WHERE Slug = @slug", conn)) {
+                    cmd.Parameters.AddWithValue("@slug", slug);
+                    conn.Open();
+                    var result = cmd.ExecuteScalar();
+                    if (result != null) {
+                        items[CacheKey_CommunityName] = result.ToString();
+                        valid = true;
+                    }
+                }
+            } catch { }
+        }
+        items[CacheKey_CommunityValid] = valid;
+        return valid;
+    }
+
+    // ══════════════════════════════════════
     //  Permission check
     // ══════════════════════════════════════
 
@@ -57,11 +120,12 @@
         if (user != null && user.IsSuperUser) return true;
         var userId = user != null ? user.UserID : -1;
         #pragma warning disable CS0618
-        var userPerms = tab.TabPermissions.Cast<TabPermissionInfo>().Where(p => p.UserID == userId).ToList();
+        var perms = tab.TabPermissions.Cast<TabPermissionInfo>();
         #pragma warning restore CS0618
-        if (userPerms.Any()) {
+        var userPerms = perms.Where(p => p.UserID == userId).ToList();
+        if (userPerms.Count > 0) {
             var viewPerms = userPerms.Where(p => p.PermissionKey == "VIEW").ToList();
-            return viewPerms.Any() && viewPerms.All(p => p.AllowAccess);
+            return viewPerms.Count > 0 && viewPerms.All(p => p.AllowAccess);
         }
         return TabPermissionController.CanViewPage(tab);
     }
@@ -70,42 +134,24 @@
     //  Extract placeholders from URL
     // ══════════════════════════════════════
 
-    // Dynamically matches ALL {placeholder} tokens found in NavSections href
-    // templates against the current URL by aligning path segments.
-    // No hardcoded markers — just add {my-thing} in any href and it works.
-
-    static void CollectHrefs(SidebarLink[] links, List<string> hrefs) {
-        foreach (var link in links) {
-            hrefs.Add(link.Href);
-            if (link.Children != null && link.Children.Length > 0)
-                CollectHrefs(link.Children, hrefs);
-        }
-    }
-
     static Dictionary<string, string> ExtractPlaceholders(string[] urlSegments) {
         var ph = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        // Collect all href templates from config
-        var hrefs = new List<string>();
-        foreach (var section in NavSections) CollectHrefs(section.Items, hrefs);
-
-        // Try to match each template against the current URL
-        foreach (var href in hrefs) {
-            var tplSegments = href.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var kv in HrefTemplates) {
+            var tplSegments = kv.Value;
             if (tplSegments.Length > urlSegments.Length) continue;
 
             var match = true;
             for (int i = 0; i < tplSegments.Length; i++) {
                 var tpl = tplSegments[i];
-                if (tpl.StartsWith("[") && tpl.EndsWith("]")) continue; // dynamic segment — skip
+                if (tpl[0] == '[' && tpl[tpl.Length - 1] == ']') continue;
                 if (!tpl.Equals(urlSegments[i], StringComparison.OrdinalIgnoreCase)) { match = false; break; }
             }
             if (!match) continue;
 
-            // Extract placeholder values from matched positions
             for (int i = 0; i < tplSegments.Length; i++) {
                 var tpl = tplSegments[i];
-                if (tpl.StartsWith("[") && tpl.EndsWith("]") && !ph.ContainsKey(tpl))
+                if (tpl[0] == '[' && tpl[tpl.Length - 1] == ']' && !ph.ContainsKey(tpl))
                     ph[tpl] = urlSegments[i];
             }
         }
@@ -119,11 +165,19 @@
 
     static List<SbNavGroup> BuildNavGroups(Dictionary<string, string> placeholders, string currentPath, int portalId, UserInfo user) {
         var allTabs = TabController.Instance.GetTabsByPortal(portalId).AsList();
+
+        // Build O(1) lookup by TabPath (case-insensitive)
+        var tabByPath = new Dictionary<string, DotNetNuke.Entities.Tabs.TabInfo>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in allTabs)
+            if (!t.IsDeleted && !tabByPath.ContainsKey(t.TabPath))
+                tabByPath[t.TabPath] = t;
+
+        var currentNorm = currentPath.TrimEnd('/');
         var groups = new List<SbNavGroup>();
         foreach (var section in NavSections) {
             var items = new List<SbNavItem>();
             foreach (var link in section.Items) {
-                var item = ConvertLink(link, placeholders, currentPath, allTabs, user);
+                var item = ConvertLink(link, placeholders, currentNorm, tabByPath, user);
                 if (item != null) items.Add(item);
             }
             if (items.Count > 0)
@@ -132,25 +186,19 @@
         return groups;
     }
 
-    static SbNavItem ConvertLink(SidebarLink link, Dictionary<string, string> placeholders, string currentPath,
-        IList<DotNetNuke.Entities.Tabs.TabInfo> allTabs, UserInfo user) {
+    static SbNavItem ConvertLink(SidebarLink link, Dictionary<string, string> placeholders, string currentNorm,
+        Dictionary<string, DotNetNuke.Entities.Tabs.TabInfo> tabByPath, UserInfo user) {
         var href = link.Href;
         foreach (var kv in placeholders) href = href.Replace(kv.Key, kv.Value);
-        // Strip brackets from any unresolved placeholders: [foo] → foo
-        href = System.Text.RegularExpressions.Regex.Replace(href, @"\[([^\]]+)\]", "$1");
+        href = BracketRegex.Replace(href, "$1");
 
         // Permission: match href to DNN tab via TabPath
         var tabPath = "//" + string.Join("//", href.Trim('/').Split('/'));
-        var tab = allTabs.FirstOrDefault(t =>
-            t.TabPath.Equals(tabPath, StringComparison.OrdinalIgnoreCase) && !t.IsDeleted);
-
-        // If resolved path didn't match (slugs replaced), try the original template path
-        // e.g. href="/keizerswaard/home" won't match, but template "/[community]/home"
-        // maps to DNN tab //[community]//home which does exist.
-        if (tab == null) {
+        DotNetNuke.Entities.Tabs.TabInfo tab;
+        if (!tabByPath.TryGetValue(tabPath, out tab)) {
+            // If resolved path didn't match (slugs replaced), try the original template path
             var tplPath = "//" + string.Join("//", link.Href.Trim('/').Split('/'));
-            tab = allTabs.FirstOrDefault(t =>
-                t.TabPath.Equals(tplPath, StringComparison.OrdinalIgnoreCase) && !t.IsDeleted);
+            tabByPath.TryGetValue(tplPath, out tab);
         }
 
         if (tab != null && !CanUserViewTab(tab, user)) return null;
@@ -158,25 +206,20 @@
         var children = new List<SbNavItem>();
         if (link.Children != null && link.Children.Length > 0) {
             foreach (var child in link.Children) {
-                var ci = ConvertLink(child, placeholders, currentPath, allTabs, user);
+                var ci = ConvertLink(child, placeholders, currentNorm, tabByPath, user);
                 if (ci != null) children.Add(ci);
             }
         }
 
-        var isActive = currentPath.TrimEnd('/').Equals(href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+        var isActive = currentNorm.Equals(href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
         var hasActiveChild = children.Any(c => c.IsActive || c.IsExpanded);
 
-        // Use the slug-replaced href directly — NavigateURL would produce
-        // template names like /community-slug/home instead of /keizerswaard/home
-        var url = href;
-
-        // Derive label from DNN tab title; fall back to last URL segment
         var label = tab != null ? tab.Title : href.Trim('/').Split('/').Last();
 
         return new SbNavItem {
             Label = label,
             Icon = string.IsNullOrEmpty(link.Icon) ? null : link.Icon,
-            Url = url,
+            Url = href,
             IsActive = isActive,
             IsExpanded = isActive || hasActiveChild,
             Items = children
@@ -188,7 +231,7 @@
     // ══════════════════════════════════════
 
     static string RenderNav(List<SbNavItem> items, int depth) {
-        var sb = new StringBuilder();
+        var sb = new StringBuilder(items.Count * 256);
         var pl = depth == 0 ? "px-3" : "pl-" + (3 + depth * 4);
         var py = depth == 0 ? "py-2.5" : "py-2";
         var ico = depth == 0 ? "size-5" : "size-4";
@@ -210,20 +253,23 @@
                 var exp = item.IsExpanded ? "true" : "false";
                 var rot = item.IsExpanded ? " rotate-90" : "";
                 var rows = item.IsExpanded ? "1fr" : "0fr";
-                sb.AppendLine("<div class=\"flex items-center justify-between " + pl + " " + py + " rounded-lg text-sm transition-colors cursor-pointer " + active + "\" data-submenu-parent aria-expanded=\"" + exp + "\">");
-                sb.Append("  <a href=\"" + item.Url + "\" class=\"flex items-center gap-3 flex-1\">");
-                if (item.Icon != null) sb.Append("<i data-lucide=\"" + item.Icon + "\" class=\"" + ico + " shrink-0\"></i>");
-                sb.AppendLine("<span>" + label + "</span></a>");
+                sb.Append("<div class=\"flex items-center justify-between ").Append(pl).Append(' ').Append(py)
+                  .Append(" rounded-lg text-sm transition-colors cursor-pointer ").Append(active)
+                  .Append("\" data-submenu-parent aria-expanded=\"").Append(exp).AppendLine("\">");
+                sb.Append("  <a href=\"").Append(item.Url).Append("\" class=\"flex items-center gap-3 flex-1\">");
+                if (item.Icon != null) sb.Append("<i data-lucide=\"").Append(item.Icon).Append("\" class=\"").Append(ico).Append(" shrink-0\"></i>");
+                sb.Append("<span>").Append(label).AppendLine("</span></a>");
                 sb.AppendLine("  <button type=\"button\" class=\"sidebar-submenu-toggle p-0.5 rounded hover:bg-gray-200 transition-colors\">");
-                sb.AppendLine("    <i data-lucide=\"chevron-right\" class=\"size-4 transition-transform duration-200" + rot + "\"></i>");
+                sb.Append("    <i data-lucide=\"chevron-right\" class=\"size-4 transition-transform duration-200").Append(rot).AppendLine("\"></i>");
                 sb.AppendLine("  </button></div>");
-                sb.AppendLine("<div class=\"grid\" style=\"grid-template-rows:" + rows + ";\">");
-                sb.AppendLine("  <div class=\"overflow-hidden pl-4\">" + RenderNav(item.Items, depth + 1) + "</div>");
+                sb.Append("<div class=\"grid\" style=\"grid-template-rows:").Append(rows).AppendLine(";\">");
+                sb.Append("  <div class=\"overflow-hidden pl-4\">").Append(RenderNav(item.Items, depth + 1)).AppendLine("</div>");
                 sb.AppendLine("</div>");
             } else {
-                sb.Append("<a href=\"" + item.Url + "\" class=\"flex items-center gap-3 " + pl + " " + py + " rounded-lg text-sm transition-colors " + active + "\">");
-                if (item.Icon != null) sb.Append("<i data-lucide=\"" + item.Icon + "\" class=\"" + ico + " shrink-0\"></i>");
-                sb.AppendLine("<span>" + label + "</span></a>");
+                sb.Append("<a href=\"").Append(item.Url).Append("\" class=\"flex items-center gap-3 ").Append(pl)
+                  .Append(' ').Append(py).Append(" rounded-lg text-sm transition-colors ").Append(active).Append("\">");
+                if (item.Icon != null) sb.Append("<i data-lucide=\"").Append(item.Icon).Append("\" class=\"").Append(ico).Append(" shrink-0\"></i>");
+                sb.Append("<span>").Append(label).AppendLine("</span></a>");
             }
             sb.AppendLine("</li>");
         }
@@ -242,25 +288,12 @@
     var _sbSegs = _sbPath.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
     var _sbAuth = _sbReq.IsAuthenticated;
 
-    var _sbIsOnDash     = _sbSegs.Length > 0 && _sbSegs[0].Equals("dashboard",     StringComparison.OrdinalIgnoreCase);
-    var _sbIsOnSettings = _sbSegs.Length > 0 && _sbSegs[0].Equals("settings",      StringComparison.OrdinalIgnoreCase);
-    var _sbIsOnAdmin    = _sbSegs.Length > 0 && _sbSegs[0].Equals("administrator", StringComparison.OrdinalIgnoreCase);
-    var _sbHasCommunity = _sbSegs.Length >= 2 && !_sbIsOnDash && !_sbIsOnSettings && !_sbIsOnAdmin;
-    var _sbSlug         = _sbHasCommunity ? _sbSegs[0] : "";
-    var _sbCommunityName = "";
-    if (!string.IsNullOrEmpty(_sbSlug)) {
-        try {
-            var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
-            using (var conn = new System.Data.SqlClient.SqlConnection(connStr))
-            using (var cmd  = new System.Data.SqlClient.SqlCommand("SELECT Name FROM Community WHERE Slug = @slug", conn)) {
-                cmd.Parameters.AddWithValue("@slug", _sbSlug);
-                conn.Open();
-                var result = cmd.ExecuteScalar();
-                if (result != null) _sbCommunityName = result.ToString();
-                else _sbHasCommunity = false;
-            }
-        } catch { _sbHasCommunity = false; }
-    }
+    var _sbSeg0         = _sbSegs.Length > 0 ? _sbSegs[0] : "";
+    var _sbIsOnDash     = _sbSeg0.Equals("dashboard",     StringComparison.OrdinalIgnoreCase);
+    var _sbIsOnSettings = _sbSeg0.Equals("settings",      StringComparison.OrdinalIgnoreCase);
+    var _sbIsOnAdmin    = _sbSeg0.Equals("administrator", StringComparison.OrdinalIgnoreCase);
+    var _sbSlug         = (_sbSegs.Length >= 2 && !_sbIsOnDash && !_sbIsOnSettings && !_sbIsOnAdmin) ? _sbSeg0 : "";
+    var _sbHasCommunity = !string.IsNullOrEmpty(_sbSlug) && ValidateCommunitySlug(_sbSlug);
     var _sbLogoUrl      = (_sbPs != null && !string.IsNullOrEmpty(_sbPs.LogoFile)) ? _sbPs.HomeDirectory + _sbPs.LogoFile : "";
 
     // Extract template placeholders from NavSections + current URL segments
@@ -270,8 +303,7 @@
     var navGroups = BuildNavGroups(placeholders, _sbPath, _sbPs.PortalId, _sbUser);
 
     // Determine logo link: community home if slug present, otherwise /dashboard
-    var communityKey = "[community]";
-    var resolvedSlug = placeholders.ContainsKey(communityKey) ? placeholders[communityKey] : _sbSlug;
+    var resolvedSlug = placeholders.ContainsKey("[community]") ? placeholders["[community]"] : _sbSlug;
     var sbLogoUrl = !string.IsNullOrEmpty(resolvedSlug)
         ? "/" + resolvedSlug + "/home"
         : "/dashboard";
