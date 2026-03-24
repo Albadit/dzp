@@ -1,17 +1,50 @@
 @inherits DotNetNuke.Web.Razor.DotNetNukeWebPage<dynamic>
-    
-@helper RenderLink(string href, string icon, string text, string currentPath) {
-    bool active = currentPath.Equals(href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
-    string cls = active
-        ? "bg-primary-50 text-primary-700 font-semibold"
-        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
 
-    <li>
-        <a href="@href" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors @cls">
-            @if (!string.IsNullOrEmpty(icon)) { <i data-lucide="@icon" class="size-5 shrink-0"></i> }
-            <span>@text</span>
-        </a>
-    </li>
+@helper RenderTreeItems(System.Collections.ArrayList nodes, string currentPath) {
+    foreach (object[] node in nodes) {
+        var href     = (string)node[0];
+        var icon     = (string)node[1];
+        var text     = (string)node[2];
+        var children = (System.Collections.ArrayList)node[3];
+        var hasSub   = children != null && children.Count > 0;
+
+        bool active      = currentPath.Equals(href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+        bool childActive = !active && currentPath.StartsWith(href.TrimEnd('/') + "/", StringComparison.OrdinalIgnoreCase);
+        bool expanded    = childActive;
+        string cls = (active || childActive)
+            ? "bg-primary-50 text-primary-700 font-semibold"
+            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900";
+
+        if (hasSub) {
+            var ariaExp  = expanded ? "true" : "false";
+            var gridRows = expanded ? "1fr" : "0fr";
+            var chevCls  = expanded ? "size-4 transition-transform rotate-90" : "size-4 transition-transform";
+
+            <li>
+                <div data-submenu-parent aria-expanded="@ariaExp" class="flex items-center rounded-lg text-sm transition-colors @cls">
+                    <a href="@href" class="flex-1 flex items-center gap-3 px-3 py-2.5 min-w-0">
+                        @if (!string.IsNullOrEmpty(icon)) { <i data-lucide="@icon" class="size-5 shrink-0"></i> }
+                        <span class="truncate">@text</span>
+                    </a>
+                    <button type="button" class="sidebar-submenu-toggle px-2 py-2.5 shrink-0" aria-label="Expand">
+                        <i data-lucide="chevron-right" class="@chevCls"></i>
+                    </button>
+                </div>
+                <div style="display:grid; grid-template-rows: @gridRows;" class="transition-[grid-template-rows] duration-200">
+                    <ul class="overflow-hidden flex flex-col gap-1 pl-4">
+                        @RenderTreeItems(children, currentPath)
+                    </ul>
+                </div>
+            </li>
+        } else {
+            <li>
+                <a href="@href" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors @cls">
+                    @if (!string.IsNullOrEmpty(icon)) { <i data-lucide="@icon" class="size-5 shrink-0"></i> }
+                    <span>@text</span>
+                </a>
+            </li>
+        }
+    }
 }
 
 @{
@@ -66,12 +99,57 @@
     var slug         = hasCommunity ? rc.CommunitySlug : "";
     if (hasCommunity) { ctx = "community"; }
 
+    // Hide dashboard link when user belongs to exactly one community
+    var userComms    = DZP.RouteContext.RouteContext.GetUserCommunities(
+                           DotNetNuke.Entities.Portals.PortalSettings.Current?.UserInfo);
+    var hideDashboard = userComms != null && userComms.Count == 1;
+
     // --- Portal / user info for shell ---
     var ps       = DotNetNuke.Entities.Portals.PortalSettings.Current;
     var logoUrl  = (ps != null && !string.IsNullOrEmpty(ps.LogoFile)) ? ps.HomeDirectory + ps.LogoFile : "";
     var logoHref = hasCommunity ? "/" + slug + "/home" : "/dashboard";
     var skinPath = (ps != null && ps.ActiveTab != null && !string.IsNullOrEmpty(ps.ActiveTab.SkinPath))
                    ? ps.ActiveTab.SkinPath : "/Portals/_default/Skins/TailwindDNN/";
+
+    // Build lookups from DNN tabs in a single pass:
+    //   tabsByPath        — normalized TabPath → TabInfo (for permission checks)
+    //   childrenByParent  — ParentId → sorted List<TabInfo> (for BFS tree building)
+    var portalId = ps != null ? ps.PortalId : 0;
+    var tabsByPath = new Dictionary<string, DotNetNuke.Entities.Tabs.TabInfo>(StringComparer.OrdinalIgnoreCase);
+    var childrenByParent = new Dictionary<int, List<DotNetNuke.Entities.Tabs.TabInfo>>();
+    var tabCollection = DotNetNuke.Entities.Tabs.TabController.Instance.GetTabsByPortal(portalId);
+    if (tabCollection != null)
+    {
+        foreach (DotNetNuke.Entities.Tabs.TabInfo t in tabCollection.Values)
+        {
+            // tabsByPath
+            if (!string.IsNullOrEmpty(t.TabPath))
+            {
+                var tp = t.TabPath.Replace("//", "/").TrimStart('/');
+                if (tp.Length > 0 && !tabsByPath.ContainsKey(tp))
+                {
+                    tabsByPath[tp] = t;
+                }
+            }
+
+            // childrenByParent (skip deleted, insert sorted by TabOrder)
+            if (!t.IsDeleted)
+            {
+                List<DotNetNuke.Entities.Tabs.TabInfo> siblings;
+                if (!childrenByParent.TryGetValue(t.ParentId, out siblings))
+                {
+                    siblings = new List<DotNetNuke.Entities.Tabs.TabInfo>();
+                    childrenByParent[t.ParentId] = siblings;
+                }
+                int pos = siblings.Count;
+                for (int idx = 0; idx < siblings.Count; idx++)
+                {
+                    if (t.TabOrder < siblings[idx].TabOrder) { pos = idx; break; }
+                }
+                siblings.Insert(pos, t);
+            }
+        }
+    }
 }
 
 <!-- Overlay for mobile -->
@@ -91,7 +169,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-1 overflow-y-auto px-3 py-4">
+    <nav class="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-6">
     @foreach (var section in sections)
     {
         var sec = (Dictionary<string, object>)section;
@@ -114,60 +192,222 @@
             if (!show) { continue; }
         }
 
-        // --- Pages ---
+        // --- Dynamic (parent) or static (pages) ---
+        object parentRaw;
+        var parentPath = sec.TryGetValue("parent", out parentRaw) && parentRaw != null ? (string)parentRaw : null;
+
         object pagesRaw;
         var pagesObj = sec.TryGetValue("pages", out pagesRaw) && pagesRaw != null ? pagesRaw as System.Collections.ArrayList : null;
-        if (pagesObj == null || pagesObj.Count == 0) { continue; }
+
+        // Must have either parent or pages
+        if (parentPath == null && (pagesObj == null || pagesObj.Count == 0)) { continue; }
+
+        // --- Icons map (for dynamic sections) ---
+        object iconsRaw;
+        var iconMap = sec.TryGetValue("icons", out iconsRaw) && iconsRaw != null ? iconsRaw as Dictionary<string, object> : null;
+
+        // --- Ignore list (for dynamic sections) ---
+        object ignoreRaw;
+        var ignoreList = sec.TryGetValue("ignore", out ignoreRaw) && ignoreRaw != null ? ignoreRaw as System.Collections.ArrayList : null;
+        var ignoreSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (ignoreList != null)
+        {
+            foreach (string ign in ignoreList) { ignoreSet.Add(ign); }
+        }
+
+        // --- Level (0 = unlimited depth, 1 = direct children only, 2 = children+grandchildren, etc.) ---
+        object levelRaw;
+        var maxLevel = sec.TryGetValue("level", out levelRaw) && levelRaw != null ? Convert.ToInt32(levelRaw) : 1;
 
         // --- Label ---
         object labelRaw;
         var label = sec.TryGetValue("label", out labelRaw) && labelRaw != null ? (string)labelRaw : null;
 
-        // Resolve paths: replace [community] with actual slug
-        var items = new List<string[]>(pagesObj.Count);
+        // Resolve items — tree nodes: object[] { href, icon, text, childrenArrayList }
+        var items = new System.Collections.ArrayList();
+        var nodeMap = new Dictionary<int, object[]>();
         bool skipSection = false;
-        foreach (Dictionary<string, object> entry in pagesObj)
+
+        if (parentPath != null)
         {
-            object val;
-            var p    = entry.TryGetValue("page", out val) && val != null ? (string)val : "";
-            var icon = entry.TryGetValue("icon", out val) && val != null ? (string)val : "";
-            var text = entry.TryGetValue("text", out val) && val != null ? (string)val : null;
+            // --- DYNAMIC: pull child tabs from DNN ---
+            var isCommunityParent = parentPath.StartsWith("[community]", StringComparison.OrdinalIgnoreCase);
+            if (isCommunityParent && !hasCommunity) { skipSection = true; }
 
-            string href;
-            if (p.Length > 12 && p[0] == '[' && p.StartsWith("[community]", StringComparison.OrdinalIgnoreCase))
+            // Check the parent tab itself first
+            DotNetNuke.Entities.Tabs.TabInfo parentTab = null;
+            if (!skipSection && tabsByPath.TryGetValue(parentPath, out parentTab))
             {
-                if (!hasCommunity) { skipSection = true; break; }
-                href = "/" + slug + p.Substring(11);
-            }
-            else
-            {
-                href = "/" + p;
-            }
-
-            // Derive display text from last path segment if not explicit
-            if (text == null)
-            {
-                var lastSlash = href.LastIndexOf('/');
-                var name = lastSlash >= 0 && lastSlash < href.Length - 1 ? href.Substring(lastSlash + 1) : href.TrimStart('/');
-                text = char.ToUpper(name[0]) + name.Substring(1);
+                if (!parentTab.IsVisible
+                    || !DotNetNuke.Security.Permissions.TabPermissionController.CanViewPage(parentTab)
+                    || (parentTab.StartDate != DateTime.MinValue && parentTab.StartDate > DateTime.Now)
+                    || (parentTab.EndDate != DateTime.MinValue && parentTab.EndDate < DateTime.Now))
+                {
+                    skipSection = true;
+                }
             }
 
-            items.Add(new[] { href, icon, text });
+            if (!skipSection && parentTab != null)
+            {
+                // BFS to build tree of descendants up to maxLevel depth (0 = unlimited)
+                var queue = new List<object[]>();
+                queue.Add(new object[] { parentTab, 0 });
+                int qi = 0;
+
+                while (qi < queue.Count)
+                {
+                    var entry = queue[qi];
+                    qi++;
+                    var qTab = (DotNetNuke.Entities.Tabs.TabInfo)entry[0];
+                    var qDepth = (int)entry[1];
+
+                    // Look up pre-sorted children (O(1) instead of scanning all tabs)
+                    List<DotNetNuke.Entities.Tabs.TabInfo> children;
+                    if (!childrenByParent.TryGetValue(qTab.TabID, out children))
+                    {
+                        children = new List<DotNetNuke.Entities.Tabs.TabInfo>();
+                    }
+
+                    foreach (var child in children)
+                    {
+                        var childName = child.TabName.ToLower();
+
+                        // Skip ignored pages
+                        if (ignoreSet.Contains(childName)) { continue; }
+
+                        var childOk = child.IsVisible
+                            && DotNetNuke.Security.Permissions.TabPermissionController.CanViewPage(child)
+                            && (child.StartDate == DateTime.MinValue || child.StartDate <= DateTime.Now)
+                            && (child.EndDate == DateTime.MinValue || child.EndDate >= DateTime.Now);
+
+                        if (childOk)
+                        {
+                            string href;
+                            if (isCommunityParent)
+                            {
+                                var childPath = child.TabPath.Replace("//", "/").TrimStart('/');
+                                var parentPrefix = parentPath.Length > 0 ? parentPath + "/" : "";
+                                string relative;
+                                if (childPath.StartsWith(parentPrefix, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    relative = childPath.Substring(parentPrefix.Length);
+                                }
+                                else
+                                {
+                                    relative = childName;
+                                }
+                                href = "/" + slug + "/" + relative;
+                            }
+                            else
+                            {
+                                var childPath = child.TabPath.Replace("//", "/").TrimStart('/');
+                                href = "/" + childPath;
+                            }
+
+                            object iconVal;
+                            var icon = (iconMap != null && iconMap.TryGetValue(childName, out iconVal) && iconVal != null)
+                                ? (string)iconVal : "";
+                            var text = char.ToUpper(child.TabName[0]) + child.TabName.Substring(1);
+
+                            // Build tree node with children list
+                            var childrenList = new System.Collections.ArrayList();
+                            var treeNode = new object[] { href, icon, text, childrenList };
+
+                            // Attach to parent node or to section roots
+                            object[] parentNode;
+                            if (qTab.TabID == parentTab.TabID)
+                            {
+                                items.Add(treeNode);
+                            }
+                            else if (nodeMap.TryGetValue(qTab.TabID, out parentNode))
+                            {
+                                ((System.Collections.ArrayList)parentNode[3]).Add(treeNode);
+                            }
+                            nodeMap[child.TabID] = treeNode;
+
+                            // Enqueue for deeper traversal if level allows
+                            var nextDepth = qDepth + 1;
+                            if (maxLevel == 0 || nextDepth < maxLevel)
+                            {
+                                queue.Add(new object[] { child, nextDepth });
+                            }
+                        }
+                    }
+                }
+            }
         }
-        if (skipSection) { continue; }
+        else
+        {
+            // --- STATIC: resolve pages from JSON ---
+            foreach (Dictionary<string, object> entry in pagesObj)
+            {
+                object val;
+                var p    = entry.TryGetValue("page", out val) && val != null ? (string)val : "";
+                var icon = entry.TryGetValue("icon", out val) && val != null ? (string)val : "";
+                var text = entry.TryGetValue("text", out val) && val != null ? (string)val : null;
 
-        <div class="mb-6">
+                var skipEntry = hideDashboard && p.Equals("dashboard", StringComparison.OrdinalIgnoreCase);
+
+                string href = "";
+                if (!skipEntry)
+                {
+                    if (p.Length > 12 && p[0] == '[' && p.StartsWith("[community]", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!hasCommunity) { skipSection = true; break; }
+                        href = "/" + slug + p.Substring(11);
+                    }
+                    else
+                    {
+                        href = "/" + p;
+                    }
+
+                    // Check DNN tab (and all ancestors)
+                    var pathToCheck = p;
+                    while (pathToCheck.Length > 0 && !skipEntry)
+                    {
+                        DotNetNuke.Entities.Tabs.TabInfo tab;
+                        if (tabsByPath.TryGetValue(pathToCheck, out tab))
+                        {
+                            if (!tab.IsVisible
+                                || !DotNetNuke.Security.Permissions.TabPermissionController.CanViewPage(tab)
+                                || (tab.StartDate != DateTime.MinValue && tab.StartDate > DateTime.Now)
+                                || (tab.EndDate != DateTime.MinValue && tab.EndDate < DateTime.Now))
+                            {
+                                skipEntry = true;
+                            }
+                        }
+                        var lastSlash = pathToCheck.LastIndexOf('/');
+                        pathToCheck = lastSlash > 0 ? pathToCheck.Substring(0, lastSlash) : "";
+                    }
+                }
+                
+                if (skipEntry) { /* skip */ }
+                else
+                {
+                    if (text == null)
+                    {
+                        var lastSlash = href.LastIndexOf('/');
+                        var name = lastSlash >= 0 && lastSlash < href.Length - 1 ? href.Substring(lastSlash + 1) : href.TrimStart('/');
+                        text = char.ToUpper(name[0]) + name.Substring(1);
+                    }
+
+                    items.Add(new object[] { href, icon, text, new System.Collections.ArrayList() });
+                }
+            }
+        }
+        if (!skipSection && items.Count > 0)
+        {
+
+        <div class="flex flex-col gap-2">
             @if (!string.IsNullOrEmpty(label))
             {
-                <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">@label</h3>
+                <h3 class="px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">@label</h3>
             }
-            <ul class="space-y-1">
-                @foreach (var item in items)
-                {
-                    @RenderLink(item[0], item[1], item[2], currentPath)
-                }
+            <ul class="flex flex-col gap-1">
+                @RenderTreeItems(items, currentPath)
             </ul>
         </div>
+        }
     }
     </nav>
 

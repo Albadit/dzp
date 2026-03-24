@@ -14,22 +14,29 @@
     },
     {
       "label": "Community",
-      "pages": [
-        { "page": "[community]/home", "icon": "home" },
-        { "page": "[community]/timeline", "icon": "message-square-text" },
-        { "page": "[community]/discover", "icon": "library-big" }
-      ],
+      "parent": "[community]",
+      "level": 1,
+      "ignore": ["manage"],
+      "icons": {
+        "home": "home",
+        "timeline": "message-square-text",
+        "discover": "library-big"
+      },
       "context": ["community"]
     },
     {
       "label": "Management",
-      "pages": [
-        { "page": "[community]/manage/users", "icon": "users" },
-        { "page": "[community]/manage/company", "icon": "building-2" },
-        { "page": "[community]/manage/managers", "icon": "handshake" },
-        { "page": "[community]/manage/groups", "icon": "component" },
-        { "page": "[community]/manage/newsletter", "icon": "newspaper" }
-      ],
+      "parent": "[community]/manage",
+      "level": 1,
+      "ignore": [],
+      "icons": {
+        "users": "users",
+        "[company]": "building-2",
+        "companies": "building-2",
+        "managers": "handshake",
+        "groups": "component",
+        "newsletter": "newspaper"
+      },
       "context": ["community"]
     },
     {
@@ -41,11 +48,14 @@
     },
     {
       "label": "Instellingen",
-      "pages": [
-        { "page": "settings/profile", "icon": "user" },
-        { "page": "settings/password", "icon": "key-round" },
-        { "page": "settings/notifications", "icon": "bell" }
-      ],
+      "parent": "settings",
+      "level": 1,
+      "ignore": [],
+      "icons": {
+        "profile": "user",
+        "password": "key-round",
+        "notifications": "bell"
+      },
       "context": ["settings"]
     }
   ]
