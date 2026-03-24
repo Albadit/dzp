@@ -143,6 +143,35 @@ namespace DZP.RouteContext
         }
 
         /// <summary>
+        /// Returns all communities.
+        /// </summary>
+        public static List<CommunityInfo> GetAllCommunities()
+        {
+            var list = new List<CommunityInfo>();
+            var connStr = ConfigurationManager.ConnectionStrings["SiteSqlServer"]?.ConnectionString;
+            if (string.IsNullOrEmpty(connStr)) return list;
+
+            using (var conn = new SqlConnection(connStr))
+            using (var cmd = new SqlCommand("SELECT CommunityID, Slug, Name FROM Community ORDER BY Name", conn))
+            {
+                conn.Open();
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        list.Add(new CommunityInfo
+                        {
+                            Id   = reader.GetInt32(0),
+                            Slug = reader.GetString(1),
+                            Name = reader.GetString(2)
+                        });
+                    }
+                }
+            }
+            return list;
+        }
+
+        /// <summary>
         /// Returns communities the user belongs to (or all for SuperUsers).
         /// </summary>
         public static List<CommunityInfo> GetUserCommunities(UserInfo user)
