@@ -1,88 +1,168 @@
-@using System.IO
-@using System.Web.Script.Serialization
 @inherits DotNetNuke.Web.Razor.DotNetNukeWebPage<dynamic>
-
 @{
-    // --- Load and cache _routeFilter.json ---
+    // --- Load and cache HeaderRoute.json (across requests, auto-invalidates on file change) ---
     const string cacheKey = "dzp:headerRoute";
-    var config = HttpContext.Current.Items[cacheKey] as Dictionary<string, object>;
+    var appCache = System.Web.HttpRuntime.Cache;
+    var config   = appCache[cacheKey] as Dictionary<string, object>;
     if (config == null)
     {
-        var jsonPath = Server.MapPath("~/Portals/_default/Skins/TailwindDNN/menus/header/_routeFilter.json");
-        var json = File.ReadAllText(jsonPath);
-        var jss = new JavaScriptSerializer();
-        config = jss.Deserialize<Dictionary<string, object>>(json);
-        HttpContext.Current.Items[cacheKey] = config;
+        var jsonPath = Server.MapPath("~/Portals/_default/Skins/TailwindDNN/menus/header/HeaderRoute.json");
+        var json = System.IO.File.ReadAllText(jsonPath);
+        var jss  = new System.Web.Script.Serialization.JavaScriptSerializer();
+        config   = jss.Deserialize<Dictionary<string, object>>(json);
+        appCache.Insert(cacheKey, config,
+            new System.Web.Caching.CacheDependency(jsonPath),
+            System.Web.Caching.Cache.NoAbsoluteExpiration,
+            System.Web.Caching.Cache.NoSlidingExpiration);
     }
 
     var contexts   = config["contexts"] as Dictionary<string, object>;
     var popupLinks = config["popupLinks"] as System.Collections.ArrayList;
 
+    // --- Route context (validated community/company, cached per request) ---
+    var rc = DZP.RouteContext.RouteContext.Current;
+
     // --- URL state ---
-    var req  = HttpContext.Current.Request;
-    var segs = req.RawUrl.Split('?')[0].Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-    var seg0 = segs.Length > 0 ? segs[0] : "";
+    var rawUrl = HttpContext.Current.Request.RawUrl;
+    var qIdx   = rawUrl.IndexOf('?');
+    var path   = qIdx >= 0 ? rawUrl.Substring(0, qIdx) : rawUrl;
+    var segs   = path.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    var seg0   = segs.Length > 0 ? segs[0] : "";
+    var auth   = HttpContext.Current.Request.IsAuthenticated;
 
     // Derive context from JSON mapping
     string ctx = "";
-    bool knownSegment = false;
-    foreach (var kv in contexts)
+    object ctxVal;
+    if (seg0.Length > 0 && contexts.TryGetValue(seg0, out ctxVal))
     {
-        if (seg0.Equals(kv.Key, StringComparison.OrdinalIgnoreCase))
+        ctx = (string)ctxVal;
+    }
+    else if (seg0.Length > 0)
+    {
+        foreach (var kv in contexts)
         {
-            ctx = (string)kv.Value;
-            knownSegment = true;
-            break;
+            if (seg0.Equals(kv.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                ctx = (string)kv.Value;
+                break;
+            }
         }
     }
 
-    var slug         = (segs.Length >= 2 && !knownSegment) ? seg0 : "";
-    var hasCommunity = !string.IsNullOrEmpty(slug)
-                       && HttpContext.Current.Items.Contains("dzp:CommunityValid")
-                       && (bool)HttpContext.Current.Items["dzp:CommunityValid"];
+    // Community from RouteContext (already validated + membership checked)
+    var hasCommunity = rc != null && !string.IsNullOrEmpty(rc.CommunitySlug);
+    var communityName = hasCommunity ? rc.CommunityName : "";
+    var slug          = hasCommunity ? rc.CommunitySlug : "";
     if (hasCommunity) { ctx = "community"; }
-}
 
-<ul class="flex flex-col">
-@foreach (Dictionary<string, object> link in popupLinks)
-{
-    // --- Context filter ---
-    var ctxList = link.ContainsKey("context") && link["context"] != null ? link["context"] as System.Collections.ArrayList : null;
-    if (ctxList != null && ctxList.Count > 0)
+    // --- Portal / user info ---
+    var ps          = DotNetNuke.Entities.Portals.PortalSettings.Current;
+    var user        = ps != null ? ps.UserInfo : null;
+    var logoUrl     = (ps != null && !string.IsNullOrEmpty(ps.LogoFile)) ? ps.HomeDirectory + ps.LogoFile : "";
+    var profileImg  = (user != null && user.UserID > 0) ? "/DnnImageHandler.ashx?mode=profilepic&userId=" + user.UserID + "&h=64&w=64" : "";
+    var displayName = user != null ? (user.DisplayName ?? "") : "";
+    var email       = user != null ? (user.Email ?? "") : "";
+    var portalName  = ps != null ? ps.PortalName : "";
+    var skinPath    = (ps != null && ps.ActiveTab != null && !string.IsNullOrEmpty(ps.ActiveTab.SkinPath))
+                      ? ps.ActiveTab.SkinPath : "/Portals/_default/Skins/TailwindDNN/";
+    var userRole = "";
+    if (user != null && user.UserID > 0)
     {
-        bool show = false;
-        foreach (string rule in ctxList)
+        if (user.IsSuperUser) { userRole = "Super User"; }
+        else if (user.IsInRole("Administrators")) { userRole = "Administrators"; }
+        else if (user.Roles != null)
         {
-            if (rule.StartsWith("!"))
+            foreach (var r in user.Roles)
             {
-                if (!ctx.Equals(rule.Substring(1), StringComparison.OrdinalIgnoreCase)) { show = true; }
-                else { show = false; break; }
+                if (!string.Equals(r, "Registered Users", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(r, "Subscribers", StringComparison.OrdinalIgnoreCase))
+                {
+                    userRole = r;
+                    break;
+                }
             }
-            else
-            {
-                if (ctx.Equals(rule, StringComparison.OrdinalIgnoreCase)) { show = true; break; }
-            }
+            if (string.IsNullOrEmpty(userRole) && user.Roles.Length > 0) { userRole = user.Roles[0]; }
         }
-        if (!show) { continue; }
     }
-
-    var hrefRaw   = link.ContainsKey("href") && link["href"] != null ? (string)link["href"] : "";
-    var label     = link.ContainsKey("label") && link["label"] != null ? (string)link["label"] : "";
-    var css       = link.ContainsKey("css") && link["css"] != null ? (string)link["css"] : "text-gray-700";
-    var separator = link.ContainsKey("separator") && link["separator"] != null ? (string)link["separator"] : "";
-
-    // Resolve [community] placeholder
-    string href;
-    if (hrefRaw.StartsWith("[community]", StringComparison.OrdinalIgnoreCase))
-    {
-        if (!hasCommunity) { continue; }
-        href = "/" + slug + hrefRaw.Substring("[community]".Length);
-    }
-    else
-    {
-        href = "/" + hrefRaw;
-    }
-
-    <li class="@separator"><a href="@href" class="block px-4 py-2 text-sm @css hover:bg-gray-100">@label</a></li>
 }
-</ul>
+
+<div class="sticky top-0 z-50 bg-white flex h-17.5 p-3 border-b border-[#D9D9D9]">
+    <div class="lg:w-[250px] mr-4 flex gap-2.5 shrink-0 items-center">
+        <!-- Mobile hamburger -->
+        <button type="button" id="sidebar-toggle" class="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors" aria-label="Toggle sidebar">
+            <i data-lucide="menu" class="size-5"></i>
+        </button>
+        <!-- Logo -->
+        <a href="/" class="lg:block hidden self-stretch">
+            <img src="@logoUrl" alt="@portalName" class="h-full"/>
+        </a>
+    </div>
+    <div class="w-full flex justify-between">
+        <div class="flex gap-2.5 @(string.IsNullOrEmpty(communityName) ? "invisible" : "")">
+            <div class="sm:flex hidden h-full aspect-square object-cover rounded-xs bg-gray-200 justify-center items-center font-bold">Logo</div>
+            <div class="lg:w-80 w-45 flex flex-col lg:justify-between justify-center">
+                <span class="lg:text-base text-sm font-bold w-full text-ellipsis overflow-hidden whitespace-nowrap">@communityName</span>
+                <div class="flex gap-2 items-center">
+                    <i data-lucide="coffee" class="size-3 shrink-0"></i>
+                    <span class="lg:text-base w-full text-xs text-ellipsis overflow-hidden whitespace-nowrap">@userRole</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-8 items-center">
+            <i data-lucide="bell" class="lg:block hidden size-5.5 shrink-0"></i>
+            <i data-lucide="search" class="lg:block hidden size-5.5 shrink-0"></i>
+            <div id="user-menu-trigger" class="flex gap-2.5 items-center self-stretch relative cursor-pointer">
+                <img src="@profileImg" alt="@displayName" class="h-full shrink-0 aspect-square object-cover rounded-full">
+                <div class="lg:flex hidden flex-col max-w-32 leading-none">
+                    <span class="w-full font-bold text-ellipsis overflow-hidden whitespace-nowrap">@displayName</span>
+                    <span class="w-full text-sm text-ellipsis overflow-hidden whitespace-nowrap">@email</span>
+                </div>
+
+                <!-- User Popup -->
+                <div id="user-popup" class="hidden absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-2">
+                    <ul class="flex flex-col">
+                    @foreach (Dictionary<string, object> link in popupLinks)
+                    {
+                        object linkVal;
+                        var ctxList = link.TryGetValue("context", out linkVal) && linkVal != null ? linkVal as System.Collections.ArrayList : null;
+                        if (ctxList != null && ctxList.Count > 0)
+                        {
+                            bool show = false;
+                            foreach (string rule in ctxList)
+                            {
+                                if (rule[0] == '!')
+                                {
+                                    if (ctx.Equals(rule.Substring(1), StringComparison.OrdinalIgnoreCase)) { show = false; break; }
+                                    show = true;
+                                }
+                                else if (ctx.Equals(rule, StringComparison.OrdinalIgnoreCase)) { show = true; break; }
+                            }
+                            if (!show) { continue; }
+                        }
+
+                        var hrefRaw   = link.TryGetValue("href", out linkVal) && linkVal != null ? (string)linkVal : "";
+                        var label     = link.TryGetValue("label", out linkVal) && linkVal != null ? (string)linkVal : "";
+                        var css       = link.TryGetValue("css", out linkVal) && linkVal != null ? (string)linkVal : "text-gray-700";
+                        var separator = link.TryGetValue("separator", out linkVal) && linkVal != null ? (string)linkVal : "";
+
+                        string href;
+                        if (hrefRaw.Length > 12 && hrefRaw[0] == '[' && hrefRaw.StartsWith("[community]", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (!hasCommunity) { continue; }
+                            href = "/" + slug + hrefRaw.Substring(11);
+                        }
+                        else
+                        {
+                            href = "/" + hrefRaw;
+                        }
+
+                        <li class="@separator"><a href="@href" class="block px-4 py-2 text-sm @css hover:bg-gray-100">@label</a></li>
+                    }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="@(skinPath)js/header.js"></script>

@@ -1,7 +1,5 @@
-@using System.IO
-@using System.Web.Script.Serialization
 @inherits DotNetNuke.Web.Razor.DotNetNukeWebPage<dynamic>
-
+    
 @helper RenderLink(string href, string icon, string text, string currentPath) {
     bool active = currentPath.Equals(href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
     string cls = active
@@ -17,118 +15,169 @@
 }
 
 @{
-    // --- Load and cache _routeFilter.json ---
-    const string cacheKey = "dzp:routeFilter";
-    var config = HttpContext.Current.Items[cacheKey] as Dictionary<string, object>;
+    // --- Load and cache SidebarRoute.json (across requests, auto-invalidates on file change) ---
+    const string cacheKey = "dzp:sidebarRoute";
+    var cache  = System.Web.HttpRuntime.Cache;
+    var config = cache[cacheKey] as Dictionary<string, object>;
     if (config == null)
     {
         var jsonPath = Server.MapPath("~/Portals/_default/Skins/TailwindDNN/menus/sidebar/SidebarRoute.json");
-        var json = File.ReadAllText(jsonPath);
-        var jss = new JavaScriptSerializer();
-        config = jss.Deserialize<Dictionary<string, object>>(json);
-        HttpContext.Current.Items[cacheKey] = config;
+        var json = System.IO.File.ReadAllText(jsonPath);
+        var jss  = new System.Web.Script.Serialization.JavaScriptSerializer();
+        config   = jss.Deserialize<Dictionary<string, object>>(json);
+        cache.Insert(cacheKey, config,
+            new System.Web.Caching.CacheDependency(jsonPath),
+            System.Web.Caching.Cache.NoAbsoluteExpiration,
+            System.Web.Caching.Cache.NoSlidingExpiration);
     }
 
     var contexts = config["contexts"] as Dictionary<string, object>;
     var sections = config["sections"] as System.Collections.ArrayList;
 
     // --- URL state ---
-    var req         = HttpContext.Current.Request;
-    var currentPath = req.RawUrl.Split('?')[0].TrimEnd('/');
-    var segs        = currentPath.Trim('/').Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+    var rawUrl      = HttpContext.Current.Request.RawUrl;
+    var qIdx        = rawUrl.IndexOf('?');
+    var currentPath = (qIdx >= 0 ? rawUrl.Substring(0, qIdx) : rawUrl).TrimEnd('/');
+    var segs        = currentPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
     var seg0        = segs.Length > 0 ? segs[0] : "";
 
     // Derive context from JSON mapping
     string ctx = "";
-    bool knownSegment = false;
-    foreach (var kv in contexts)
+    object ctxVal;
+    if (seg0.Length > 0 && contexts.TryGetValue(seg0, out ctxVal))
     {
-        if (seg0.Equals(kv.Key, StringComparison.OrdinalIgnoreCase))
+        ctx = (string)ctxVal;
+    }
+    else if (seg0.Length > 0)
+    {
+        foreach (var kv in contexts)
         {
-            ctx = (string)kv.Value;
-            knownSegment = true;
-            break;
+            if (seg0.Equals(kv.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                ctx = (string)kv.Value;
+                break;
+            }
         }
     }
 
-    var slug         = (segs.Length >= 2 && !knownSegment) ? seg0 : "";
-    var hasCommunity = !string.IsNullOrEmpty(slug)
-                       && HttpContext.Current.Items.Contains("dzp:CommunityValid")
-                       && (bool)HttpContext.Current.Items["dzp:CommunityValid"];
+    // Community from RouteContext (already validated + membership checked)
+    var rc           = DZP.RouteContext.RouteContext.Current;
+    var hasCommunity = rc != null && !string.IsNullOrEmpty(rc.CommunitySlug);
+    var slug         = hasCommunity ? rc.CommunitySlug : "";
     if (hasCommunity) { ctx = "community"; }
+
+    // --- Portal / user info for shell ---
+    var ps       = DotNetNuke.Entities.Portals.PortalSettings.Current;
+    var logoUrl  = (ps != null && !string.IsNullOrEmpty(ps.LogoFile)) ? ps.HomeDirectory + ps.LogoFile : "";
+    var logoHref = hasCommunity ? "/" + slug + "/home" : "/dashboard";
+    var skinPath = (ps != null && ps.ActiveTab != null && !string.IsNullOrEmpty(ps.ActiveTab.SkinPath))
+                   ? ps.ActiveTab.SkinPath : "/Portals/_default/Skins/TailwindDNN/";
 }
 
-@foreach (var section in sections)
-{
-    var sec = (Dictionary<string, object>)section;
-    // --- Context filter ---
-    // context is an array: ["admin", "dashboard"] = show on admin OR dashboard
-    //                      ["!settings"]           = show everywhere EXCEPT settings
-    var ctxList = sec.ContainsKey("context") && sec["context"] != null ? sec["context"] as System.Collections.ArrayList : null;
-    if (ctxList != null && ctxList.Count > 0)
+<!-- Overlay for mobile -->
+<div id="sidebar-overlay" class="hidden fixed inset-0 z-30 bg-black/40 lg:hidden"></div>
+
+<!-- Sidebar -->
+<aside id="sidebar" class="fixed top-0 lg:sticky lg:top-[70px] z-40 h-dvh lg:h-[calc(100dvh-70px)] w-[250px] -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out bg-white border-r border-gray-200 flex flex-col">
+
+    <!-- Header (mobile only) -->
+    <div class="h-17.5 flex items-center justify-between px-4 py-3 border-b border-gray-200 lg:hidden shrink-0">
+        <a href="@logoHref" class="self-stretch">
+            <img src="@logoUrl" alt="@(ps != null ? ps.PortalName : "")" class="h-full"/>
+        </a>
+        <button type="button" id="sidebar-close" class="p-1 rounded-md hover:bg-gray-100 transition-colors" aria-label="Close sidebar">
+            <i data-lucide="x" class="size-5 text-gray-500"></i>
+        </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 overflow-y-auto px-3 py-4">
+    @foreach (var section in sections)
     {
-        bool show = false;
-        foreach (string rule in ctxList)
+        var sec = (Dictionary<string, object>)section;
+
+        // --- Context filter ---
+        object ctxRaw;
+        var ctxList = sec.TryGetValue("context", out ctxRaw) && ctxRaw != null ? ctxRaw as System.Collections.ArrayList : null;
+        if (ctxList != null && ctxList.Count > 0)
         {
-            if (rule.StartsWith("!"))
+            bool show = false;
+            foreach (string rule in ctxList)
             {
-                // negation: show unless ctx matches
-                if (!ctx.Equals(rule.Substring(1), StringComparison.OrdinalIgnoreCase)) { show = true; }
-                else { show = false; break; }
+                if (rule[0] == '!')
+                {
+                    if (ctx.Equals(rule.Substring(1), StringComparison.OrdinalIgnoreCase)) { show = false; break; }
+                    show = true;
+                }
+                else if (ctx.Equals(rule, StringComparison.OrdinalIgnoreCase)) { show = true; break; }
+            }
+            if (!show) { continue; }
+        }
+
+        // --- Pages ---
+        object pagesRaw;
+        var pagesObj = sec.TryGetValue("pages", out pagesRaw) && pagesRaw != null ? pagesRaw as System.Collections.ArrayList : null;
+        if (pagesObj == null || pagesObj.Count == 0) { continue; }
+
+        // --- Label ---
+        object labelRaw;
+        var label = sec.TryGetValue("label", out labelRaw) && labelRaw != null ? (string)labelRaw : null;
+
+        // Resolve paths: replace [community] with actual slug
+        var items = new List<string[]>(pagesObj.Count);
+        bool skipSection = false;
+        foreach (Dictionary<string, object> entry in pagesObj)
+        {
+            object val;
+            var p    = entry.TryGetValue("page", out val) && val != null ? (string)val : "";
+            var icon = entry.TryGetValue("icon", out val) && val != null ? (string)val : "";
+            var text = entry.TryGetValue("text", out val) && val != null ? (string)val : null;
+
+            string href;
+            if (p.Length > 12 && p[0] == '[' && p.StartsWith("[community]", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!hasCommunity) { skipSection = true; break; }
+                href = "/" + slug + p.Substring(11);
             }
             else
             {
-                if (ctx.Equals(rule, StringComparison.OrdinalIgnoreCase)) { show = true; break; }
+                href = "/" + p;
             }
-        }
-        if (!show) { continue; }
-    }
 
-    // --- Pages ---
-    var pagesObj = sec.ContainsKey("pages") && sec["pages"] != null ? sec["pages"] as System.Collections.ArrayList : null;
-
-    // --- Label ---
-    var label = sec.ContainsKey("label") && sec["label"] != null ? (string)sec["label"] : null;
-
-    if (pagesObj == null || pagesObj.Count == 0) { continue; }
-
-    // Resolve paths: replace [community] with actual slug
-    var items = new List<string[]>(); // [href, icon, text]
-    bool skipSection = false;
-    foreach (Dictionary<string, object> entry in pagesObj)
-    {
-        var p    = entry.ContainsKey("page") && entry["page"] != null ? (string)entry["page"] : "";
-        var icon = entry.ContainsKey("icon") && entry["icon"] != null ? (string)entry["icon"] : "";
-
-        string href;
-        if (p.StartsWith("[community]", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!hasCommunity) { skipSection = true; break; }
-            href = "/" + slug + p.Substring("[community]".Length);
-        }
-        else
-        {
-            href = "/" + p;
-        }
-
-        var parts = href.Trim('/').Split('/');
-        var name  = parts[parts.Length - 1];
-        var text  = char.ToUpper(name[0]) + name.Substring(1);
-
-        items.Add(new[] { href, icon, text });
-    }
-    if (skipSection) { continue; }
-
-    <div class="mb-6">
-        @if (!string.IsNullOrEmpty(label))
-        {
-            <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">@label</h3>
-        }
-        <ul class="space-y-1">
-            @foreach (var item in items)
+            // Derive display text from last path segment if not explicit
+            if (text == null)
             {
-                @RenderLink(item[0], item[1], item[2], currentPath)
+                var lastSlash = href.LastIndexOf('/');
+                var name = lastSlash >= 0 && lastSlash < href.Length - 1 ? href.Substring(lastSlash + 1) : href.TrimStart('/');
+                text = char.ToUpper(name[0]) + name.Substring(1);
             }
-        </ul>
+
+            items.Add(new[] { href, icon, text });
+        }
+        if (skipSection) { continue; }
+
+        <div class="mb-6">
+            @if (!string.IsNullOrEmpty(label))
+            {
+                <h3 class="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">@label</h3>
+            }
+            <ul class="space-y-1">
+                @foreach (var item in items)
+                {
+                    @RenderLink(item[0], item[1], item[2], currentPath)
+                }
+            </ul>
+        </div>
+    }
+    </nav>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 px-3 py-4 shrink-0">
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900">
+            <i data-lucide="help-circle" class="size-5 shrink-0"></i>
+            <span>Help & Support</span>
+        </a>
     </div>
-}
+</aside>
+
+<script src="@(skinPath)js/sidebar.js"></script>
