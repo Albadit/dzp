@@ -368,15 +368,7 @@
   color: #6b7280;
 }
 .dt-page-size {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  outline: none;
-}
-.dt-page-size:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  min-width: 5rem;
 }
 
 /* ── Modal Overlay ── */

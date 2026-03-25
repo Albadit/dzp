@@ -1,147 +1,63 @@
 /* ==========================================================================
-   Edit.cshtml – module-specific overrides & additions
-   Extends the base .dnnEditBasicSettings design system below.
+   Edit.cshtml – AdvancedTable config form styles
    ========================================================================== */
 
-/* ---- API method + path row ---- */
-.dnnEditBasicSettings .edit-method-row {
+/* ---- DNN base style reset ---- */
+.at-edit,
+.at-edit * {
+  box-sizing: border-box;
+}
+
+.at-edit h2 {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+}
+
+.at-edit fieldset {
+  clear: none !important;
+  margin-bottom: 0 !important;
+}
+
+.at-edit textarea {
+  resize: none !important;
+  overflow: hidden !important;
+}
+
+.at-edit input[type="text"],
+.at-edit input[type="email"],
+.at-edit input[type="url"],
+.at-edit input[type="number"],
+.at-edit textarea {
+  margin-bottom: 0 !important;
+  
+}
+
+/* ---- Outer wrapper ---- */
+[id^="EditConfig-"] {
+  width: 48rem;
+  padding: 0 8px;
+}
+
+[id^="mvcContainer-"] {
   display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  flex-direction: row !important;
-  align-items: flex-end !important;
+  justify-content: center;
 }
-
-.dnnEditBasicSettings .edit-method-row > div:last-child {
-  flex: 1;
-}
-
-/* ---- Section head spacing ---- */
-.dnnEditBasicSettings .edit-section-head {
-  margin-top: 1.25rem;
-}
-
-/* ---- Checkbox label (Allow Create, etc.) ---- */
-.dnnEditBasicSettings .edit-check-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  cursor: pointer;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--default-700);
-}
-
-/* ---- Permission info text ---- */
-.dnnEditBasicSettings .edit-perm-info {
-  margin-bottom: 0.375rem;
-  font-size: 0.75rem;
-  color: var(--default-400);
-}
-
-/* ---- Permission Row ---- */
-.dnnEditBasicSettings .perm-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  padding: 0.375rem 0;
-  flex-wrap: wrap;
-}
-
-/* Permission type & name selects */
-.dnnEditBasicSettings .perm-type {
-  width: 6.5rem;
-  flex: 0 0 auto;
-}
-
-.dnnEditBasicSettings .perm-name {
-  width: 13rem;
-  flex: 0 0 auto;
-}
-
-/* Permission checkbox labels */
-.dnnEditBasicSettings .perm-row label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--default-700);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-/* Remove buttons (permission rows) */
-.dnnEditBasicSettings .perm-row .remove-perm {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: var(--default-400);
-  background: transparent;
-  border: 1px solid var(--default-200);
-  border-radius: var(--radius-button);
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.dnnEditBasicSettings .perm-row .remove-perm:hover {
-  color: #dc2626;
-  border-color: #fca5a5;
-  background-color: #fef2f2;
-}
-
-/* ---- Add Permission Button ---- */
-.dnnEditBasicSettings #addPermission {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--primary-600);
-  background: transparent;
-  border: 1px dashed var(--primary-300);
-  border-radius: var(--radius-button);
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-  margin-top: 0.5rem;
-}
-
-.dnnEditBasicSettings #addPermission:hover {
-  background-color: var(--primary-50);
-  border-color: var(--primary-500);
-}
-
-/* ---- Action bar ---- */
-.dnnEditBasicSettings + .edit-actions {
-  display: flex;
-  gap: 0.625rem;
-  align-items: center;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--default-200);
-  margin-top: 1.25rem;
-}
-
-/* ==========================================================================
-   DNN Edit Basic Settings (Module Config Forms)
-   Clean card-based layout for .dnnEditBasicSettings configuration panels.
-   ========================================================================== */
 
 /* ---- Form Container ---- */
-.dnnEditBasicSettings {
+.at-edit {
   max-width: 44rem;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 0.25rem;
 }
 
-/* ---- Expand All Link ---- */
-.dnnEditBasicSettings .dnnFormExpandContent {
+/* ---- Collapse/Expand All ---- */
+.at-collapse-toggle {
   text-align: right;
-  margin-bottom: 0.25rem;
 }
 
-.dnnEditBasicSettings .dnnFormExpandContent a {
+.at-collapse-toggle a {
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--primary-600);
@@ -149,13 +65,13 @@
   transition: color 0.15s ease;
 }
 
-.dnnEditBasicSettings .dnnFormExpandContent a:hover {
+.at-collapse-toggle a:hover {
   color: var(--primary-700);
   text-decoration: underline;
 }
 
-/* ---- Section Headings (Accordion Panels) ---- */
-.dnnEditBasicSettings h2.dnnFormSectionHead {
+/* ---- Section Headings (Accordion) ---- */
+.at-edit h2.at-section-head {
   margin: 0;
   padding: 0;
   border: none;
@@ -165,7 +81,7 @@
   letter-spacing: normal;
 }
 
-.dnnEditBasicSettings h2.dnnFormSectionHead a {
+.at-edit h2.at-section-head a {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -178,7 +94,7 @@
   transition: color 0.15s ease;
 }
 
-.dnnEditBasicSettings h2.dnnFormSectionHead a::before {
+.at-edit h2.at-section-head a::before {
   content: "";
   display: inline-block;
   width: 0.5rem;
@@ -190,23 +106,23 @@
   flex-shrink: 0;
 }
 
-.dnnEditBasicSettings h2.dnnFormSectionHead a.dnnSectionExpanded::before {
+.at-edit h2.at-section-head a.at-expanded::before {
   transform: rotate(-135deg);
 }
 
-.dnnEditBasicSettings h2.dnnFormSectionHead a:hover {
+.at-edit h2.at-section-head a:hover {
   color: var(--primary-600);
   background: none !important;
 }
 
-.dnnEditBasicSettings h2.dnnFormSectionHead a small {
+.at-edit h2.at-section-head a small {
   font-weight: 400;
   font-size: 0.75rem;
   color: var(--default-400);
 }
 
 /* ---- Fieldset ---- */
-.dnnEditBasicSettings fieldset {
+.at-edit fieldset {
   border: none;
   margin: 0;
   padding: 0.75rem 0 1.25rem;
@@ -215,8 +131,8 @@
   gap: 1rem;
 }
 
-/* ---- Form Items ---- */
-.dnnEditBasicSettings .dnnFormItem {
+/* ---- Form Fields ---- */
+.at-edit .at-field {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
@@ -224,24 +140,24 @@
 }
 
 /* ---- Labels ---- */
-.dnnEditBasicSettings .dnnFormItem > div > label,
-.dnnEditBasicSettings .dnnFormItem label {
+.at-edit .at-field > div > label,
+.at-edit .at-field label {
   display: block;
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--default-700);
 }
 
-.dnnEditBasicSettings .dnnFormItem label small {
+.at-edit .at-field label small {
   font-weight: 400;
   color: var(--default-400);
 }
 
 /* ---- Text Inputs ---- */
-.dnnEditBasicSettings input[type="text"],
-.dnnEditBasicSettings input[type="email"],
-.dnnEditBasicSettings input[type="url"],
-.dnnEditBasicSettings input[type="number"] {
+.at-edit input[type="text"],
+.at-edit input[type="email"],
+.at-edit input[type="url"],
+.at-edit input[type="number"] {
   display: block;
   width: 100% !important;
   max-width: 100% !important;
@@ -257,36 +173,16 @@
   outline: none;
 }
 
-.dnnEditBasicSettings input[type="text"]:focus,
-.dnnEditBasicSettings input[type="email"]:focus,
-.dnnEditBasicSettings input[type="url"]:focus,
-.dnnEditBasicSettings input[type="number"]:focus {
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
-}
-
-/* ---- Select ---- */
-.dnnEditBasicSettings select {
-  display: block;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: var(--default-900);
-  background-color: white;
-  border: 1px solid var(--default-300);
-  border-radius: var(--radius-button);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  outline: none;
-  cursor: pointer;
-}
-
-.dnnEditBasicSettings select:focus {
+.at-edit input[type="text"]:focus,
+.at-edit input[type="email"]:focus,
+.at-edit input[type="url"]:focus,
+.at-edit input[type="number"]:focus {
   border-color: var(--primary-500);
   box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
 }
 
 /* ---- Textarea ---- */
-.dnnEditBasicSettings textarea {
+.at-edit textarea {
   display: block;
   width: 100% !important;
   max-width: 100% !important;
@@ -301,21 +197,22 @@
   border-radius: var(--radius-button);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   outline: none;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   min-height: 2.75rem;
 }
 
-.dnnEditBasicSettings textarea:focus {
+.at-edit textarea:focus {
   border-color: var(--primary-500);
   box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
 }
 
-.dnnEditBasicSettings textarea::placeholder {
+.at-edit textarea::placeholder {
   color: var(--default-400);
 }
 
 /* ---- Checkboxes ---- */
-.dnnEditBasicSettings input[type="checkbox"] {
+.at-edit input[type="checkbox"] {
   -webkit-appearance: none;
   appearance: none;
   position: static !important;
@@ -332,7 +229,7 @@
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.dnnEditBasicSettings input[type="checkbox"]:checked {
+.at-edit input[type="checkbox"]:checked {
   background-color: var(--primary-600);
   border-color: var(--primary-600);
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
@@ -341,70 +238,167 @@
   background-repeat: no-repeat;
 }
 
-/* Hide DNN's fake checkbox */
-.dnnEditBasicSettings .dnnCheckbox {
-  display: none !important;
+/* ---- API Fields and SQl Fields ---- */
+#apiFields, #sqlFields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.dnnEditBasicSettings .dnnBoxLabel {
-  display: inline-flex !important;
-  align-items: center;
+/* ---- API method grid (2 cols: method + path) ---- */
+.at-edit .at-method-grid {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.5rem 0.75rem;
+}
+
+/* ---- Permission info text ---- */
+.at-edit .edit-perm-info {
+  font-size: 0.75rem;
+  color: var(--default-400);
+}
+
+/* ---- Permission Row ---- */
+.at-edit .perm-row {
+  display: flex;
   gap: 0.5rem;
+  align-items: center;
+  padding: 0.375rem 4rem 0.375rem 0;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.at-edit .perm-type-ms {
+  width: 8rem;
+  flex: 0 0 auto;
+}
+
+.at-edit .perm-name-ms {
+  width: 16rem;
+  flex: 0 0 auto;
+}
+
+.at-edit .perm-checks {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.25rem 0.75rem;
+}
+
+.at-edit .perm-checks label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--default-700);
   cursor: pointer;
+  white-space: nowrap;
 }
 
-/* ---- Column Row (dynamic column editor) ---- */
-.dnnEditBasicSettings .column-row {
+.at-edit .perm-row .remove-perm {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1;
+  color: var(--default-400);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.at-edit .perm-row .remove-perm:hover {
+  color: #dc2626;
+}
+
+/* ---- Column Row ---- */
+.at-edit .column-row {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  padding: 0.375rem 0;
+  padding: 0.375rem 4rem 0.375rem 0;
+  flex-wrap: wrap;
+  position: relative;
 }
 
-.dnnEditBasicSettings .column-row input[type="text"] {
+.at-edit .column-row input[type="text"] {
   width: auto !important;
   max-width: none !important;
   flex: 0 0 auto;
 }
 
-.dnnEditBasicSettings .column-row select {
+.at-edit .col-type-ms {
+  width: 10rem;
   flex: 0 0 auto;
 }
 
-.dnnEditBasicSettings .column-row .remove-col {
-  padding: 0.5rem 0.75rem;
+.at-edit .col-query-wrap {
+  flex: 1 1 100%;
+}
+
+.at-edit .col-query-wrap .col-query {
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+.at-edit .column-row .remove-col {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: 1;
   color: var(--default-400);
   background: transparent;
-  border: 1px solid var(--default-200);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.at-edit .column-row .remove-col:hover {
+  color: #dc2626;
+}
+
+/* ---- Add Buttons (dashed) ---- */
+.at-edit .at-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--primary-600);
+  background: transparent;
+  border: 1px dashed var(--primary-300);
   border-radius: var(--radius-button);
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  margin-top: 0.5rem;
 }
 
-.dnnEditBasicSettings .column-row .remove-col:hover {
-  color: #dc2626;
-  border-color: #fca5a5;
-  background-color: #fef2f2;
+.at-edit .at-add-btn:hover {
+  background-color: var(--primary-50);
+  border-color: var(--primary-500);
 }
 
-/* ---- Inline Flex Rows (API method+path pairs) ---- */
-.dnnEditBasicSettings .dnnFormItem[style*="display:flex"],
-.dnnEditBasicSettings .dnnFormItem[style*="display: flex"] {
-  flex-direction: row !important;
-  align-items: flex-end !important;
-  gap: 0.75rem !important;
-  flex-wrap: wrap !important;
+/* ---- Action Bar ---- */
+.at-actions {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--default-200);
+  margin-top: 1.25rem;
 }
 
-/* ---- Primary Action (Save Button) ---- */
-.dnnEditBasicSettings ~ div .dnnPrimaryAction,
-#EditConfig .dnnPrimaryAction,
-.dnnEditBasicSettings + div .dnnPrimaryAction {
+/* ---- Primary Button (Save) ---- */
+.at-btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -420,18 +414,14 @@
   text-decoration: none;
 }
 
-.dnnEditBasicSettings ~ div .dnnPrimaryAction:hover,
-#EditConfig .dnnPrimaryAction:hover,
-.dnnEditBasicSettings + div .dnnPrimaryAction:hover {
+.at-btn-primary:hover {
   background-color: var(--primary-700);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   color: white;
 }
 
-/* ---- Secondary Action (Cancel Link) ---- */
-.dnnEditBasicSettings ~ div .dnnSecondaryAction,
-#EditConfig .dnnSecondaryAction,
-.dnnEditBasicSettings + div .dnnSecondaryAction {
+/* ---- Secondary Button (Cancel) ---- */
+.at-btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -447,43 +437,10 @@
   text-decoration: none;
 }
 
-.dnnEditBasicSettings ~ div .dnnSecondaryAction:hover,
-#EditConfig .dnnSecondaryAction:hover,
-.dnnEditBasicSettings + div .dnnSecondaryAction:hover {
+.at-btn-secondary:hover {
   background-color: var(--default-50);
   border-color: var(--default-400);
   color: var(--default-700);
   text-decoration: none;
 }
 
-/* ---- Action Button Row ---- */
-.dnnEditBasicSettings ~ div,
-.dnnEditBasicSettings + div {
-  display: flex;
-  gap: 0.625rem;
-  align-items: center;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--default-200);
-  margin-top: 1.25rem;
-}
-
-/* ---- Add Column Button ---- */
-.dnnEditBasicSettings #addColumn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--primary-600);
-  background: transparent;
-  border: 1px dashed var(--primary-300);
-  border-radius: var(--radius-button);
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.dnnEditBasicSettings #addColumn:hover {
-  background-color: var(--primary-50);
-  border-color: var(--primary-500);
-}

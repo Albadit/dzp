@@ -30,6 +30,76 @@ function initDataTable(tid) {
   if (delModal) document.body.appendChild(delModal);
   if (createModal) document.body.appendChild(createModal);
 
+  function lockScroll() { document.body.style.overflow = 'hidden'; }
+  function unlockScroll() { document.body.style.overflow = ''; }
+
+  // Initialize MultiSelect widgets for lookup columns
+  var lookupData = window['__dtLookups_' + tid] || {};
+
+  function initLookupWidgets(container, cssClass) {
+    if (!container) return;
+    container.querySelectorAll('.' + cssClass).forEach(function (el) {
+      var col = el.dataset.col;
+      var isMulti = el.dataset.multi === 'true';
+      var opts = (lookupData[col] || []).map(function (o) {
+        return { value: String(o.value), label: o.label };
+      });
+      el._ms = MultiSelect.create(el, {
+        placeholder: '-- Select --',
+        options: opts,
+        selected: [],
+        single: !isMulti
+      });
+    });
+  }
+
+  initLookupWidgets(modal, 'dt-modal-lookup');
+  initLookupWidgets(createModal, 'dt-create-lookup');
+
+  function getModalFields(container, inputClass, lookupClass, prefix) {
+    var fields = {};
+    container.querySelectorAll('.' + inputClass).forEach(function (inp) {
+      fields[prefix + inp.dataset.col] = inp.value;
+    });
+    container.querySelectorAll('.' + lookupClass).forEach(function (el) {
+      if (el._ms) {
+        var isMulti = el.dataset.multi === 'true';
+        fields[prefix + el.dataset.col] = isMulti ? el._ms.getSelected().join(',') : el._ms.getValue();
+      }
+    });
+    return fields;
+  }
+
+  function setModalLookupValue(container, lookupClass, col, val) {
+    container.querySelectorAll('.' + lookupClass).forEach(function (el) {
+      if (el.dataset.col === col && el._ms) {
+        var isMulti = el.dataset.multi === 'true';
+        var selArr;
+        if (isMulti && val) {
+          selArr = String(val).split(',').map(function (v) { return v.trim(); }).filter(function (v) { return v !== ''; });
+        } else {
+          selArr = val ? [String(val)] : [];
+        }
+        el._ms.setOptions(
+          (lookupData[col] || []).map(function (o) { return { value: String(o.value), label: o.label }; }),
+          selArr
+        );
+      }
+    });
+  }
+
+  function resetLookups(container, lookupClass) {
+    container.querySelectorAll('.' + lookupClass).forEach(function (el) {
+      if (el._ms) {
+        var col = el.dataset.col;
+        el._ms.setOptions(
+          (lookupData[col] || []).map(function (o) { return { value: String(o.value), label: o.label }; }),
+          []
+        );
+      }
+    });
+  }
+
   function postForm(fields) {
     var form = document.createElement('form');
     form.method = 'post';
@@ -62,10 +132,21 @@ function initDataTable(tid) {
   }
 
   if (pageSizeSelect) {
-    pageSizeSelect.addEventListener('change', function () {
-      pageSize = parseInt(this.value) || 10;
-      currentPage = 1;
-      render();
+    var pageSizeMs = MultiSelect.create(pageSizeSelect, {
+      placeholder: '10',
+      options: [
+        { value: '10', label: '10' },
+        { value: '25', label: '25' },
+        { value: '50', label: '50' },
+        { value: '100', label: '100' }
+      ],
+      selected: [String(pageSize)],
+      single: true,
+      onChange: function (sel) {
+        pageSize = parseInt(sel.length ? sel[0] : '10') || 10;
+        currentPage = 1;
+        render();
+      }
     });
   }
 
@@ -109,13 +190,13 @@ function initDataTable(tid) {
         }
         if (wrapEl) {
           var icon = dir === 'asc' ? 'move-up' : 'move-down';
-          wrapEl.innerHTML = '<i data-lucide="' + icon + '" class="dt-icon-xs dt-sort-active-icon"></i>';
+          wrapEl.innerHTML = '<i data-lucide="' + icon + '" class="dt-icon dt-icon-xs dt-sort-active-icon"></i>';
         }
       } else {
         th.dataset.dir = '';
         if (numEl) { numEl.textContent = ''; numEl.classList.add('hidden'); }
         if (wrapEl) {
-          wrapEl.innerHTML = '<i data-lucide="arrow-down-up" class="dt-icon-xs dt-sort-default-icon"></i>';
+          wrapEl.innerHTML = '<i data-lucide="arrow-down-up" class="dt-icon dt-icon-xs dt-sort-default-icon"></i>';
         }
       }
     });
@@ -144,7 +225,9 @@ function initDataTable(tid) {
 
   function getCellText(row, col) {
     var cell = row.querySelector('[data-col="' + col + '"]');
-    return cell ? (cell.textContent || '').trim() : '';
+    if (!cell) return '';
+    if (cell.hasAttribute('data-raw')) return cell.getAttribute('data-raw');
+    return (cell.textContent || '').trim();
   }
 
   function render() {
@@ -244,11 +327,13 @@ function initDataTable(tid) {
   function resetCreateForm() {
     if (!createModal) return;
     createModal.querySelectorAll('.dt-create-input').forEach(function (inp) { inp.value = ''; });
+    resetLookups(createModal, 'dt-create-lookup');
   }
 
   if (addBtn && createModal) {
     addBtn.addEventListener('click', function () {
       createModal.classList.remove('hidden');
+      lockScroll();
       var firstInput = createModal.querySelector('.dt-create-input');
       if (firstInput) firstInput.focus();
     });
@@ -264,9 +349,8 @@ function initDataTable(tid) {
         });
         if (!valid) return;
         var fields = { '_dt_action': 'create' };
-        createModal.querySelectorAll('.dt-create-input').forEach(function (inp) {
-          fields['_dt_new_' + inp.dataset.col] = inp.value;
-        });
+        var inputFields = getModalFields(createModal, 'dt-create-input', 'dt-create-lookup', '_dt_new_');
+        for (var k in inputFields) { fields[k] = inputFields[k]; }
         postForm(fields);
       });
     }
@@ -274,12 +358,14 @@ function initDataTable(tid) {
     createModal.querySelectorAll('.dt-create-modal-close').forEach(function (btn) {
       btn.addEventListener('click', function () {
         createModal.classList.add('hidden');
+        unlockScroll();
         resetCreateForm();
       });
     });
     createModal.addEventListener('click', function (e) {
       if (e.target === createModal) {
         createModal.classList.add('hidden');
+        unlockScroll();
         resetCreateForm();
       }
     });
@@ -293,7 +379,11 @@ function initDataTable(tid) {
     modal.querySelectorAll('.dt-modal-input').forEach(function (inp) {
       inp.value = getCellText(row, inp.dataset.col);
     });
+    modal.querySelectorAll('.dt-modal-lookup').forEach(function (el) {
+      setModalLookupValue(modal, 'dt-modal-lookup', el.dataset.col, getCellText(row, el.dataset.col));
+    });
     modal.classList.remove('hidden');
+    lockScroll();
     var firstInput = modal.querySelector('.dt-modal-input');
     if (firstInput) firstInput.focus();
   });
@@ -306,16 +396,15 @@ function initDataTable(tid) {
       });
       if (!valid) return;
       var fields = { '_dt_action': 'update', '_dt_edit_pk': editPk };
-      modal.querySelectorAll('.dt-modal-input').forEach(function (inp) {
-        fields['_dt_edit_' + inp.dataset.col] = inp.value;
-      });
+      var inputFields = getModalFields(modal, 'dt-modal-input', 'dt-modal-lookup', '_dt_edit_');
+      for (var k in inputFields) { fields[k] = inputFields[k]; }
       postForm(fields);
     });
     modal.querySelectorAll('.dt-modal-close').forEach(function (btn) {
-      btn.addEventListener('click', function () { modal.classList.add('hidden'); });
+      btn.addEventListener('click', function () { modal.classList.add('hidden'); unlockScroll(); });
     });
     modal.addEventListener('click', function (e) {
-      if (e.target === modal) modal.classList.add('hidden');
+      if (e.target === modal) { modal.classList.add('hidden'); unlockScroll(); }
     });
   }
 
@@ -326,6 +415,7 @@ function initDataTable(tid) {
     delPkVal = btn.dataset.pk;
     delModal.querySelector('.dt-del-msg').textContent = 'This item will be permanently deleted.';
     delModal.classList.remove('hidden');
+    lockScroll();
   });
 
   if (bulkBtn) {
@@ -336,6 +426,7 @@ function initDataTable(tid) {
       delPkVal = ids.join(',');
       delModal.querySelector('.dt-del-msg').textContent = ids.length + ' item(s) will be permanently deleted.';
       delModal.classList.remove('hidden');
+      lockScroll();
     });
   }
 
@@ -349,9 +440,10 @@ function initDataTable(tid) {
     });
     delModal.querySelector('.dt-del-cancel').addEventListener('click', function () {
       delModal.classList.add('hidden');
+      unlockScroll();
     });
     delModal.addEventListener('click', function (e) {
-      if (e.target === delModal) delModal.classList.add('hidden');
+      if (e.target === delModal) { delModal.classList.add('hidden'); unlockScroll(); }
     });
   }
 
@@ -367,10 +459,11 @@ function initDataTable(tid) {
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      if (modal && !modal.classList.contains('hidden')) modal.classList.add('hidden');
-      if (delModal && !delModal.classList.contains('hidden')) delModal.classList.add('hidden');
+      if (modal && !modal.classList.contains('hidden')) { modal.classList.add('hidden'); unlockScroll(); }
+      if (delModal && !delModal.classList.contains('hidden')) { delModal.classList.add('hidden'); unlockScroll(); }
       if (createModal && !createModal.classList.contains('hidden')) {
         createModal.classList.add('hidden');
+        unlockScroll();
         resetCreateForm();
       }
     }

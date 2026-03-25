@@ -1,0 +1,25 @@
+@*
+    Shared multi-select dropdown widget.
+    Include once per page — provides CSS + JS + renders an optional instance.
+
+    ViewData parameters (all optional):
+      "ms-id"          – unique id for the container div
+      "ms-placeholder"  – placeholder text
+      "ms-options"      – JSON string of [{value,label}]
+      "ms-selected"     – JSON string of ["val1","val2"]
+      "ms-single"       – "true" for single-select mode
+*@
+<link rel="stylesheet" href="/DesktopModules/MVC/AdvancedTable/Resources/css/select.css" />
+
+@if (ViewData["ms-id"] != null)
+{
+    <div id="@ViewData["ms-id"]"
+         class="ms-container"
+         data-placeholder="@(ViewData["ms-placeholder"] ?? "Select…")"
+         data-options="@(ViewData["ms-options"] ?? "[]")"
+         data-selected="@(ViewData["ms-selected"] ?? "[]")"
+         data-single="@(ViewData["ms-single"] ?? "false")">
+    </div>
+}
+
+<script type="text/javascript" src="/DesktopModules/MVC/AdvancedTable/Resources/js/select.js"></script>

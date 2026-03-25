@@ -2,19 +2,69 @@
 @{
     var config = Model.Config;
     var tid = Model.TableId;
+
+    // Execute lookup queries for "select" type columns
+    var lookups = new Dictionary<string, List<KeyValuePair<string, string>>>();
+    var selectCols = new List<AdvancedTable.Models.DataTableColumn>();
+    if (Model.EditableColumns != null)
+    {
+        foreach (var c in Model.EditableColumns)
+        {
+            if ((c.Type == "select" || c.Type == "multiselect") && !string.IsNullOrEmpty(c.Pattern) && !lookups.ContainsKey(c.Key))
+            {
+                selectCols.Add(c);
+            }
+        }
+    }
+    if (Model.VisibleColumns != null)
+    {
+        foreach (var c in Model.VisibleColumns)
+        {
+            bool already = false;
+            foreach (var s in selectCols) { if (s.Key == c.Key) { already = true; break; } }
+            if (!already && (c.Type == "select" || c.Type == "multiselect") && !string.IsNullOrEmpty(c.Pattern) && !lookups.ContainsKey(c.Key))
+            {
+                selectCols.Add(c);
+            }
+        }
+    }
+    foreach (var col in selectCols)
+    {
+        var opts = new List<KeyValuePair<string, string>>();
+        try
+        {
+            var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
+            var conn = new System.Data.SqlClient.SqlConnection(connStr);
+            try
+            {
+                conn.Open();
+                var cmd = new System.Data.SqlClient.SqlCommand(col.Pattern, conn);
+                var rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                {
+                    var val = rdr[0] != null ? rdr[0].ToString() : "";
+                    var lbl = rdr.FieldCount > 1 && rdr[1] != null ? rdr[1].ToString() : val;
+                    opts.Add(new KeyValuePair<string, string>(val, lbl));
+                }
+                rdr.Close();
+                cmd.Dispose();
+            }
+            finally { conn.Dispose(); }
+        }
+        catch { }
+        lookups[col.Key] = opts;
+    }
 }
 
-@* <script src="https://cdn.tailwindcss.com"></script> *@
 @* <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script> *@
 <link rel="stylesheet" href="/DesktopModules/MVC/AdvancedTable/Resources/css/module.css" />
+@Html.Partial("_Select")
 
 <div id="@tid" class="w-full max-w-5xl mx-auto flex flex-col gap-4 py-6" data-page-size="10" data-total="@Model.TotalRows">
 
     @if (!string.IsNullOrEmpty(config.Title))
     {
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">@config.Title</h2>
-        </div>
+        <h2 class="text-2xl font-bold text-gray-900">@config.Title</h2>
     }
 
     @{
@@ -113,7 +163,7 @@
                 }
                 @foreach (var row in Model.Rows)
                 {
-                    var pkVal = row.ContainsKey(config.PrimaryKey ?? "") ? (row[config.PrimaryKey]?.ToString() ?? "") : "";
+                    var pkVal = row.ContainsKey(config.PrimaryKey ?? "") ? (row[config.PrimaryKey] != null ? row[config.PrimaryKey].ToString() : "") : "";
                     <div class="dt-row contents group" data-pk="@pkVal">
                         @if (config.AllowBulkDelete)
                         {
@@ -123,9 +173,32 @@
                         }
                         @foreach (var col in Model.VisibleColumns)
                         {
-                            var cellVal = row.ContainsKey(col.Key) ? (row[col.Key]?.ToString() ?? "") : "";
-                            <div class="px-4 py-3 border-t border-gray-100 dt-cell flex items-center group-hover:bg-gray-50/50 transition-colors" data-col="@col.Key">
-                                @if (col.Type == "url" && !string.IsNullOrEmpty(cellVal))
+                            var cellVal = row.ContainsKey(col.Key) ? (row[col.Key] != null ? row[col.Key].ToString() : "") : "";
+                            <div class="px-4 py-3 border-t border-gray-100 dt-cell flex items-center group-hover:bg-gray-50/50 transition-colors" data-col="@col.Key"
+                                 @if (col.Type == "select" || col.Type == "multiselect") { @Html.Raw("data-raw=\"" + Html.Encode(cellVal) + "\"") }>
+                                @if (col.Type == "select" && lookups.ContainsKey(col.Key))
+                                {
+                                    var matchLabel = cellVal;
+                                    foreach (var opt in lookups[col.Key]) { if (opt.Key == cellVal) { matchLabel = opt.Value; break; } }
+                                    <span class="dt-cell-text">@matchLabel</span>
+                                }
+                                else if (col.Type == "multiselect" && lookups.ContainsKey(col.Key))
+                                {
+                                    var ids = cellVal.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
+                                    var labels = new List<string>();
+                                    foreach (var id in ids)
+                                    {
+                                        var trimId = id.Trim();
+                                        var found = false;
+                                        foreach (var opt in lookups[col.Key])
+                                        {
+                                            if (opt.Key == trimId) { labels.Add(opt.Value); found = true; break; }
+                                        }
+                                        if (!found) { labels.Add(trimId); }
+                                    }
+                                    <span class="dt-cell-text">@string.Join(", ", labels)</span>
+                                }
+                                else if (col.Type == "url" && !string.IsNullOrEmpty(cellVal))
                                 {
                                     <a href="@cellVal" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline truncate block max-w-[200px]">@cellVal</a>
                                 }
@@ -173,12 +246,7 @@
                 <i data-lucide="chevron-right"></i>
             </button>
         </div>
-        <select class="dt-page-size px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" data-target="@tid">
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-        </select>
+        <div class="dt-page-size" data-target="@tid"></div>
     </div>
 
 </div>
@@ -199,12 +267,23 @@
                     <label class="block text-xs font-medium text-gray-600 mb-1">
                         @col.Label @if (col.Required) { <span class="text-red-500">*</span> }
                     </label>
-                    <input type="@(col.Type == "slug" ? "text" : col.Type)"
-                           class="dt-modal-input w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                           data-col="@col.Key"
-                           @(col.Required ? Html.Raw("required") : null)
-                           @(col.MaxLength.HasValue ? Html.Raw("maxlength=\"" + col.MaxLength + "\"") : null)
-                           @(!string.IsNullOrEmpty(col.Pattern) ? Html.Raw("pattern=\"" + Html.Encode(col.Pattern) + "\" title=\"" + Html.Encode(col.PatternMessage ?? "") + "\"") : null) />
+                    @if (col.Type == "select" && lookups.ContainsKey(col.Key))
+                    {
+                        <div class="dt-modal-lookup" data-col="@col.Key"></div>
+                    }
+                    else if (col.Type == "multiselect" && lookups.ContainsKey(col.Key))
+                    {
+                        <div class="dt-modal-lookup" data-col="@col.Key" data-multi="true"></div>
+                    }
+                    else
+                    {
+                        <input type="@(col.Type == "slug" ? "text" : col.Type)"
+                               class="dt-modal-input w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                               data-col="@col.Key"
+                               @(col.Required ? Html.Raw("required") : null)
+                               @(col.MaxLength.HasValue ? Html.Raw("maxlength=\"" + col.MaxLength + "\"") : null)
+                               @(!string.IsNullOrEmpty(col.Pattern) ? Html.Raw("pattern=\"" + Html.Encode(col.Pattern) + "\" title=\"" + Html.Encode(col.PatternMessage ?? "") + "\"") : null) />
+                    }
                 </div>
             }
         </div>
@@ -234,13 +313,24 @@
                             <label class="block text-xs font-medium text-gray-600 mb-1">
                                 @col.Label @if (col.Required) { <span class="text-red-500">*</span> }
                             </label>
-                            <input type="@(col.Type == "slug" ? "text" : col.Type)"
-                                   data-col="@col.Key"
-                                   placeholder="@(col.Placeholder ?? col.Label)"
-                                   @(col.Required ? Html.Raw("required") : null)
-                                   @(col.MaxLength.HasValue ? Html.Raw("maxlength=\"" + col.MaxLength + "\"") : null)
-                                   @(!string.IsNullOrEmpty(col.Pattern) ? Html.Raw("pattern=\"" + Html.Encode(col.Pattern) + "\" title=\"" + Html.Encode(col.PatternMessage ?? "") + "\"") : null)
-                                   class="dt-create-input w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                            @if (col.Type == "select" && lookups.ContainsKey(col.Key))
+                            {
+                                <div class="dt-create-lookup" data-col="@col.Key"></div>
+                            }
+                            else if (col.Type == "multiselect" && lookups.ContainsKey(col.Key))
+                            {
+                                <div class="dt-create-lookup" data-col="@col.Key" data-multi="true"></div>
+                            }
+                            else
+                            {
+                                <input type="@(col.Type == "slug" ? "text" : col.Type)"
+                                       data-col="@col.Key"
+                                       placeholder="@(col.Placeholder ?? col.Label)"
+                                       @(col.Required ? Html.Raw("required") : null)
+                                       @(col.MaxLength.HasValue ? Html.Raw("maxlength=\"" + col.MaxLength + "\"") : null)
+                                       @(!string.IsNullOrEmpty(col.Pattern) ? Html.Raw("pattern=\"" + Html.Encode(col.Pattern) + "\" title=\"" + Html.Encode(col.PatternMessage ?? "") + "\"") : null)
+                                       class="dt-create-input w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                            }
                         </div>
                     }
                 </div>
@@ -270,5 +360,18 @@
     </div>
 </div>
 
+<script>
+    window['__dtLookups_@(tid)'] = {};
+    @foreach (var kv in lookups)
+    {
+        var jsItems = new List<string>();
+        foreach (var o in kv.Value) {
+            var jv = o.Key.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\r", "").Replace("\n", "\\n");
+            var jl = o.Value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\r", "").Replace("\n", "\\n");
+            jsItems.Add("{value:'" + jv + "',label:'" + jl + "'}");
+        }
+        @:window['__dtLookups_@(tid)']['@kv.Key'] = [@Html.Raw(string.Join(",", jsItems))]; 
+    }
+</script>
 <script src="/DesktopModules/MVC/AdvancedTable/Resources/js/module.js"></script>
 <script>initDataTable('@tid')</script>
