@@ -1,6 +1,11 @@
 <dnn:META ID="mobileScale" runat="server" Name="viewport" Content="width=device-width, initial-scale=1.0" />
 <dnn:DnnCssExclude runat="server" Name="dnndefault" />
 
+<!-- Anti-FOUC: set theme on <html> before first paint -->
+<script>
+  (function(){var t=localStorage.getItem('theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');var h=document.documentElement;h.setAttribute('data-theme',t);h.className=h.className.replace(/\b(light|dark)\b/g,'').trim()+' '+t;})();
+</script>
+
 <!-- Google Fonts: Inter -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,6 +19,7 @@
 <!-- Tailwind CSS Browser Runtime: compiles Tailwind classes in the browser from the <style> block below -->
 <dnn:DnnJsInclude runat="server" FilePath="js/tailwind4.js" Priority="100" PathNameAlias="SkinPath" ForceProvider="DnnFormBottomProvider" />
 <dnn:DnnJsInclude runat="server" FilePath="js/lucide.min.js" Priority="100" PathNameAlias="SkinPath" ForceProvider="DnnFormBottomProvider" />
+<dnn:DnnJsInclude runat="server" FilePath="js/theme-switcher.js" Priority="101" PathNameAlias="SkinPath" ForceProvider="DnnFormBottomProvider" />
 
 <!-- Initialize Lucide icons globally after the DOM is ready -->
 <script>

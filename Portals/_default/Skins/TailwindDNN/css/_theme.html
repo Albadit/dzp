@@ -1,4 +1,11 @@
 <style type="text/tailwindcss">
+/* =====================================================================
+   Tailwind dark: variant — fires for any theme whose type is "dark"
+   To add a new dark-type theme, add its name here:
+   e.g.  &:is([data-theme="dark"] *, [data-theme="midnight"] *)
+   ===================================================================== */
+@custom-variant dark (&:is([data-theme="dark"] *));
+
 @theme {
   /* Primary — Blue */
   --color-primary-50: var(--primary-50);
@@ -115,9 +122,12 @@
   --spacing-header: var(--spacing-header);
 }
 
+/* =====================================================================
+   Shared design tokens (font, shadow, radius, animation)
+   These never change between themes.
+   ===================================================================== */
 @layer base {
   :root {
-    /* Design tokens */
     --font-inter: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-heading: "Inter", ui-sans-serif, system-ui, sans-serif;
     --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
@@ -128,7 +138,14 @@
     --animate-fade-in: fade-in 0.3s ease-in-out;
     --animate-slide-down: slide-down 0.3s ease-out;
     --spacing-header: 4rem;
+  }
+}
 
+/* =====================================================================
+   THEME: light  (type: light — default / fallback)
+   ===================================================================== */
+@layer base {
+  :root, [data-theme="light"] {
     /* Primary — Blue */
     --primary-50: #e6f1fe;
     --primary-100: #cce3fd;
@@ -207,7 +224,7 @@
     --default-900: #18181b;
     --default-950: #09090b;
 
-    /* Base — single semantic color per group */
+    /* Base */
     --base-default: #3f3f46;
     --base-primary: #006FEE;
     --base-secondary: #9353d3;
@@ -227,27 +244,28 @@
     --content-3: #e4e4e7;
     --content-4: #d4d4d8;
 
-    /* Gradients & misc */
+    /* Misc */
     --color-head-gradient: linear-gradient(to right, #18181b, #27272a, #18181b);
     --color-body-bg: #fafafa;
-
     --color-title-header: #11181c;
     --color-title-span: #52525b;
     --color-title-text: #3f3f46;
     --color-title-muted: #71717a;
-
     --color-button-solid-text: #ffffff;
     --color-button-solid-bg: #006FEE;
-
     --color-card-border: #e4e4e7;
-
     --color-footer-bg: #18181b;
     --color-footer-header: #ffffff;
     --color-footer-text: #a1a1aa;
     --color-footer-link: #d4d4d8;
   }
+}
 
-  .dark {
+/* =====================================================================
+   THEME: dark  (type: dark)
+   ===================================================================== */
+@layer base {
+  [data-theme="dark"] {
     /* Base */
     --base-default: #3f3f46;
     --base-primary: #006FEE;
@@ -256,7 +274,7 @@
     --base-warning: #f5a524;
     --base-danger: #f31260;
 
-    /* Default — reversed for dark mode */
+    /* Default — reversed */
     --default-50: #18181b;
     --default-100: #27272a;
     --default-200: #3f3f46;
@@ -281,18 +299,23 @@
     --content-3: #3f3f46;
     --content-4: #52525b;
 
-    /* Misc overrides */
+    /* Misc */
     --color-body-bg: #000000;
     --color-title-header: #ecedee;
     --color-title-span: #a1a1aa;
     --color-title-text: #d4d4d8;
     --color-title-muted: #71717a;
-
     --color-card-border: #3f3f46;
-
     --color-footer-bg: #000000;
     --color-footer-text: #71717a;
     --color-footer-link: #a1a1aa;
   }
 }
+
+/* =====================================================================
+   ADD MORE THEMES BELOW
+   Copy a block above, change [data-theme="yourname"], set your colors.
+   Then register it in theme-switcher.js:
+     ThemeSwitcher.register('yourname', 'light');   // or 'dark'
+   ===================================================================== */
 </style>
