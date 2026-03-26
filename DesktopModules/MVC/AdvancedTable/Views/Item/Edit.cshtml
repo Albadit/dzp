@@ -156,6 +156,10 @@ SqlBulkDelete = "DELETE FROM Community WHERE CommunityID IN ({ids})",
 
             <h2 class="at-section-head">
                 <a href="#" class="at-expanded">Columns <small class="edit-hint">(leave empty to auto-detect)</small></a>
+                <div class="at-detect-bar">
+                    <button type="button" id="detectColumns" class="at-add-btn">Detect Columns from Select</button>
+                    <span id="detectStatus" class="edit-hint"></span>
+                </div>
             </h2>
             <fieldset>
                 <div id="columnsContainer">
@@ -163,14 +167,42 @@ SqlBulkDelete = "DELETE FROM Community WHERE CommunityID IN ({ids})",
                     {
                         foreach (var col in Model.Columns)
                         {
+                            var isSelectType = col.Type == "select" || col.Type == "multiselect";
+                            var colSourceMode = "sql";
+                            var colApiMethod = "GET";
+                            var colApiPath = "";
+                            var colSqlQuery = col.Pattern ?? "";
+                            if (isSelectType && !string.IsNullOrEmpty(col.Pattern) && col.Pattern.TrimStart().StartsWith("{"))
+                            {
+                                try
+                                {
+                                    var parsed = JsonConvert.DeserializeObject<Dictionary<string, string>>(col.Pattern);
+                                    if (parsed != null && parsed.ContainsKey("mode") && parsed["mode"] == "api")
+                                    {
+                                        colSourceMode = "api";
+                                        colApiMethod = parsed.ContainsKey("method") ? parsed["method"] : "GET";
+                                        colApiPath = parsed.ContainsKey("path") ? parsed["path"] : "";
+                                        colSqlQuery = "";
+                                    }
+                                }
+                                catch { }
+                            }
                             <div class="column-row">
                                 <input type="text" class="col-key" value="@col.Key" placeholder="Column Key" />
                                 <input type="text" class="col-label" value="@col.Label" placeholder="Display Label" />
                                 <div class="col-type-ms" data-selected="@col.Type"></div>
-                                @if ((col.Type == "select" || col.Type == "multiselect") && !string.IsNullOrEmpty(col.Pattern))
+                                @if (isSelectType && !string.IsNullOrEmpty(col.Pattern))
                                 {
                                     <div class="col-query-wrap">
-                                        <textarea class="col-query edit-code-area" rows="1" placeholder="SELECT value, label FROM ...">@col.Pattern</textarea>
+                                        <div class="col-source-mode-ms" data-selected="@colSourceMode"></div>
+                                        <div class="col-source-sql" style="@(colSourceMode == "api" ? "display:none;" : "")">
+                                            <textarea class="col-query edit-code-area" rows="1" placeholder="SELECT value, label FROM ...">@colSqlQuery</textarea>
+                                        </div>
+                                        <div class="col-source-api" style="@(colSourceMode != "api" ? "display:none;" : "")">
+                                            <div class="col-api-method-ms" data-selected="@colApiMethod" data-options='[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"}]'></div>
+                                            <input type="hidden" class="col-api-method-val" value="@colApiMethod" />
+                                            <input type="text" class="col-api-path" value="@colApiPath" placeholder="/api/items" />
+                                        </div>
                                     </div>
                                 }
                                 <button type="button" class="remove-col"><i data-lucide="circle-x"></i></button>

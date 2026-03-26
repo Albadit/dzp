@@ -156,9 +156,24 @@ var MultiSelect = (function () {
 
         function positionDropdown() {
             var rect = trigger.getBoundingClientRect();
+            var gap = 4;
             dropdown.style.left = rect.left + 'px';
-            dropdown.style.top = (rect.bottom + 4) + 'px';
             dropdown.style.minWidth = rect.width + 'px';
+            // Temporarily show to measure height
+            dropdown.style.visibility = 'hidden';
+            dropdown.style.display = 'flex';
+            var ddH = dropdown.offsetHeight;
+            dropdown.style.visibility = '';
+            if (!isOpen) dropdown.style.display = '';
+            var spaceBelow = window.innerHeight - rect.bottom - gap;
+            var spaceAbove = rect.top - gap;
+            if (spaceBelow < ddH && spaceAbove > spaceBelow) {
+                dropdown.style.top = (rect.top - ddH - gap) + 'px';
+                dropdown.classList.add('ms-above');
+            } else {
+                dropdown.style.top = (rect.bottom + gap) + 'px';
+                dropdown.classList.remove('ms-above');
+            }
         }
 
         function onReposition() { if (isOpen) positionDropdown(); }

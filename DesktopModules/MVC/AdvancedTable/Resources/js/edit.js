@@ -73,6 +73,39 @@
         });
     }
 
+    function initColSourceMode(wrap) {
+        var modeEl = wrap.querySelector('.col-source-mode-ms');
+        var sqlDiv = wrap.querySelector('.col-source-sql');
+        var apiDiv = wrap.querySelector('.col-source-api');
+        var methodEl = wrap.querySelector('.col-api-method-ms');
+        var methodHidden = wrap.querySelector('.col-api-method-val');
+        if (modeEl._ms) return;
+        modeEl._ms = MultiSelect.create(modeEl, {
+            placeholder: '-- Source --',
+            options: [{ value: 'sql', label: 'SQL' }, { value: 'api', label: 'API' }],
+            selected: [modeEl.getAttribute('data-selected') || 'sql'],
+            single: true,
+            onChange: function (sel) {
+                var val = sel.length ? sel[0] : 'sql';
+                if (val === 'api') { sqlDiv.style.display = 'none'; apiDiv.style.display = ''; }
+                else { sqlDiv.style.display = ''; apiDiv.style.display = 'none'; }
+                var ta = sqlDiv.querySelector('textarea');
+                if (ta && val !== 'api') autoResize(ta);
+            }
+        });
+        if (methodEl && !methodEl._ms) {
+            var opts = JSON.parse(methodEl.getAttribute('data-options') || '[]');
+            var selected = methodEl.getAttribute('data-selected') || 'GET';
+            methodEl._ms = MultiSelect.create(methodEl, {
+                placeholder: '-- Method --',
+                options: opts,
+                selected: [selected],
+                single: true,
+                onChange: function (sel) { methodHidden.value = sel.length ? sel[0] : ''; }
+            });
+        }
+    }
+
     function toggleQueryField(row) {
         var typeMs = row.querySelector('.col-type-ms');
         var type = typeMs._ms ? typeMs._ms.getValue() : '';
@@ -81,10 +114,19 @@
             if (!qField) {
                 qField = document.createElement('div');
                 qField.className = 'col-query-wrap';
-                qField.innerHTML = '<textarea class="col-query edit-code-area" rows="1" placeholder="SELECT value, label FROM ..."></textarea>';
+                qField.innerHTML =
+                    '<div class="col-source-mode-ms" data-selected="sql"></div>' +
+                    '<div class="col-source-sql"><textarea class="col-query edit-code-area" rows="1" placeholder="SELECT value, label FROM ..."></textarea></div>' +
+                    '<div class="col-source-api" style="display:none;">' +
+                        '<div class="col-api-method-ms" data-selected="GET" data-options=\'[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"}]\'></div>' +
+                        '<input type="hidden" class="col-api-method-val" value="GET" />' +
+                        '<input type="text" class="col-api-path" placeholder="/api/items" />' +
+                    '</div>';
                 row.querySelector('.remove-col').before(qField);
-                autoResize(qField.querySelector('textarea'));
-                qField.querySelector('textarea').addEventListener('input', function () { autoResize(this); });
+                initColSourceMode(qField);
+                var ta = qField.querySelector('textarea');
+                autoResize(ta);
+                ta.addEventListener('input', function () { autoResize(this); });
             }
             qField.style.display = '';
         } else if (qField) {
@@ -93,18 +135,50 @@
     }
 
     function createColumnRow(key, label, type, query) {
+        var isSelect = type === 'select' || type === 'multiselect';
+        var sourceMode = 'sql', apiMethod = 'GET', apiPath = '', sqlQuery = query || '';
+        if (isSelect && query && query.charAt(0) === '{') {
+            try {
+                var parsed = JSON.parse(query);
+                if (parsed.mode === 'api') {
+                    sourceMode = 'api';
+                    apiMethod = parsed.method || 'GET';
+                    apiPath = parsed.path || '';
+                    sqlQuery = '';
+                }
+            } catch (e) { }
+        }
         var row = document.createElement('div');
         row.className = 'column-row';
+        var qHtml = '';
+        if (isSelect) {
+            qHtml =
+                '<div class="col-query-wrap">' +
+                    '<div class="col-source-mode-ms" data-selected="' + sourceMode + '"></div>' +
+                    '<div class="col-source-sql"' + (sourceMode === 'api' ? ' style="display:none;"' : '') + '>' +
+                        '<textarea class="col-query edit-code-area" rows="1" placeholder="SELECT value, label FROM ...">' + escHtml(sqlQuery) + '</textarea>' +
+                    '</div>' +
+                    '<div class="col-source-api"' + (sourceMode !== 'api' ? ' style="display:none;"' : '') + '>' +
+                        '<div class="col-api-method-ms" data-selected="' + escHtml(apiMethod) + '" data-options=\'[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"}]\'></div>' +
+                        '<input type="hidden" class="col-api-method-val" value="' + escHtml(apiMethod) + '" />' +
+                        '<input type="text" class="col-api-path" value="' + escHtml(apiPath) + '" placeholder="/api/items" />' +
+                    '</div>' +
+                '</div>';
+        }
         row.innerHTML =
             '<input type="text" class="col-key" value="' + escHtml(key || '') + '" placeholder="Column Key" />' +
             '<input type="text" class="col-label" value="' + escHtml(label || '') + '" placeholder="Display Label" />' +
             '<div class="col-type-ms"></div>' +
-            (type === 'select' || type === 'multiselect' ? '<div class="col-query-wrap"><textarea class="col-query edit-code-area" rows="1" placeholder="SELECT value, label FROM ...">' + escHtml(query || '') + '</textarea></div>' : '') +
+            qHtml +
             '<button type="button" class="remove-col"><i data-lucide="circle-x"></i></button>';
         var typeMs = row.querySelector('.col-type-ms');
         typeMs._ms = initColTypeSelect(typeMs, type || '');
-        var ta = row.querySelector('.col-query');
-        if (ta) { autoResize(ta); ta.addEventListener('input', function () { autoResize(this); }); }
+        var wrap = row.querySelector('.col-query-wrap');
+        if (wrap) {
+            initColSourceMode(wrap);
+            var ta = wrap.querySelector('.col-query');
+            if (ta) { autoResize(ta); ta.addEventListener('input', function () { autoResize(this); }); }
+        }
         return row;
     }
 
@@ -121,6 +195,8 @@
         var colTypeMs = colRow.querySelector('.col-type-ms');
         var colType = colTypeMs.getAttribute('data-selected') || '';
         colTypeMs._ms = initColTypeSelect(colTypeMs, colType);
+        var existingWrap = colRow.querySelector('.col-query-wrap');
+        if (existingWrap) initColSourceMode(existingWrap);
         toggleQueryField(colRow);
     }
 
@@ -128,6 +204,77 @@
         container.appendChild(createColumnRow('', '', 'text', ''));
         if (window.lucide) lucide.createIcons();
     });
+
+    // Detect Columns button
+    var detectBtn = document.getElementById('detectColumns');
+    var detectStatus = document.getElementById('detectStatus');
+    if (detectBtn) {
+        detectBtn.addEventListener('click', function () {
+            var mode = modeHidden.value || 'sql';
+            var formData = new FormData();
+            formData.append('mode', mode);
+
+            if (mode === 'sql') {
+                var querySelect = document.querySelector('[name="QuerySelect"]');
+                var q = querySelect ? querySelect.value.trim() : '';
+                if (!q) { detectStatus.textContent = 'Enter a SELECT query first.'; return; }
+                formData.append('query', q);
+            } else {
+                var baseUrl = document.querySelector('[name="ApiBaseUrl"]');
+                var selPath = document.querySelector('[name="ApiSelectPath"]');
+                var selMethod = document.querySelector('[name="ApiSelectMethod"]');
+                var hdrs = document.querySelector('[name="ApiHeaders"]');
+                if (!baseUrl || !baseUrl.value.trim()) { detectStatus.textContent = 'Enter an API Base URL first.'; return; }
+                formData.append('apiBaseUrl', baseUrl.value.trim());
+                formData.append('apiSelectPath', selPath ? selPath.value.trim() : '');
+                formData.append('apiSelectMethod', selMethod ? selMethod.value : 'GET');
+                formData.append('apiHeaders', hdrs ? hdrs.value : '');
+            }
+
+            detectBtn.disabled = true;
+            detectStatus.textContent = 'Detecting...';
+
+            fetch('/DesktopModules/MVC/AdvancedTable/DetectColumns.ashx', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                detectBtn.disabled = false;
+                if (!data.success) {
+                    detectStatus.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    return;
+                }
+                if (!data.columns || !data.columns.length) {
+                    detectStatus.textContent = 'No columns found.';
+                    return;
+                }
+                // Build a set of existing column keys
+                var existing = {};
+                var existingRows = container.querySelectorAll('.column-row');
+                for (var i = 0; i < existingRows.length; i++) {
+                    var k = existingRows[i].querySelector('.col-key').value.trim().toLowerCase();
+                    if (k) existing[k] = true;
+                }
+                var added = 0;
+                for (var j = 0; j < data.columns.length; j++) {
+                    var col = data.columns[j];
+                    if (!existing[col.Key.toLowerCase()]) {
+                        container.appendChild(createColumnRow(col.Key, col.Label, col.Type, ''));
+                        added++;
+                    }
+                }
+                if (window.lucide) lucide.createIcons();
+                detectStatus.textContent = added > 0
+                    ? 'Added ' + added + ' column(s).'
+                    : 'All columns already exist.';
+            })
+            .catch(function (err) {
+                detectBtn.disabled = false;
+                detectStatus.textContent = 'Error: ' + err.message;
+            });
+        });
+    }
 
     container.addEventListener('click', function (e) {
         var btn = e.target.closest('.remove-col');
@@ -231,7 +378,19 @@
             var colTypeMs = row.querySelector('.col-type-ms');
             var type = colTypeMs._ms ? colTypeMs._ms.getValue() : '';
             var queryEl = row.querySelector('.col-query');
-            var query = ((type === 'select' || type === 'multiselect') && queryEl) ? queryEl.value.trim() : '';
+            var colWrap = row.querySelector('.col-query-wrap');
+            var query = '';
+            if ((type === 'select' || type === 'multiselect') && colWrap) {
+                var srcModeMs = colWrap.querySelector('.col-source-mode-ms');
+                var srcMode = (srcModeMs && srcModeMs._ms) ? srcModeMs._ms.getValue() : 'sql';
+                if (srcMode === 'api') {
+                    var mEl = colWrap.querySelector('.col-api-method-val');
+                    var pEl = colWrap.querySelector('.col-api-path');
+                    query = JSON.stringify({ mode: 'api', method: mEl ? mEl.value : 'GET', path: pEl ? pEl.value.trim() : '' });
+                } else {
+                    query = queryEl ? queryEl.value.trim() : '';
+                }
+            }
             if (key) {
                 columns.push({ Key: key, Label: label || key, Type: type, Pattern: query || null, Required: false, Sortable: true, Filterable: true });
             }
