@@ -1,24 +1,101 @@
 @{
     Layout = "Shared/_Layout.cshtml";
+
+    /* ── Hero check marks ── */
+    var heroChecks = new[] {
+        "Realtime nieuws & eventfeed",
+        "Veilige documentenbibliotheek",
+        "Slim zoeken met tags & filters",
+        "Rollen & rechten per gebied",
+    };
+
+    /* ── Probleem / Oplossing ── */
+    var problems = new[] {
+        "Groepschats vol ruis en gemiste berichten",
+        "Privé en zakelijk door elkaar op je telefoon",
+        "Documenten kwijt in e-mailbijlagen",
+        "Geen overzicht wie wat wanneer heeft gedeeld",
+    };
+    var solutions = new[] {
+        "Eén app voor al je gebiedscommunicatie",
+        "Nieuws, events en documenten op één plek",
+        "Direct zien wie wat publiceert en beheert",
+        "Alles terugvindbaar via zoeken, tags en filters",
+    };
+
+    /* ── Hoe het werkt ── */
+    var steps = new[] {
+        new { Title = "Maak je gebied aan",   Desc = "Stel rollen in en nodig je team uit - klaar in minuten." },
+        new { Title = "Deel nieuws & events", Desc = "Publiceer updates, upload documenten en plan events - allemaal vanuit één scherm." },
+        new { Title = "Alles doorzoekbaar",   Desc = "Filter op type, tag of datum. Zoek berichten en documenten terug in seconden." },
+    };
+
+    /* ── Functionaliteiten ── */
+    var features = new[] {
+        new { Icon = "layout-dashboard", Bg = "bg-indigo-100", HoverBg = "group-hover:bg-indigo-600", Color = "text-indigo-600", Title = "Dashboard",         Desc = "Open de app en zie direct wat er speelt - de laatste updates, pinned berichten en highlights." },
+        new { Icon = "clock",            Bg = "bg-amber-100",  HoverBg = "group-hover:bg-amber-500",  Color = "text-amber-600",  Title = "Tijdlijn",          Desc = "Scroll door alle berichten op volgorde, of filter op type, tag en datum." },
+        new { Icon = "newspaper",        Bg = "bg-blue-100",   HoverBg = "group-hover:bg-blue-600",   Color = "text-blue-600",   Title = "Nieuws & Events",   Desc = "Publiceer nieuws, plan events, stuur waarschuwingen - kies type, voeg tags en bijlagen toe." },
+        new { Icon = "folder",           Bg = "bg-green-100",  HoverBg = "group-hover:bg-green-600",  Color = "text-green-600",  Title = "Documenten",        Desc = "Upload bestanden, organiseer in mappen. Iedereen met de juiste rol kan ze downloaden." },
+        new { Icon = "building",         Bg = "bg-purple-100", HoverBg = "group-hover:bg-purple-600", Color = "text-purple-600", Title = "Bedrijfsprofielen", Desc = "Elk bedrijf in het gebied heeft een profiel met contactgegevens en gekoppelde medewerkers." },
+        new { Icon = "settings",         Bg = "bg-rose-100",   HoverBg = "group-hover:bg-rose-600",   Color = "text-rose-600",   Title = "Beheerpaneel",      Desc = "Volledige controle: gebieden, rollen, tags en content moderatie vanuit één dashboard." },
+    };
+
+    /* ── Voor wie ── */
+    var audiences = new[] {
+        new { Icon = "shopping-bag", Bg = "bg-indigo-100", Color = "text-indigo-600", Title = "Ondernemers",     Desc = "Zie alleen wat voor jou relevant is. Geen ruis, direct to the point." },
+        new { Icon = "landmark",     Bg = "bg-blue-100",   Color = "text-blue-600",   Title = "Gemeente",         Desc = "Bereik de juiste mensen met officiële berichten en documenten." },
+        new { Icon = "home",         Bg = "bg-green-100",  Color = "text-green-600",  Title = "Pandeigenaren",    Desc = "Blijf op de hoogte en vind alle documenten terug op één plek." },
+        new { Icon = "users",        Bg = "bg-purple-100", Color = "text-purple-600", Title = "Gebiedsbeheerder", Desc = "Beheer content, rollen en structuur vanuit je eigen dashboard." },
+    };
+
+    /* ── Rollen ── */
+    var roles = new[] {
+        new { Icon = "shield-check", BadgeBg = "bg-indigo-600", Border = "border-indigo-100", CardBg = "bg-indigo-50/50", Title = "Admin",             Desc = "Beheert de gebieden, gebruikers, tags en alle instellingen." },
+        new { Icon = "square-pen",   BadgeBg = "bg-amber-500",  Border = "border-amber-100",  CardBg = "bg-amber-50/50",  Title = "Community Manager", Desc = "Plaatst nieuws, modereert content en beheert de documentenbibliotheek." },
+        new { Icon = "eye",          BadgeBg = "bg-green-600",  Border = "border-green-100",  CardBg = "bg-green-50/50",  Title = "Ondernemer",        Desc = "Leest updates, filtert op relevantie, vult enquêtes in en beheert zijn profiel." },
+    };
+
+    /* ── Privacy ── */
+    var privacyItems = new[] {
+        new { Icon = "user",         Title = "Privé of openbaar profiel",       Desc = "Jij kiest wat anderen van je zien." },
+        new { Icon = "building",     Title = "Bedrijfsgegevens onder controle", Desc = "Elk bedrijf beslist zelf welke info zichtbaar is." },
+        new { Icon = "lock",         Title = "Data blijft in het gebied",       Desc = "Content is strikt gescheiden per gebied - geen lekkage." },
+        new { Icon = "shield-check", Title = "AVG-proof",                      Desc = "Privacy, logging en dataminimalisatie zitten ingebakken in het systeem." },
+    };
+
+    /* ── Pakketten ── */
+    var packages = new[] {
+        new { Badge = "Bronze", BadgeClass = "bg-amber-100 text-amber-700",       Title = "Basis",         IsFeatured = false, Items = new[] { "Nieuws", "Tijdlijn", "Bedrijven" } },
+        new { Badge = "Silver", BadgeClass = "bg-default-200 text-foreground-700", Title = "Professioneel", IsFeatured = true,  Items = new[] { "Alles uit Bronze", "Documentenbibliotheek", "Enquêtes" } },
+        new { Badge = "Gold",   BadgeClass = "bg-yellow-100 text-yellow-700",     Title = "Enterprise",    IsFeatured = false, Items = new[] { "Alles uit Silver", "Extra beheeropties", "Toekomstige uitbreidingen" } },
+    };
+
+    /* ── Roadmap ── */
+    var roadmapItems = new[] {
+        new { Icon = "bar-chart-3",     Bg = "bg-indigo-100", Color = "text-indigo-600", Title = "KPI dashboards per gebied" },
+        new { Icon = "clipboard-check", Bg = "bg-amber-100",  Color = "text-amber-600",  Title = "Moderatieflows en approvals" },
+        new { Icon = "refresh-cw",      Bg = "bg-green-100",  Color = "text-green-600",  Title = "Versiebeheer documenten" },
+        new { Icon = "bell",            Bg = "bg-purple-100", Color = "text-purple-600", Title = "Meer notificatieopties" },
+    };
 }
 
 <!-- ============================================ -->
 <!-- 2) HERO                                      -->
 <!-- ============================================ -->
-<section class="w-full relative overflow-hidden bg-linear-to-br from-indigo-50 via-white to-indigo-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+<section class="w-full relative overflow-hidden bg-linear-to-br from-indigo-50 via-background to-indigo-50 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
         <div class="grid lg:grid-cols-2 gap-12 items-center">
             <!-- Text -->
-            <div>
-                <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+            <div class="flex flex-col gap-8">
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-foreground-900 leading-tight">
                     Alles in één app. Eén plek voor je hele gebied.
                 </h1>
-                <p class="text-lg text-gray-600 mb-8 max-w-xl">
+                <p class="text-lg text-foreground-600 max-w-xl">
                     Nieuws, events, documenten en bedrijfsprofielen - overzichtelijk, veilig en altijd bij de hand.
                 </p>
-                <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <div class="flex flex-col sm:flex-row gap-4">
                     <a href="#demo"
-                       class="px-8 py-3 rounded-lg bg-indigo-600 text-white font-semibold text-center hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                       class="px-8 py-3 rounded-lg bg-indigo-600 text-white font-semibold text-center hover:bg-indigo-700 transition">
                         Probeer de demo
                     </a>
                     <a href="#functionaliteiten"
@@ -26,64 +103,54 @@
                         Ontdek de features
                     </a>
                 </div>
-                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
+                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-foreground-600">
+                    @foreach (var check in heroChecks) {
                     <li class="flex items-center gap-2">
                         <i data-lucide="check" class="size-5 text-green-500 shrink-0"></i>
-                        Realtime nieuws &amp; eventfeed
+                        @check
                     </li>
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-5 text-green-500 shrink-0"></i>
-                        Veilige documentenbibliotheek
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-5 text-green-500 shrink-0"></i>
-                        Slim zoeken met tags &amp; filters
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-5 text-green-500 shrink-0"></i>
-                        Rollen &amp; rechten per gebied
-                    </li>
+                    }
                 </ul>
             </div>
             <!-- Visual mockup placeholder -->
             <div class="hidden lg:flex items-center justify-center">
                 <div class="relative w-full max-w-md">
                     <!-- Dashboard mockup -->
-                    <div class="bg-white rounded-2xl shadow-2xl p-6 border border-gray-100">
-                        <div class="flex items-center gap-2 mb-4">
+                    <div class="bg-background rounded-2xl shadow-2xl p-6 border border-default-100 flex flex-col gap-4">
+                        <div class="flex items-center gap-2">
                             <div class="w-3 h-3 rounded-full bg-red-400"></div>
                             <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
                             <div class="w-3 h-3 rounded-full bg-green-400"></div>
-                            <span class="ml-2 text-xs text-gray-400">Dashboard - Centrum Rotterdam</span>
+                            <span class="text-xs text-foreground-400">Dashboard - Centrum Rotterdam</span>
                         </div>
-                        <div class="space-y-3">
+                        <div class="flex flex-col gap-3">
                             <div class="h-4 bg-indigo-100 rounded w-3/4"></div>
-                            <div class="h-3 bg-gray-100 rounded w-full"></div>
-                            <div class="h-3 bg-gray-100 rounded w-5/6"></div>
-                            <div class="grid grid-cols-3 gap-2 mt-4">
+                            <div class="h-3 bg-default-100 rounded w-full"></div>
+                            <div class="h-3 bg-default-100 rounded w-5/6"></div>
+                            <div class="grid grid-cols-3 gap-2">
                                 <div class="h-16 bg-indigo-50 rounded-lg flex items-center justify-center text-xs text-indigo-500 font-medium">Nieuws</div>
                                 <div class="h-16 bg-amber-50 rounded-lg flex items-center justify-center text-xs text-amber-600 font-medium">Events</div>
                                 <div class="h-16 bg-green-50 rounded-lg flex items-center justify-center text-xs text-green-600 font-medium">Docs</div>
                             </div>
-                            <div class="h-3 bg-gray-100 rounded w-2/3 mt-3"></div>
-                            <div class="h-3 bg-gray-50 rounded w-full"></div>
+                            <div class="h-3 bg-default-100 rounded w-2/3"></div>
+                            <div class="h-3 bg-default-50 rounded w-full"></div>
                         </div>
                     </div>
                     <!-- Floating timeline card -->
-                    <div class="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-lg p-4 border border-gray-100 w-48">
-                        <div class="text-xs font-semibold text-gray-700 mb-2">Tijdlijn</div>
-                        <div class="space-y-2">
+                    <div class="absolute -bottom-6 -left-6 bg-background rounded-xl shadow-lg p-4 border border-default-100 w-48 flex flex-col gap-2">
+                        <div class="text-xs font-semibold text-foreground-700">Tijdlijn</div>
+                        <div class="flex flex-col gap-2">
                             <div class="flex items-center gap-2">
                                 <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
-                                <div class="h-2 bg-gray-100 rounded flex-1"></div>
+                                <div class="h-2 bg-default-100 rounded flex-1"></div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="w-2 h-2 rounded-full bg-amber-500"></div>
-                                <div class="h-2 bg-gray-100 rounded flex-1"></div>
+                                <div class="h-2 bg-default-100 rounded flex-1"></div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                                <div class="h-2 bg-gray-100 rounded flex-1"></div>
+                                <div class="h-2 bg-default-100 rounded flex-1"></div>
                             </div>
                         </div>
                     </div>
@@ -96,60 +163,40 @@
 <!-- ============================================ -->
 <!-- 3) PROBLEEM → OPLOSSING                      -->
 <!-- ============================================ -->
-<section id="product" class="w-full bg-white py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold text-gray-900 text-center mb-12">
+<section id="product" class="w-full bg-background py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
+        <h2 class="text-3xl font-bold text-foreground-900 text-center">
             Waarom DZP Connect?
         </h2>
         <div class="grid md:grid-cols-2 gap-8 lg:gap-16">
             <!-- Nu -->
-            <div class="bg-red-50 rounded-2xl p-8">
-                <h3 class="text-lg font-semibold text-red-700 mb-4 flex items-center gap-2">
+            <div class="bg-red-50 rounded-2xl p-8 flex flex-col gap-4">
+                <h3 class="text-lg font-semibold text-red-700 flex items-center gap-2">
                     <i data-lucide="circle-x" class="size-6"></i>
                     Zonder DZP Connect
                 </h3>
-                <ul class="space-y-3 text-gray-700">
+                <ul class="flex flex-col gap-3 text-foreground-700">
+                    @foreach (var p in problems) {
                     <li class="flex items-start gap-3">
-                        <span class="text-red-400 mt-1">✗</span>
-                        Groepschats vol ruis en gemiste berichten
+                        <i data-lucide="x" class="text-red-400 shrink-0"></i> 
+                        @p
                     </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-red-400 mt-1">✗</span>
-                        Privé en zakelijk door elkaar op je telefoon
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-red-400 mt-1">✗</span>
-                        Documenten kwijt in e-mailbijlagen
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-red-400 mt-1">✗</span>
-                        Geen overzicht wie wat wanneer heeft gedeeld
-                    </li>
+                    }
                 </ul>
             </div>
             <!-- DZP Connect -->
-            <div class="bg-green-50 rounded-2xl p-8">
-                <h3 class="text-lg font-semibold text-green-700 mb-4 flex items-center gap-2">
+            <div class="bg-green-50 rounded-2xl p-8 flex flex-col gap-4">
+                <h3 class="text-lg font-semibold text-green-700 flex items-center gap-2">
                     <i data-lucide="circle-check" class="size-6"></i>
                     Met DZP Connect
                 </h3>
-                <ul class="space-y-3 text-gray-700">
+                <ul class="flex flex-col gap-3 text-foreground-700">
+                    @foreach (var s in solutions) {
                     <li class="flex items-start gap-3">
-                        <span class="text-green-500 mt-1">✓</span>
-                        Eén app voor al je gebiedscommunicatie
+                        <i data-lucide="check" class="text-green-500 shrink-0"></i> 
+                        @s
                     </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-green-500 mt-1">✓</span>
-                        Nieuws, events en documenten op één plek
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-green-500 mt-1">✓</span>
-                        Direct zien wie wat publiceert en beheert
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-green-500 mt-1">✓</span>
-                        Alles terugvindbaar via zoeken, tags en filters
-                    </li>
+                    }
                 </ul>
             </div>
         </div>
@@ -159,31 +206,24 @@
 <!-- ============================================ -->
 <!-- 4) HOE HET WERKT - 3 STAPPEN                -->
 <!-- ============================================ -->
-<section class="w-full bg-gray-50 py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-gray-900 mb-4">
+<section class="w-full bg-content2 py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-4 text-center">
+        <h2 class="text-3xl font-bold text-foreground-900">
             Hoe werkt het?
         </h2>
-        <p class="text-gray-500 mb-12 max-w-2xl mx-auto">In drie simpele stappen live.</p>
-        <div class="grid md:grid-cols-3 gap-8">
-            <!-- Step 1 -->
-            <div class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition">
-                <div class="w-14 h-14 mx-auto mb-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-bold">1</div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Maak je gebied aan</h3>
-                <p class="text-gray-500 text-sm">Stel rollen in en nodig je team uit - klaar in minuten.</p>
+        <p class="text-foreground-500 max-w-2xl">In drie simpele stappen live.</p>
+        <div class="grid md:grid-cols-3 gap-8 w-full pt-8">
+            @{ var stepNum = 0; }
+            @foreach (var step in steps) {
+                stepNum++;
+            <div class="bg-background rounded-2xl p-8 shadow-card hover:shadow-card-hover transition flex flex-col items-center gap-6">
+                <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-bold">@stepNum</div>
+                <div class="flex flex-col gap-2">
+                    <h3 class="text-lg font-semibold text-foreground-900">@step.Title</h3>
+                    <p class="text-foreground-500 text-sm">@step.Desc</p>
+                </div>
             </div>
-            <!-- Step 2 -->
-            <div class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition">
-                <div class="w-14 h-14 mx-auto mb-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-bold">2</div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Deel nieuws &amp; events</h3>
-                <p class="text-gray-500 text-sm">Publiceer updates, upload documenten en plan events - allemaal vanuit één scherm.</p>
-            </div>
-            <!-- Step 3 -->
-            <div class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition">
-                <div class="w-14 h-14 mx-auto mb-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-bold">3</div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Alles doorzoekbaar</h3>
-                <p class="text-gray-500 text-sm">Filter op type, tag of datum. Zoek berichten en documenten terug in seconden.</p>
-            </div>
+            }
         </div>
     </div>
 </section>
@@ -191,63 +231,26 @@
 <!-- ============================================ -->
 <!-- 5) FUNCTIONALITEITEN (MVP)                   -->
 <!-- ============================================ -->
-<section id="functionaliteiten" class="w-full bg-white py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">
+<section id="functionaliteiten" class="w-full bg-background py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
+        <div class="flex flex-col items-center text-center gap-4">
+            <h2 class="text-3xl font-bold text-foreground-900">
                 Dit zit er allemaal in
             </h2>
-            <p class="text-gray-500 max-w-2xl mx-auto">Zes krachtige features die samen jouw gebiedscommunicatie compleet maken.</p>
+            <p class="text-foreground-500 max-w-2xl">Zes krachtige features die samen jouw gebiedscommunicatie compleet maken.</p>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Dashboard -->
-            <div class="group rounded-2xl border border-gray-100 p-6 hover:border-indigo-200 hover:shadow-lg transition">
-                <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center mb-4 group-hover:bg-indigo-600 transition">
-                    <i data-lucide="layout-dashboard" class="size-6 text-indigo-600 group-hover:text-white transition"></i>
+            @foreach (var f in features) {
+            <div class="group rounded-2xl border border-default-100 p-6 hover:border-indigo-200 hover:shadow-lg transition flex flex-col gap-4">
+                <div class="w-12 h-12 rounded-xl @f.Bg flex items-center justify-center @f.HoverBg transition">
+                    <i data-lucide="@f.Icon" class="size-6 @f.Color group-hover:text-white transition"></i>
                 </div>
-                <h3 class="font-semibold text-gray-900 mb-2">Dashboard</h3>
-                <p class="text-sm text-gray-500">Open de app en zie direct wat er speelt - de laatste updates, pinned berichten en highlights.</p>
-            </div>
-            <!-- Tijdlijn -->
-            <div class="group rounded-2xl border border-gray-100 p-6 hover:border-indigo-200 hover:shadow-lg transition">
-                <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4 group-hover:bg-amber-500 transition">
-                    <i data-lucide="clock" class="size-6 text-amber-600 group-hover:text-white transition"></i>
+                <div class="flex flex-col gap-2">
+                    <h3 class="font-semibold text-foreground-900">@f.Title</h3>
+                    <p class="text-sm text-foreground-500">@f.Desc</p>
                 </div>
-                <h3 class="font-semibold text-gray-900 mb-2">Tijdlijn</h3>
-                <p class="text-sm text-gray-500">Scroll door alle berichten op volgorde, of filter op type, tag en datum.</p>
             </div>
-            <!-- Nieuwsberichten -->
-            <div class="group rounded-2xl border border-gray-100 p-6 hover:border-indigo-200 hover:shadow-lg transition">
-                <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4 group-hover:bg-blue-600 transition">
-                    <i data-lucide="newspaper" class="size-6 text-blue-600 group-hover:text-white transition"></i>
-                </div>
-                <h3 class="font-semibold text-gray-900 mb-2">Nieuws &amp; Events</h3>
-                <p class="text-sm text-gray-500">Publiceer nieuws, plan events, stuur waarschuwingen - kies type, voeg tags en bijlagen toe.</p>
-            </div>
-            <!-- Documentenbibliotheek -->
-            <div class="group rounded-2xl border border-gray-100 p-6 hover:border-indigo-200 hover:shadow-lg transition">
-                <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4 group-hover:bg-green-600 transition">
-                    <i data-lucide="folder" class="size-6 text-green-600 group-hover:text-white transition"></i>
-                </div>
-                <h3 class="font-semibold text-gray-900 mb-2">Documenten</h3>
-                <p class="text-sm text-gray-500">Upload bestanden, organiseer in mappen. Iedereen met de juiste rol kan ze downloaden.</p>
-            </div>
-            <!-- Bedrijven -->
-            <div class="group rounded-2xl border border-gray-100 p-6 hover:border-indigo-200 hover:shadow-lg transition">
-                <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4 group-hover:bg-purple-600 transition">
-                    <i data-lucide="building" class="size-6 text-purple-600 group-hover:text-white transition"></i>
-                </div>
-                <h3 class="font-semibold text-gray-900 mb-2">Bedrijfsprofielen</h3>
-                <p class="text-sm text-gray-500">Elk bedrijf in het gebied heeft een profiel met contactgegevens en gekoppelde medewerkers.</p>
-            </div>
-            <!-- Gebiedenbeheer -->
-            <div class="group rounded-2xl border border-gray-100 p-6 hover:border-indigo-200 hover:shadow-lg transition">
-                <div class="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center mb-4 group-hover:bg-rose-600 transition">
-                    <i data-lucide="settings" class="size-6 text-rose-600 group-hover:text-white transition"></i>
-                </div>
-                <h3 class="font-semibold text-gray-900 mb-2">Beheerpaneel</h3>
-                <p class="text-sm text-gray-500">Volledige controle: gebieden, rollen, tags en content moderatie vanuit één dashboard.</p>
-            </div>
+            }
         </div>
     </div>
 </section>
@@ -255,48 +258,27 @@
 <!-- ============================================ -->
 <!-- 6) VOOR WIE                                  -->
 <!-- ============================================ -->
-<section id="voor-wie" class="w-full bg-gray-50 py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">
+<section id="voor-wie" class="w-full bg-content2 py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
+        <div class="flex flex-col items-center text-center">
+            <h2 class="text-3xl font-bold text-foreground-900">
                 Gebouwd voor iedereen in het winkelgebied
             </h2>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Ondernemers -->
-            <div class="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <i data-lucide="shopping-bag" class="size-8 text-indigo-600"></i>
+            @foreach (var a in audiences) {
+            <div class="bg-background rounded-2xl p-6 text-center shadow-card hover:shadow-card-hover transition flex flex-col items-center gap-4">
+                <div class="w-16 h-16 rounded-full @a.Bg flex items-center justify-center">
+                    <i data-lucide="@a.Icon" class="size-8 @a.Color"></i>
                 </div>
-                <h3 class="font-semibold text-gray-900 mb-1">Ondernemers</h3>
-                <p class="text-sm text-gray-500">Zie alleen wat voor jou relevant is. Geen ruis, direct to the point.</p>
-            </div>
-            <!-- Gemeente -->
-            <div class="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
-                    <i data-lucide="landmark" class="size-8 text-blue-600"></i>
+                <div class="flex flex-col gap-1">
+                    <h3 class="font-semibold text-foreground-900">@a.Title</h3>
+                    <p class="text-sm text-foreground-500">@a.Desc</p>
                 </div>
-                <h3 class="font-semibold text-gray-900 mb-1">Gemeente</h3>
-                <p class="text-sm text-gray-500">Bereik de juiste mensen met officiële berichten en documenten.</p>
             </div>
-            <!-- Pandeigenaren -->
-            <div class="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                    <i data-lucide="home" class="size-8 text-green-600"></i>
-                </div>
-                <h3 class="font-semibold text-gray-900 mb-1">Pandeigenaren</h3>
-                <p class="text-sm text-gray-500">Blijf op de hoogte en vind alle documenten terug op één plek.</p>
-            </div>
-            <!-- Community Admin -->
-            <div class="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-100 flex items-center justify-center">
-                    <i data-lucide="users" class="size-8 text-purple-600"></i>
-                </div>
-                <h3 class="font-semibold text-gray-900 mb-1">Gebiedsbeheerder</h3>
-                <p class="text-sm text-gray-500">Beheer content, rollen en structuur vanuit je eigen dashboard.</p>
-            </div>
+            }
         </div>
-        <p class="text-center text-xs text-gray-400 mt-8">
+        <p class="text-center text-xs text-foreground-400">
             Exclusief voor zakelijke stakeholders - geen open social media.
         </p>
     </div>
@@ -305,41 +287,28 @@
 <!-- ============================================ -->
 <!-- 7) ROLLEN & GOVERNANCE                       -->
 <!-- ============================================ -->
-<section class="w-full bg-white py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="max-w-3xl mx-auto text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">
+<section class="w-full bg-background py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
+        <div class="max-w-3xl flex flex-col items-center text-center gap-4">
+            <h2 class="text-3xl font-bold text-foreground-900">
                 Slimme rollen - iedereen ziet precies wat nodig is
             </h2>
-            <p class="text-gray-500">
+            <p class="text-foreground-500">
                 Drie rollen, duidelijk gescheiden. De admin beheert, de community manager publiceert, de ondernemer leest en filtert.
             </p>
         </div>
-        <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <!-- Admin -->
-            <div class="rounded-2xl border-2 border-indigo-100 bg-indigo-50/50 p-6">
-                <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center mb-4">
-                    <i data-lucide="shield-check" class="size-5 text-white"></i>
+        <div class="grid md:grid-cols-3 gap-6 max-w-4xl w-full">
+            @foreach (var r in roles) {
+            <div class="rounded-2xl border-2 @r.Border @r.CardBg p-6 flex flex-col gap-4">
+                <div class="w-10 h-10 rounded-lg @r.BadgeBg flex items-center justify-center">
+                    <i data-lucide="@r.Icon" class="size-5 text-white"></i>
                 </div>
-                <h3 class="font-semibold text-gray-900 mb-2">Admin</h3>
-                <p class="text-sm text-gray-600">Beheert de gebieden, gebruikers, tags en alle instellingen.</p>
-            </div>
-            <!-- Community beheerder -->
-            <div class="rounded-2xl border-2 border-amber-100 bg-amber-50/50 p-6">
-                <div class="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center mb-4">
-                    <i data-lucide="square-pen" class="size-5 text-white"></i>
+                <div class="flex flex-col gap-2">
+                    <h3 class="font-semibold text-foreground-900">@r.Title</h3>
+                    <p class="text-sm text-foreground-600">@r.Desc</p>
                 </div>
-                <h3 class="font-semibold text-gray-900 mb-2">Community Manager</h3>
-                <p class="text-sm text-gray-600">Plaatst nieuws, modereert content en beheert de documentenbibliotheek.</p>
             </div>
-            <!-- Ondernemer -->
-            <div class="rounded-2xl border-2 border-green-100 bg-green-50/50 p-6">
-                <div class="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center mb-4">
-                    <i data-lucide="eye" class="size-5 text-white"></i>
-                </div>
-                <h3 class="font-semibold text-gray-900 mb-2">Ondernemer</h3>
-                <p class="text-sm text-gray-600">Leest updates, filtert op relevantie, vult enquêtes in en beheert zijn profiel.</p>
-            </div>
+            }
         </div>
     </div>
 </section>
@@ -347,50 +316,25 @@
 <!-- ============================================ -->
 <!-- 8) PRIVACY & VEILIGHEID                      -->
 <!-- ============================================ -->
-<section id="privacy" class="w-full bg-gray-50 py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="max-w-3xl mx-auto text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">
+<section id="privacy" class="w-full bg-content2 py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
+        <div class="max-w-3xl flex flex-col items-center text-center">
+            <h2 class="text-3xl font-bold text-foreground-900">
                 Veilig &amp; privé by design
             </h2>
         </div>
-        <div class="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            <div class="flex items-start gap-4 bg-white rounded-xl p-5 shadow-sm">
+        <div class="grid sm:grid-cols-2 gap-6 max-w-3xl w-full">
+            @foreach (var pi in privacyItems) {
+            <div class="flex items-start gap-4 bg-background rounded-xl p-5 shadow-card">
                 <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                    <i data-lucide="user" class="size-5 text-indigo-600"></i>
+                    <i data-lucide="@pi.Icon" class="size-5 text-indigo-600"></i>
                 </div>
-                <div>
-                    <h4 class="font-semibold text-gray-900 text-sm">Privé of openbaar profiel</h4>
-                    <p class="text-xs text-gray-500 mt-1">Jij kiest wat anderen van je zien.</p>
+                <div class="flex flex-col gap-1">
+                    <h4 class="font-semibold text-foreground-900 text-sm">@pi.Title</h4>
+                    <p class="text-xs text-foreground-500">@pi.Desc</p>
                 </div>
             </div>
-            <div class="flex items-start gap-4 bg-white rounded-xl p-5 shadow-sm">
-                <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                    <i data-lucide="building" class="size-5 text-indigo-600"></i>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-gray-900 text-sm">Bedrijfsgegevens onder controle</h4>
-                    <p class="text-xs text-gray-500 mt-1">Elk bedrijf beslist zelf welke info zichtbaar is.</p>
-                </div>
-            </div>
-            <div class="flex items-start gap-4 bg-white rounded-xl p-5 shadow-sm">
-                <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                    <i data-lucide="lock" class="size-5 text-indigo-600"></i>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-gray-900 text-sm">Data blijft in het gebied</h4>
-                    <p class="text-xs text-gray-500 mt-1">Content is strikt gescheiden per gebied - geen lekkage.</p>
-                </div>
-            </div>
-            <div class="flex items-start gap-4 bg-white rounded-xl p-5 shadow-sm">
-                <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                    <i data-lucide="shield-check" class="size-5 text-indigo-600"></i>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-gray-900 text-sm">AVG-proof</h4>
-                    <p class="text-xs text-gray-500 mt-1">Privacy, logging en dataminimalisatie zitten ingebakken in het systeem.</p>
-                </div>
-            </div>
+            }
         </div>
     </div>
 </section>
@@ -398,82 +342,37 @@
 <!-- ============================================ -->
 <!-- 9) PAKKETTEN                                 -->
 <!-- ============================================ -->
-<section id="pakketten" class="w-full bg-white py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">
+<section id="pakketten" class="w-full bg-background py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
+        <div class="flex flex-col items-center text-center">
+            <h2 class="text-3xl font-bold text-foreground-900">
                 Kies het pakket dat bij je past
             </h2>
         </div>
-        <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <!-- Bronze -->
-            <div class="rounded-2xl border border-gray-200 p-8 hover:shadow-lg transition flex flex-col">
-                <div class="text-center mb-6">
-                    <div class="inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold mb-3">Bronze</div>
-                    <h3 class="text-xl font-bold text-gray-900">Basis</h3>
-                </div>
-                <ul class="space-y-3 text-sm text-gray-600 flex-1">
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-4 text-green-500"></i>
-                        Nieuws
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-4 text-green-500"></i>
-                        Tijdlijn
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-4 text-green-500"></i>
-                        Bedrijven
-                    </li>
-                </ul>
-            </div>
-            <!-- Silver -->
-            <div class="rounded-2xl border-2 border-indigo-500 p-8 shadow-lg relative flex flex-col">
-                <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+        <div class="grid md:grid-cols-3 gap-8 max-w-5xl w-full">
+            @foreach (var pkg in packages) {
+            <div class="rounded-2xl @(pkg.IsFeatured ? "border-2 border-indigo-500 shadow-lg relative" : "border border-divider hover:shadow-lg transition") p-8 flex flex-col">
+                @if (pkg.IsFeatured) {
+                <div class="absolute -top-3 inset-x-0 flex justify-center">
                     <span class="bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Populair</span>
                 </div>
-                <div class="text-center mb-6">
-                    <div class="inline-flex items-center px-3 py-1 rounded-full bg-gray-200 text-gray-700 text-xs font-semibold mb-3">Silver</div>
-                    <h3 class="text-xl font-bold text-gray-900">Professioneel</h3>
+                }
+                <div class="flex flex-col items-center gap-3 text-center">
+                    <div class="inline-flex items-center px-3 py-1 rounded-full @pkg.BadgeClass text-xs font-semibold">@pkg.Badge</div>
+                    <h3 class="text-xl font-bold text-foreground-900">@pkg.Title</h3>
                 </div>
-                <ul class="space-y-3 text-sm text-gray-600 flex-1">
+                <ul class="flex flex-col gap-3 text-sm text-foreground-600 flex-1 pt-6">
+                    @foreach (var item in pkg.Items) {
                     <li class="flex items-center gap-2">
                         <i data-lucide="check" class="size-4 text-green-500"></i>
-                        Alles uit Bronze
+                        @item
                     </li>
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-4 text-green-500"></i>
-                        Documentenbibliotheek
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-4 text-green-500"></i>
-                        Enquêtes
-                    </li>
+                    }
                 </ul>
             </div>
-            <!-- Gold -->
-            <div class="rounded-2xl border border-gray-200 p-8 hover:shadow-lg transition flex flex-col">
-                <div class="text-center mb-6">
-                    <div class="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold mb-3">Gold</div>
-                    <h3 class="text-xl font-bold text-gray-900">Enterprise</h3>
-                </div>
-                <ul class="space-y-3 text-sm text-gray-600 flex-1">
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-4 text-green-500"></i>
-                        Alles uit Silver
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-4 text-green-500"></i>
-                        Extra beheeropties
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <i data-lucide="check" class="size-4 text-green-500"></i>
-                        Toekomstige uitbreidingen
-                    </li>
-                </ul>
-            </div>
+            }
         </div>
-        <div class="text-center mt-10">
+        <div class="flex justify-center">
             <a href="#demo"
                class="inline-flex items-center px-8 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
                 Neem contact op
@@ -485,39 +384,23 @@
 <!-- ============================================ -->
 <!-- 10) ROADMAP TEASER                           -->
 <!-- ============================================ -->
-<section class="w-full bg-gray-50 py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="max-w-3xl mx-auto text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">
+<section class="w-full bg-content2 py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
+        <div class="max-w-3xl flex flex-col items-center text-center gap-4">
+            <h2 class="text-3xl font-bold text-foreground-900">
                 Binnenkort nog meer
             </h2>
-            <p class="text-gray-500">Deze features staan al op de roadmap.</p>
+            <p class="text-foreground-500">Deze features staan al op de roadmap.</p>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            <div class="bg-white rounded-xl p-5 shadow-sm text-center">
-                <div class="w-10 h-10 mx-auto mb-3 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <i data-lucide="bar-chart-3" class="size-5 text-indigo-600"></i>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl w-full">
+            @foreach (var rm in roadmapItems) {
+            <div class="bg-background rounded-xl p-5 shadow-card flex flex-col items-center gap-3 text-center">
+                <div class="w-10 h-10 rounded-full @rm.Bg flex items-center justify-center">
+                    <i data-lucide="@rm.Icon" class="size-5 @rm.Color"></i>
                 </div>
-                <h4 class="text-sm font-semibold text-gray-900">KPI dashboards per gebied</h4>
+                <h4 class="text-sm font-semibold text-foreground-900">@rm.Title</h4>
             </div>
-            <div class="bg-white rounded-xl p-5 shadow-sm text-center">
-                <div class="w-10 h-10 mx-auto mb-3 rounded-full bg-amber-100 flex items-center justify-center">
-                    <i data-lucide="clipboard-check" class="size-5 text-amber-600"></i>
-                </div>
-                <h4 class="text-sm font-semibold text-gray-900">Moderatieflows en approvals</h4>
-            </div>
-            <div class="bg-white rounded-xl p-5 shadow-sm text-center">
-                <div class="w-10 h-10 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center">
-                    <i data-lucide="refresh-cw" class="size-5 text-green-600"></i>
-                </div>
-                <h4 class="text-sm font-semibold text-gray-900">Versiebeheer documenten</h4>
-            </div>
-            <div class="bg-white rounded-xl p-5 shadow-sm text-center">
-                <div class="w-10 h-10 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center">
-                    <i data-lucide="bell" class="size-5 text-purple-600"></i>
-                </div>
-                <h4 class="text-sm font-semibold text-gray-900">Meer notificatieopties</h4>
-            </div>
+            }
         </div>
     </div>
 </section>

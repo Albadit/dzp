@@ -190,13 +190,13 @@ function initDataTable(tid) {
         }
         if (wrapEl) {
           var icon = dir === 'asc' ? 'move-up' : 'move-down';
-          wrapEl.innerHTML = '<i data-lucide="' + icon + '" class="dt-icon dt-icon-xs dt-sort-active-icon"></i>';
+          wrapEl.innerHTML = '<i data-lucide="' + icon + '" class="size-3.5 shrink-0 text-primary"></i>';
         }
       } else {
         th.dataset.dir = '';
         if (numEl) { numEl.textContent = ''; numEl.classList.add('hidden'); }
         if (wrapEl) {
-          wrapEl.innerHTML = '<i data-lucide="arrow-down-up" class="dt-icon dt-icon-xs dt-sort-default-icon"></i>';
+          wrapEl.innerHTML = '<i data-lucide="arrow-down-up" class="size-3.5 shrink-0 opacity-40"></i>';
         }
       }
     });
@@ -447,7 +447,7 @@ function initDataTable(tid) {
     });
   }
 
-  if (window.lucide) lucide.createIcons({ attrs: { class: 'dt-icon' } });
+  if (window.lucide) lucide.createIcons({ attrs: { class: 'shrink-0' } });
 
   root.querySelectorAll('.dt-alert[data-auto-dismiss]').forEach(function (el) {
     setTimeout(function () {

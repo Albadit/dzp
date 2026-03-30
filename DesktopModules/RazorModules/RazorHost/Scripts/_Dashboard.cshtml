@@ -17,8 +17,8 @@
 
 <section class="w-full py-12 flex flex-col">
     <div class="px-4 sm:px-6 lg:px-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Mijn communities</h1>
-        <p class="text-gray-500 mb-8">
+        <h1 class="text-3xl font-bold text-foreground-900 mb-2">Mijn communities</h1>
+        <p class="text-foreground-500 mb-8">
             @if (user != null && user.IsSuperUser)
             {
                 <span>Je ziet alle communities (superuser).</span>
@@ -31,8 +31,8 @@
 
         @if (communities.Count == 0)
         {
-            <div class="bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-4">
-                <p class="text-sm text-yellow-800">Je bent nog niet gekoppeld aan een community.</p>
+            <div class="bg-warning-50 border border-warning-200 rounded-xl px-5 py-4">
+                <p class="text-sm text-warning-800">Je bent nog niet gekoppeld aan een community.</p>
             </div>
         }
         else
@@ -41,18 +41,18 @@
                 @foreach (var c in communities)
                 {
                     <a href="/@c.Slug/home"
-                       class="group block rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition">
+                       class="group block rounded-xl border border-divider bg-background p-5 shadow-card hover:shadow-card-hover hover:border-primary-300 transition">
                         <div class="flex items-center gap-4">
-                            <div class="flex size-12 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 font-bold text-lg shrink-0">
+                            <div class="flex size-12 items-center justify-center rounded-lg bg-primary-50 text-primary font-bold text-lg shrink-0">
                                 @(c.Name.Substring(0, 1).ToUpper())
                             </div>
                             <div class="min-w-0">
-                                <h2 class="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition truncate">
+                                <h2 class="text-lg font-semibold text-foreground-900 group-hover:text-primary transition truncate">
                                     @c.Name
                                 </h2>
-                                <p class="text-sm text-gray-400 font-mono truncate">/@c.Slug</p>
+                                <p class="text-sm text-foreground-400 font-mono truncate">/@c.Slug</p>
                             </div>
-                            <i data-lucide="chevron-right" class="size-5 text-gray-300 group-hover:text-indigo-400 ml-auto shrink-0 transition"></i>
+                            <i data-lucide="chevron-right" class="size-5 text-foreground-300 group-hover:text-primary-400 ml-auto shrink-0 transition"></i>
                         </div>
                     </a>
                 }

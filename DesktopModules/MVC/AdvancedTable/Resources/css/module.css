@@ -1,8 +1,8 @@
 /* ============================================
-   DataTable Component Styles
+   DataTable – Minimal CSS (everything else is Tailwind)
    ============================================ */
 
-/* ── Scoped hidden (dt- elements only, avoids Tailwind conflict) ── */
+/* Override display:flex when JS toggles the "hidden" class */
 .dt-modal.hidden,
 .dt-create-modal.hidden,
 .dt-del-modal.hidden,
@@ -10,579 +10,21 @@
   display: none !important;
 }
 
-/* ── Icon Base & Sizes ── */
-.dt-icon {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-}
-.dt-icon.dt-icon-xs { width: 0.875rem; height: 0.875rem; }
-.dt-icon.dt-icon-md { width: 1.25rem; height: 1.25rem; }
-.dt-icon.dt-icon-lg { width: 1.5rem; height: 1.5rem; }
-.dt-icon.dt-icon-xl { width: 2rem; height: 2rem; }
-
-/* ── Container ── */
-.dt-container {
-  width: 100%;
-  max-width: 64rem;
-  margin-left: auto;
-  margin-right: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1.5rem 0;
-}
-
-/* ── Title ── */
-.dt-title-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-.dt-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-}
-
-/* ── Alert ── */
-.dt-alert {
-  position: fixed;
-  bottom: 1rem;
-  right: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  z-index: 1000;
-}
-.dt-alert--success {
-  background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-}
-.dt-alert--error {
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-}
-
-/* ── Toolbar ── */
-.dt-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-}
-.dt-search-wrap {
-  position: relative;
-  flex: 1;
-  min-width: 200px;
-  max-width: 24rem;
-}
-.dt-search-icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  pointer-events: none;
-  color: #9ca3af;
-}
-.dt-search {
-  width: 100%;
-  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  outline: none;
-  background: #fff;
-  box-sizing: border-box;
-}
-.dt-search:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-}
-.dt-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* ── Buttons ── */
-.dt-btn-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #fff;
-  background-color: #2563eb;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.15s;
-  line-height: 1.25rem;
-}
-.dt-btn-add:hover {
-  background-color: #1d4ed8;
-}
-.dt-btn-bulk-del {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #fff;
-  background-color: #dc2626;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.15s;
-  line-height: 1.25rem;
-}
-.dt-btn-bulk-del:hover {
-  background-color: #b91c1c;
-}
-
-/* ── Table Wrapper ── */
-.dt-table-wrap {
-  overflow-x: auto;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-  background-color: #fff;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-.dt-table {
-  min-width: 100%;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-}
-
-/* ── Header Cells ── */
-.dt-th {
-  background-color: #f9fafb;
-  padding: 0.75rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: #374151;
-  user-select: none;
-  display: flex;
-  align-items: center;
-}
-.dt-th--checkbox {
-  padding: 0.75rem;
-}
-.dt-th--actions {
-  justify-content: flex-end;
-}
-
-/* ── Sortable Header ── */
-.dt-sort {
-  cursor: pointer;
-}
-.dt-sort-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-.dt-sort-icons {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.125rem;
-}
-.dt-sort-default-icon {
-  opacity: 0.4;
-}
-.dt-sort-active-icon {
-  color: #3b82f6;
-}
-.dt-sort-num {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #3b82f6;
-}
-
-/* ── Table Body ── */
-.dt-tbody {
-  display: contents;
-}
-.dt-row {
-  display: contents;
-}
-
-/* ── Cells ── */
-.dt-cell {
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #f3f4f6;
-  display: flex;
-  align-items: center;
-  transition: background-color 0.15s;
-}
-.dt-cell--checkbox {
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
-}
-.dt-cell--actions {
-  justify-content: flex-end;
-}
-.dt-row:hover .dt-cell {
-  background-color: rgba(249, 250, 251, 0.5);
-}
-
-/* ── Empty State ── */
+/* Empty row must span full grid */
 .dt-row-empty {
   grid-column: 1 / -1;
 }
-.dt-empty-content {
-  padding: 3rem 1rem;
-  text-align: center;
-  color: #9ca3af;
-}
-.dt-empty-icon {
-  display: block;
-  margin: 0 auto 0.5rem;
-  opacity: 0.4;
-}
 
-/* ── Cell Link ── */
-.dt-link {
-  color: #2563eb;
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: block;
-  max-width: 200px;
-}
-.dt-link:hover {
-  text-decoration: underline;
-}
-
-/* ── Row Action Buttons ── */
-.dt-action-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-.dt-btn-edit,
-.dt-btn-del {
-  padding: 0.375rem;
-  border: none;
-  background: none;
-  border-radius: 0.375rem;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
-  display: inline-flex;
-  align-items: center;
-}
-.dt-btn-edit:hover {
-  color: #2563eb;
-  background-color: #eff6ff;
-}
-.dt-btn-del:hover {
-  color: #dc2626;
-  background-color: #fef2f2;
-}
-
-/* ── Pagination Bar ── */
-.dt-pagination-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  font-size: 0.875rem;
-  color: #4b5563;
-}
-.dt-row-count {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #4b5563;
-  background-color: #f3f4f6;
-  border-radius: 9999px;
-}
-.dt-row-count-num {
-  font-weight: 600;
-  color: #111827;
-}
-.dt-pagination {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-.dt-page-prev,
-.dt-page-next {
-  padding: 0.375rem;
-  border: none;
-  background: none;
-  border-radius: 0.375rem;
-  color: #4b5563;
-  cursor: pointer;
-  transition: background-color 0.15s;
-  display: inline-flex;
-  align-items: center;
-}
-.dt-page-prev:hover,
-.dt-page-next:hover {
-  background-color: #f3f4f6;
-}
-.dt-page-prev:disabled,
-.dt-page-next:disabled {
-  color: #d1d5db;
-  cursor: not-allowed;
-}
-.dt-page-prev:disabled:hover,
-.dt-page-next:disabled:hover {
-  background-color: transparent;
-}
-.dt-page-input {
-  width: 3.5rem;
-  text-align: center;
-  padding: 0.375rem;
-  font-size: 0.875rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  outline: none;
-}
-.dt-page-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-}
-.dt-page-total {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-.dt-page-size {
-  min-width: 5rem;
-}
-
-/* ── Modal Overlay ── */
-.dt-modal,
-.dt-create-modal,
-.dt-del-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-}
-
-/* ── Modal Dialog ── */
-.dt-modal-dialog {
-  background-color: #fff;
-  border-radius: 0.75rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  width: 100%;
-  max-width: 32rem;
-  margin: 0 1rem;
-  overflow: hidden;
-}
-.dt-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-.dt-modal-title {
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-}
-.dt-modal-close {
-  padding: 0.25rem;
-  border: none;
-  background: none;
-  border-radius: 0.375rem;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
-  display: inline-flex;
-  align-items: center;
-}
-.dt-modal-close:hover {
-  background-color: #f3f4f6;
-  color: #4b5563;
-}
-.dt-modal-body {
-  padding: 1rem 1.25rem;
-}
-.dt-modal-body > * + * {
-  margin-top: 1rem;
-}
-.dt-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
-}
-.dt-label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #4b5563;
-  margin-bottom: 0.25rem;
-}
-.dt-required {
-  color: #ef4444;
-}
-.dt-modal-input,
-.dt-create-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  outline: none;
-  box-sizing: border-box;
-}
-.dt-modal-input:focus,
-.dt-create-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-}
-.dt-btn-cancel {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  background-color: #fff;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-.dt-btn-cancel:hover {
-  background-color: #f9fafb;
-  color: #374151;
-}
-.dt-btn-save {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #fff;
-  background-color: #2563eb;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-.dt-btn-save:hover {
-  background-color: #1d4ed8;
-}
-
-/* ── Delete Modal ── */
-.dt-del-dialog {
-  background-color: #fff;
-  border-radius: 0.75rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  width: 100%;
-  max-width: 24rem;
-  margin: 0 1rem;
-  overflow: hidden;
-}
-.dt-del-body {
-  padding: 1.5rem 1.25rem;
-  text-align: center;
-}
-.dt-del-icon-wrap {
-  margin: 0 auto 1rem;
-  display: flex;
-  width: 3rem;
-  height: 3rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  background-color: #fee2e2;
-}
-.dt-del-icon {
-  color: #dc2626;
-}
-.dt-del-title {
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 0.25rem;
-}
-.dt-del-msg {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0;
-}
-.dt-del-footer {
-  display: flex;
-  gap: 0.5rem;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
-  justify-content: flex-end;
-}
-.dt-del-cancel {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  background-color: #fff;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-.dt-del-cancel:hover {
-  background-color: #f9fafb;
-}
-.dt-del-confirm {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #fff;
-  background-color: #dc2626;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-.dt-del-confirm:hover {
-  background-color: #b91c1c;
-}
-
-/* ── Checkboxes ── */
+/* Custom checkboxes (pseudo-element checkmark can't be done in Tailwind) */
 .dt-check-all,
 .dt-check-row {
   -webkit-appearance: none;
   appearance: none;
   width: 1.125rem;
   height: 1.125rem;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--divider, #d1d5db);
   border-radius: 0.375rem;
-  background: #fff;
+  background: var(--layout-background, #fff);
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
@@ -593,36 +35,36 @@
 }
 .dt-check-all:hover,
 .dt-check-row:hover {
-  border-color: #2563eb;
+  border-color: var(--base-primary, #2563eb);
 }
 .dt-check-all:focus-visible,
 .dt-check-row:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2563eb;
+  box-shadow: 0 0 0 2px var(--layout-background, #fff), 0 0 0 4px var(--base-primary, #2563eb);
 }
 .dt-check-all:checked,
 .dt-check-row:checked {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--base-primary, #2563eb);
+  border-color: var(--base-primary, #2563eb);
 }
 .dt-check-all:checked::after,
 .dt-check-row:checked::after {
   content: '';
   width: 0.375rem;
   height: 0.625rem;
-  border: solid #fff;
+  border: solid var(--layout-background, #fff);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translateY(-1px);
 }
 .dt-check-all:indeterminate {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--base-primary, #2563eb);
+  border-color: var(--base-primary, #2563eb);
 }
 .dt-check-all:indeterminate::after {
   content: '';
   width: 0.5rem;
   height: 0;
-  border-top: 2px solid #fff;
+  border-top: 2px solid var(--layout-background, #fff);
 }
 .dt-check-all:active,
 .dt-check-row:active {

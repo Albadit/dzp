@@ -21,7 +21,7 @@
     padding: 0.35rem 0.625rem;
     background: #fff;
     border: 1px solid var(--default-300);
-    border-radius: var(--radius-button);
+    border-radius: var(--radius-lg);
     cursor: pointer;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
     outline: none;

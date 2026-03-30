@@ -8,25 +8,25 @@
     {
       "label": "Community",
       "href": "[community]/home",
-      "css": "text-gray-700",
-      "separator": "border-b border-gray-200",
+      "css": "text-foreground-700",
+      "separator": "border-b border-divider",
       "context": ["!dashboard"]
     },
     {
       "label": "Gebruikersprofiel bewerken",
       "href": "settings/profile",
-      "css": "text-gray-700"
+      "css": "text-foreground-700"
     },
     {
       "label": "Mijn instellingen",
       "href": "settings",
-      "css": "text-gray-700"
+      "css": "text-foreground-700"
     },
     {
       "label": "Uitloggen",
       "href": "Logoff",
-      "css": "text-red-600",
-      "separator": "border-t border-gray-200"
+      "css": "text-danger",
+      "separator": "border-t border-divider"
     }
   ]
 }

@@ -7,7 +7,7 @@
   /* Base body styles */
   body {
     font-family: var(--font-inter);
-    color: var(--color-gray-800);
+    color: var(--layout-foreground);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -50,7 +50,7 @@
     display: block;
     width: 1.25rem;
     height: 2px;
-    background-color: white;
+    background-color: var(--layout-background);
     border-radius: 1px;
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
@@ -94,7 +94,7 @@
 }
 
 #mobile-menu > div > ul > li > a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--flat-default-300);
 }
 
 /* Hide the desktop dropdown chevron on mobile */
@@ -120,15 +120,15 @@
 }
 
 #mobile-menu .group > div ul li a {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--foreground-500);
   background: transparent;
   padding-left: 2rem;
   font-size: 0.875rem;
 }
 
 #mobile-menu .group > div ul li a:hover {
-  color: white;
-  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--layout-foreground);
+  background-color: var(--flat-default-300);
 }
 
 /* Remove ring/shadow from mobile sub-menus */

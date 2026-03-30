@@ -6,73 +6,482 @@
    ===================================================================== */
 @custom-variant dark (&:is([data-theme="dark"] *));
 
+/* =====================================================================
+   PRIMITIVES — Raw color values (from Figma Primitives)
+   These never change between themes.
+   ===================================================================== */
+:root {
+  /* White & Black */
+  --white: #ffffff;
+  --black: #000000;
+
+  /* Blue */
+  --blue-50: #e6f1fe;
+  --blue-100: #cce3fd;
+  --blue-200: #99c7fb;
+  --blue-300: #66aaf9;
+  --blue-400: #338ef7;
+  --blue-500: #006fee;
+  --blue-600: #005bc4;
+  --blue-700: #004493;
+  --blue-800: #002e62;
+  --blue-900: #001731;
+
+  /* Purple */
+  --purple-50: #f2eafa;
+  --purple-100: #e4d4f4;
+  --purple-200: #c9a9e9;
+  --purple-300: #ae7ede;
+  --purple-400: #9353d3;
+  --purple-500: #7828c8;
+  --purple-600: #6020a0;
+  --purple-700: #481878;
+  --purple-800: #301050;
+  --purple-900: #180828;
+
+  /* Green */
+  --green-50: #e8faf0;
+  --green-100: #d1f4e0;
+  --green-200: #a2e9c1;
+  --green-300: #74dfa2;
+  --green-400: #45d483;
+  --green-500: #17c964;
+  --green-600: #12a150;
+  --green-700: #0e793c;
+  --green-800: #095028;
+  --green-900: #052814;
+
+  /* Red */
+  --red-50: #fee7ef;
+  --red-100: #fdd0df;
+  --red-200: #faa0bf;
+  --red-300: #f871a0;
+  --red-400: #f54180;
+  --red-500: #f31260;
+  --red-600: #c20e4d;
+  --red-700: #920b3a;
+  --red-800: #610726;
+  --red-900: #310413;
+
+  /* Yellow */
+  --yellow-50: #fefce8;
+  --yellow-100: #fdedd3;
+  --yellow-200: #fbdba7;
+  --yellow-300: #f9c97c;
+  --yellow-400: #f7b750;
+  --yellow-500: #f5a524;
+  --yellow-600: #c4841d;
+  --yellow-700: #936316;
+  --yellow-800: #62420e;
+  --yellow-900: #312107;
+
+  /* Cyan */
+  --cyan-50: #f0fcff;
+  --cyan-100: #e6fafe;
+  --cyan-200: #d7f8fe;
+  --cyan-300: #c3f4fd;
+  --cyan-400: #a5eefd;
+  --cyan-500: #7ee7fc;
+  --cyan-600: #06b7db;
+  --cyan-700: #09aacd;
+  --cyan-800: #0e8aaa;
+  --cyan-900: #053b48;
+
+  /* Pink */
+  --pink-50: #ffedfa;
+  --pink-100: #ffdcf5;
+  --pink-200: #ffb8eb;
+  --pink-300: #ff95e1;
+  --pink-400: #ff71d7;
+  --pink-500: #ff4ecd;
+  --pink-600: #cc3ea4;
+  --pink-700: #992f7b;
+  --pink-800: #661f52;
+  --pink-900: #331029;
+
+  /* Zinc */
+  --zinc-50: #fafafa;
+  --zinc-100: #f4f4f5;
+  --zinc-200: #e4e4e7;
+  --zinc-300: #d4d4d8;
+  --zinc-400: #a1a1aa;
+  --zinc-500: #71717a;
+  --zinc-600: #52525b;
+  --zinc-700: #3f3f46;
+  --zinc-800: #27272a;
+  --zinc-900: #18181b;
+
+  /* Flat (semi-transparent) */
+  --flat-default-300: #d4d4d866;
+  --flat-default-700: #3f3f4666;
+  --flat-primary-500: #006fee33;
+  --flat-secondary-400: #9353d333;
+  --flat-secondary-500: #7828c833;
+  --flat-success-500: #17c96433;
+  --flat-warning-500: #f5a52433;
+  --flat-danger-500: #f3126033;
+
+  /* Layout — Opacity */
+  --layout-disabled-opacity: 0.5;
+
+  /* Layout — Divider */
+  --layout-divider-weight: 1px;
+
+  /* Layout — Font sizes */
+  --layout-text-tiny: 0.75rem;
+  --layout-text-small: 0.875rem;
+  --layout-text-medium: 1rem;
+  --layout-text-large: 1.125rem;
+
+  /* Layout — Line heights */
+  --layout-leading-tiny: 1rem;
+  --layout-leading-small: 1.25rem;
+  --layout-leading-medium: 1.5rem;
+  --layout-leading-large: 1.75rem;
+
+  /* Layout — Border radii */
+  --layout-rounded-none: 0px;
+  --layout-rounded-small: 0.5rem;
+  --layout-rounded-medium: 0.75rem;
+  --layout-rounded-large: 0.875rem;
+  --layout-rounded-full: 9999px;
+
+  /* Layout — Border widths */
+  --layout-border-small: 1px;
+  --layout-border-medium: 2px;
+  --layout-border-large: 3px;
+}
+
+/* =====================================================================
+   TOKENS — Semantic tokens that reference primitives per theme
+   ===================================================================== */
+
+@layer base {
+  /* Light theme (default) */
+  :root, .light, [data-theme="light"] {
+    /* Layout */
+    --layout-background: var(--white);
+    --layout-foreground: #11181c;
+    --layout-divider: #11111126;
+    --layout-focus: var(--blue-500);
+    --layout-overlay: #0000004d;
+    --layout-focus-op-20: #006fee33;
+
+    /* Foreground scale */
+    --foreground-50: var(--zinc-50);
+    --foreground-100: var(--zinc-100);
+    --foreground-200: var(--zinc-200);
+    --foreground-300: var(--zinc-300);
+    --foreground-400: var(--zinc-400);
+    --foreground-500: var(--zinc-500);
+    --foreground-600: var(--zinc-600);
+    --foreground-700: var(--zinc-700);
+    --foreground-800: var(--zinc-800);
+    --foreground-900: var(--zinc-900);
+
+    /* Content */
+    --content-1: var(--white);
+    --content-2: var(--zinc-100);
+    --content-3: var(--zinc-300);
+    --content-4: var(--zinc-300);
+    --content-1-foreground: #11181c;
+    --content-2-foreground: var(--zinc-800);
+    --content-3-foreground: var(--zinc-700);
+    --content-4-foreground: var(--zinc-600);
+
+    /* Base */
+    --base-default: var(--zinc-300);
+    --base-primary: var(--blue-500);
+    --base-secondary: var(--purple-500);
+    --base-success: var(--green-500);
+    --base-warning: var(--yellow-500);
+    --base-danger: var(--red-500);
+
+    /* Base foregrounds */
+    --base-default-foreground: var(--black);
+    --base-primary-foreground: var(--white);
+    --base-secondary-foreground: var(--white);
+    --base-success-foreground: var(--black);
+    --base-warning-foreground: var(--black);
+    --base-danger-foreground: var(--white);
+
+    /* Default scale */
+    --default-50: var(--zinc-50);
+    --default-100: var(--zinc-100);
+    --default-200: var(--zinc-200);
+    --default-300: var(--zinc-300);
+    --default-400: var(--zinc-400);
+    --default-500: var(--zinc-500);
+    --default-600: var(--zinc-600);
+    --default-700: var(--zinc-700);
+    --default-800: var(--zinc-800);
+    --default-900: var(--zinc-900);
+
+    /* Primary scale */
+    --primary-50: var(--blue-50);
+    --primary-100: var(--blue-100);
+    --primary-200: var(--blue-200);
+    --primary-300: var(--blue-300);
+    --primary-400: var(--blue-400);
+    --primary-500: var(--blue-500);
+    --primary-600: var(--blue-600);
+    --primary-700: var(--blue-700);
+    --primary-800: var(--blue-800);
+    --primary-900: var(--blue-900);
+
+    /* Secondary scale */
+    --secondary-50: var(--purple-50);
+    --secondary-100: var(--purple-100);
+    --secondary-200: var(--purple-200);
+    --secondary-300: var(--purple-300);
+    --secondary-400: var(--purple-400);
+    --secondary-500: var(--purple-500);
+    --secondary-600: var(--purple-600);
+    --secondary-700: var(--purple-700);
+    --secondary-800: var(--purple-800);
+    --secondary-900: var(--purple-900);
+
+    /* Success scale */
+    --success-50: var(--green-50);
+    --success-100: var(--green-100);
+    --success-200: var(--green-200);
+    --success-300: var(--green-300);
+    --success-400: var(--green-400);
+    --success-500: var(--green-500);
+    --success-600: var(--green-600);
+    --success-700: var(--green-700);
+    --success-800: var(--green-800);
+    --success-900: var(--green-800);
+
+    /* Warning scale */
+    --warning-50: var(--yellow-50);
+    --warning-100: var(--yellow-100);
+    --warning-200: var(--yellow-200);
+    --warning-300: var(--yellow-300);
+    --warning-400: var(--yellow-400);
+    --warning-500: var(--yellow-500);
+    --warning-600: var(--yellow-600);
+    --warning-700: var(--yellow-700);
+    --warning-800: var(--yellow-800);
+    --warning-900: var(--yellow-900);
+
+    /* Danger scale */
+    --danger-50: var(--red-50);
+    --danger-100: var(--red-100);
+    --danger-200: var(--red-200);
+    --danger-300: var(--red-300);
+    --danger-400: var(--red-400);
+    --danger-500: var(--red-500);
+    --danger-600: var(--red-600);
+    --danger-700: var(--red-700);
+    --danger-800: var(--red-800);
+    --danger-900: var(--red-900);
+
+    /* Flat */
+    --flat-default: var(--flat-default-300);
+    --flat-primary: var(--flat-primary-500);
+    --flat-secondary: var(--flat-secondary-500);
+    --flat-success: var(--flat-success-500);
+    --flat-warning: var(--flat-warning-500);
+    --flat-danger: var(--flat-danger-500);
+
+    /* Force dark */
+    --base-force-dark: var(--white);
+
+    /* Shadows */
+    --layout-shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --layout-shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --layout-shadow-nav: 0 1px 3px 0 rgb(0 0 0 / 0.08);
+  }
+
+  /* Dark theme */
+  .dark, [data-theme="dark"] {
+    /* Layout */
+    --layout-background: var(--black);
+    --layout-foreground: #ecedee;
+    --layout-divider: #ffffff26;
+    --layout-focus: var(--blue-500);
+    --layout-overlay: #0000004d;
+    --layout-focus-op-20: #006fee33;
+
+    /* Foreground scale (inverted) */
+    --foreground-50: var(--zinc-900);
+    --foreground-100: var(--zinc-800);
+    --foreground-200: var(--zinc-700);
+    --foreground-300: var(--zinc-600);
+    --foreground-400: var(--zinc-500);
+    --foreground-500: var(--zinc-400);
+    --foreground-600: var(--zinc-300);
+    --foreground-700: var(--zinc-200);
+    --foreground-800: var(--zinc-100);
+    --foreground-900: var(--zinc-50);
+
+    /* Content */
+    --content-1: var(--zinc-900);
+    --content-2: var(--zinc-800);
+    --content-3: var(--zinc-700);
+    --content-4: var(--zinc-600);
+    --content-1-foreground: var(--zinc-50);
+    --content-2-foreground: var(--zinc-100);
+    --content-3-foreground: var(--zinc-200);
+    --content-4-foreground: var(--zinc-300);
+
+    /* Base */
+    --base-default: var(--zinc-700);
+    --base-primary: var(--blue-500);
+    --base-secondary: var(--purple-400);
+    --base-success: var(--green-500);
+    --base-warning: var(--yellow-500);
+    --base-danger: var(--red-500);
+
+    /* Base foregrounds */
+    --base-default-foreground: var(--white);
+    --base-primary-foreground: var(--white);
+    --base-secondary-foreground: var(--white);
+    --base-success-foreground: var(--black);
+    --base-warning-foreground: var(--black);
+    --base-danger-foreground: var(--white);
+
+    /* Default scale (inverted) */
+    --default-50: var(--zinc-900);
+    --default-100: var(--zinc-800);
+    --default-200: var(--zinc-700);
+    --default-300: var(--zinc-600);
+    --default-400: var(--zinc-500);
+    --default-500: var(--zinc-400);
+    --default-600: var(--zinc-300);
+    --default-700: var(--zinc-200);
+    --default-800: var(--zinc-100);
+    --default-900: var(--zinc-50);
+
+    /* Primary scale (inverted) */
+    --primary-50: var(--blue-900);
+    --primary-100: var(--blue-800);
+    --primary-200: var(--blue-700);
+    --primary-300: var(--blue-600);
+    --primary-400: var(--blue-500);
+    --primary-500: var(--blue-400);
+    --primary-600: var(--blue-300);
+    --primary-700: var(--blue-200);
+    --primary-800: var(--blue-100);
+    --primary-900: var(--blue-50);
+
+    /* Secondary scale (inverted) */
+    --secondary-50: var(--purple-900);
+    --secondary-100: var(--purple-800);
+    --secondary-200: var(--purple-700);
+    --secondary-300: var(--purple-600);
+    --secondary-400: var(--purple-500);
+    --secondary-500: var(--purple-400);
+    --secondary-600: var(--purple-300);
+    --secondary-700: var(--purple-200);
+    --secondary-800: var(--purple-100);
+    --secondary-900: var(--purple-50);
+
+    /* Success scale (inverted) */
+    --success-50: var(--green-900);
+    --success-100: var(--green-800);
+    --success-200: var(--green-700);
+    --success-300: var(--green-600);
+    --success-400: var(--green-500);
+    --success-500: var(--green-400);
+    --success-600: var(--green-300);
+    --success-700: var(--green-200);
+    --success-800: var(--green-100);
+    --success-900: var(--green-50);
+
+    /* Warning scale (inverted) */
+    --warning-50: var(--yellow-900);
+    --warning-100: var(--yellow-800);
+    --warning-200: var(--yellow-700);
+    --warning-300: var(--yellow-600);
+    --warning-400: var(--yellow-500);
+    --warning-500: var(--yellow-400);
+    --warning-600: var(--yellow-300);
+    --warning-700: var(--yellow-200);
+    --warning-800: var(--yellow-100);
+    --warning-900: var(--yellow-50);
+
+    /* Danger scale (inverted) */
+    --danger-50: var(--red-900);
+    --danger-100: var(--red-800);
+    --danger-200: var(--red-700);
+    --danger-300: var(--red-600);
+    --danger-400: var(--red-500);
+    --danger-500: var(--red-400);
+    --danger-600: var(--red-300);
+    --danger-700: var(--red-200);
+    --danger-800: var(--red-100);
+    --danger-900: var(--red-50);
+
+    /* Flat */
+    --flat-default: var(--flat-default-700);
+    --flat-primary: var(--flat-primary-500);
+    --flat-secondary: var(--flat-secondary-400);
+    --flat-success: var(--flat-success-500);
+    --flat-warning: var(--flat-warning-500);
+    --flat-danger: var(--flat-danger-500);
+
+    /* Force dark */
+    --base-force-dark: var(--zinc-300);
+
+    /* Shadows */
+    --layout-shadow-card: none;
+    --layout-shadow-card-hover: none;
+    --layout-shadow-nav: none;
+  }
+}
+
+/* =====================================================================
+   TAILWIND THEME — Maps tokens to Tailwind utility classes
+   ===================================================================== */
 @theme {
-  /* Primary — Blue */
-  --color-primary-50: var(--primary-50);
-  --color-primary-100: var(--primary-100);
-  --color-primary-200: var(--primary-200);
-  --color-primary-300: var(--primary-300);
-  --color-primary-400: var(--primary-400);
-  --color-primary-500: var(--primary-500);
-  --color-primary-600: var(--primary-600);
-  --color-primary-700: var(--primary-700);
-  --color-primary-800: var(--primary-800);
-  --color-primary-900: var(--primary-900);
-  --color-primary-950: var(--primary-950);
+  /* Layout */
+  --color-background: var(--layout-background);
+  --color-foreground: var(--layout-foreground);
+  --color-divider: var(--layout-divider);
+  --color-focus: var(--layout-focus);
+  --color-overlay: var(--layout-overlay);
 
-  /* Secondary — Purple */
-  --color-secondary-50: var(--secondary-50);
-  --color-secondary-100: var(--secondary-100);
-  --color-secondary-200: var(--secondary-200);
-  --color-secondary-300: var(--secondary-300);
-  --color-secondary-400: var(--secondary-400);
-  --color-secondary-500: var(--secondary-500);
-  --color-secondary-600: var(--secondary-600);
-  --color-secondary-700: var(--secondary-700);
-  --color-secondary-800: var(--secondary-800);
-  --color-secondary-900: var(--secondary-900);
-  --color-secondary-950: var(--secondary-950);
+  /* Content */
+  --color-content1: var(--content-1);
+  --color-content2: var(--content-2);
+  --color-content3: var(--content-3);
+  --color-content4: var(--content-4);
+  --color-content1-foreground: var(--content-1-foreground);
+  --color-content2-foreground: var(--content-2-foreground);
+  --color-content3-foreground: var(--content-3-foreground);
+  --color-content4-foreground: var(--content-4-foreground);
 
-  /* Success — Green */
-  --color-success-50: var(--success-50);
-  --color-success-100: var(--success-100);
-  --color-success-200: var(--success-200);
-  --color-success-300: var(--success-300);
-  --color-success-400: var(--success-400);
-  --color-success-500: var(--success-500);
-  --color-success-600: var(--success-600);
-  --color-success-700: var(--success-700);
-  --color-success-800: var(--success-800);
-  --color-success-900: var(--success-900);
-  --color-success-950: var(--success-950);
+  /* Foreground scale */
+  --color-foreground-50: var(--foreground-50);
+  --color-foreground-100: var(--foreground-100);
+  --color-foreground-200: var(--foreground-200);
+  --color-foreground-300: var(--foreground-300);
+  --color-foreground-400: var(--foreground-400);
+  --color-foreground-500: var(--foreground-500);
+  --color-foreground-600: var(--foreground-600);
+  --color-foreground-700: var(--foreground-700);
+  --color-foreground-800: var(--foreground-800);
+  --color-foreground-900: var(--foreground-900);
 
-  /* Warning — Yellow */
-  --color-warning-50: var(--warning-50);
-  --color-warning-100: var(--warning-100);
-  --color-warning-200: var(--warning-200);
-  --color-warning-300: var(--warning-300);
-  --color-warning-400: var(--warning-400);
-  --color-warning-500: var(--warning-500);
-  --color-warning-600: var(--warning-600);
-  --color-warning-700: var(--warning-700);
-  --color-warning-800: var(--warning-800);
-  --color-warning-900: var(--warning-900);
-  --color-warning-950: var(--warning-950);
+  /* Base */
+  --color-default: var(--base-default);
+  --color-primary: var(--base-primary);
+  --color-secondary: var(--base-secondary);
+  --color-success: var(--base-success);
+  --color-warning: var(--base-warning);
+  --color-danger: var(--base-danger);
 
-  /* Danger — Red/Pink */
-  --color-danger-50: var(--danger-50);
-  --color-danger-100: var(--danger-100);
-  --color-danger-200: var(--danger-200);
-  --color-danger-300: var(--danger-300);
-  --color-danger-400: var(--danger-400);
-  --color-danger-500: var(--danger-500);
-  --color-danger-600: var(--danger-600);
-  --color-danger-700: var(--danger-700);
-  --color-danger-800: var(--danger-800);
-  --color-danger-900: var(--danger-900);
-  --color-danger-950: var(--danger-950);
+  /* Base foregrounds */
+  --color-default-foreground: var(--base-default-foreground);
+  --color-primary-foreground: var(--base-primary-foreground);
+  --color-secondary-foreground: var(--base-secondary-foreground);
+  --color-success-foreground: var(--base-success-foreground);
+  --color-warning-foreground: var(--base-warning-foreground);
+  --color-danger-foreground: var(--base-danger-foreground);
 
-  /* Default — Zinc/Neutral */
+  /* Default scale */
   --color-default-50: var(--default-50);
   --color-default-100: var(--default-100);
   --color-default-200: var(--default-200);
@@ -83,239 +492,120 @@
   --color-default-700: var(--default-700);
   --color-default-800: var(--default-800);
   --color-default-900: var(--default-900);
-  --color-default-950: var(--default-950);
 
-  /* Base — single semantic base color per group */
-  --color-default: var(--base-default);
-  --color-primary: var(--base-primary);
-  --color-secondary: var(--base-secondary);
-  --color-success: var(--base-success);
-  --color-warning: var(--base-warning);
-  --color-danger: var(--base-danger);
+  /* Primary scale */
+  --color-primary-50: var(--primary-50);
+  --color-primary-100: var(--primary-100);
+  --color-primary-200: var(--primary-200);
+  --color-primary-300: var(--primary-300);
+  --color-primary-400: var(--primary-400);
+  --color-primary-500: var(--primary-500);
+  --color-primary-600: var(--primary-600);
+  --color-primary-700: var(--primary-700);
+  --color-primary-800: var(--primary-800);
+  --color-primary-900: var(--primary-900);
 
-  /* Layout */
-  --color-background: var(--layout-background);
-  --color-foreground: var(--layout-foreground);
-  --color-divider: var(--layout-divider);
-  --color-focus: var(--layout-focus);
+  /* Secondary scale */
+  --color-secondary-50: var(--secondary-50);
+  --color-secondary-100: var(--secondary-100);
+  --color-secondary-200: var(--secondary-200);
+  --color-secondary-300: var(--secondary-300);
+  --color-secondary-400: var(--secondary-400);
+  --color-secondary-500: var(--secondary-500);
+  --color-secondary-600: var(--secondary-600);
+  --color-secondary-700: var(--secondary-700);
+  --color-secondary-800: var(--secondary-800);
+  --color-secondary-900: var(--secondary-900);
 
-  /* Content */
-  --color-content1: var(--content-1);
-  --color-content2: var(--content-2);
-  --color-content3: var(--content-3);
-  --color-content4: var(--content-4);
+  /* Success scale */
+  --color-success-50: var(--success-50);
+  --color-success-100: var(--success-100);
+  --color-success-200: var(--success-200);
+  --color-success-300: var(--success-300);
+  --color-success-400: var(--success-400);
+  --color-success-500: var(--success-500);
+  --color-success-600: var(--success-600);
+  --color-success-700: var(--success-700);
+  --color-success-800: var(--success-800);
+  --color-success-900: var(--success-900);
 
-  /* Design tokens */
-  --font-inter: var(--font-inter);
-  --font-heading: var(--font-heading);
+  /* Warning scale */
+  --color-warning-50: var(--warning-50);
+  --color-warning-100: var(--warning-100);
+  --color-warning-200: var(--warning-200);
+  --color-warning-300: var(--warning-300);
+  --color-warning-400: var(--warning-400);
+  --color-warning-500: var(--warning-500);
+  --color-warning-600: var(--warning-600);
+  --color-warning-700: var(--warning-700);
+  --color-warning-800: var(--warning-800);
+  --color-warning-900: var(--warning-900);
 
-  --shadow-card: var(--shadow-card);
-  --shadow-card-hover: var(--shadow-card-hover);
-  --shadow-nav: var(--shadow-nav);
+  /* Danger scale */
+  --color-danger-50: var(--danger-50);
+  --color-danger-100: var(--danger-100);
+  --color-danger-200: var(--danger-200);
+  --color-danger-300: var(--danger-300);
+  --color-danger-400: var(--danger-400);
+  --color-danger-500: var(--danger-500);
+  --color-danger-600: var(--danger-600);
+  --color-danger-700: var(--danger-700);
+  --color-danger-800: var(--danger-800);
+  --color-danger-900: var(--danger-900);
 
-  --radius-card: var(--radius-card);
-  --radius-button: var(--radius-button);
+  /* Flat */
+  --color-flat-default: var(--flat-default);
+  --color-flat-primary: var(--flat-primary);
+  --color-flat-secondary: var(--flat-secondary);
+  --color-flat-success: var(--flat-success);
+  --color-flat-warning: var(--flat-warning);
+  --color-flat-danger: var(--flat-danger);
 
-  --animate-fade-in: var(--animate-fade-in);
-  --animate-slide-down: var(--animate-slide-down);
+  /* Fonts */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --spacing-header: var(--spacing-header);
-}
+  /* Font sizes (from Figma layout tokens) */
+  --text-tiny: var(--layout-text-tiny);
+  --text-small: var(--layout-text-small);
+  --text-medium: var(--layout-text-medium);
+  --text-large: var(--layout-text-large);
 
-/* =====================================================================
-   Shared design tokens (font, shadow, radius, animation)
-   These never change between themes.
-   ===================================================================== */
-@layer base {
-  :root {
-    --font-inter: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-heading: "Inter", ui-sans-serif, system-ui, sans-serif;
-    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-nav: 0 1px 3px 0 rgb(0 0 0 / 0.08);
-    --radius-card: 0.5rem;
-    --radius-button: 0.375rem;
-    --animate-fade-in: fade-in 0.3s ease-in-out;
-    --animate-slide-down: slide-down 0.3s ease-out;
-    --spacing-header: 4rem;
-  }
-}
+  /* Line heights (from Figma layout tokens) */
+  --leading-tiny: var(--layout-leading-tiny);
+  --leading-small: var(--layout-leading-small);
+  --leading-medium: var(--layout-leading-medium);
+  --leading-large: var(--layout-leading-large);
 
-/* =====================================================================
-   THEME: light  (type: light — default / fallback)
-   ===================================================================== */
-@layer base {
-  :root, [data-theme="light"] {
-    /* Primary — Blue */
-    --primary-50: #e6f1fe;
-    --primary-100: #cce3fd;
-    --primary-200: #99c7fb;
-    --primary-300: #66aaf9;
-    --primary-400: #338ef7;
-    --primary-500: #006FEE;
-    --primary-600: #005bc4;
-    --primary-700: #004493;
-    --primary-800: #002e62;
-    --primary-900: #001731;
-    --primary-950: #000d1b;
+  /* Border radii (from Figma layout tokens) */
+  --radius-none: var(--layout-rounded-none);
+  --radius-small: var(--layout-rounded-small);
+  --radius-medium: var(--layout-rounded-medium);
+  --radius-large: var(--layout-rounded-large);
+  --radius-full: var(--layout-rounded-full);
 
-    /* Secondary — Purple */
-    --secondary-50: #f2eafa;
-    --secondary-100: #e4d4f4;
-    --secondary-200: #c9a9e9;
-    --secondary-300: #ae7ede;
-    --secondary-400: #9353d3;
-    --secondary-500: #7828c8;
-    --secondary-600: #6020a0;
-    --secondary-700: #481878;
-    --secondary-800: #301050;
-    --secondary-900: #180828;
-    --secondary-950: #0c0414;
+  /* Border widths (from Figma layout tokens) */
+  --border-width-small: var(--layout-border-small);
+  --border-width-medium: var(--layout-border-medium);
+  --border-width-large: var(--layout-border-large);
 
-    /* Success — Green */
-    --success-50: #e8faf0;
-    --success-100: #d1f4e0;
-    --success-200: #a2e9c1;
-    --success-300: #74dfa2;
-    --success-400: #45d483;
-    --success-500: #17c964;
-    --success-600: #12a150;
-    --success-700: #0e793c;
-    --success-800: #095028;
-    --success-900: #052814;
-    --success-950: #021a0a;
+  /* Shadows */
+  --shadow-card: var(--layout-shadow-card);
+  --shadow-card-hover: var(--layout-shadow-card-hover);
+  --shadow-nav: var(--layout-shadow-nav);
 
-    /* Warning — Yellow */
-    --warning-50: #fefce8;
-    --warning-100: #fdedd3;
-    --warning-200: #fbdba7;
-    --warning-300: #f9c97c;
-    --warning-400: #f7b750;
-    --warning-500: #f5a524;
-    --warning-600: #c4841d;
-    --warning-700: #936316;
-    --warning-800: #62420e;
-    --warning-900: #312107;
-    --warning-950: #191103;
+  /* Animations */
+  --animate-fade-in: fade-in 0.3s ease-in-out;
+  --animate-slide-down: slide-down 0.3s ease-out;
 
-    /* Danger — Red/Pink */
-    --danger-50: #fee7ef;
-    --danger-100: #fdd0df;
-    --danger-200: #faa0bf;
-    --danger-300: #f871a0;
-    --danger-400: #f54180;
-    --danger-500: #f31260;
-    --danger-600: #c20e4d;
-    --danger-700: #920b3a;
-    --danger-800: #610726;
-    --danger-900: #310413;
-    --danger-950: #190209;
-
-    /* Default — Zinc/Neutral */
-    --default-50: #fafafa;
-    --default-100: #f4f4f5;
-    --default-200: #e4e4e7;
-    --default-300: #d4d4d8;
-    --default-400: #a1a1aa;
-    --default-500: #71717a;
-    --default-600: #52525b;
-    --default-700: #3f3f46;
-    --default-800: #27272a;
-    --default-900: #18181b;
-    --default-950: #09090b;
-
-    /* Base */
-    --base-default: #3f3f46;
-    --base-primary: #006FEE;
-    --base-secondary: #9353d3;
-    --base-success: #17c964;
-    --base-warning: #f5a524;
-    --base-danger: #f31260;
-
-    /* Layout */
-    --layout-background: #ffffff;
-    --layout-foreground: #11181c;
-    --layout-divider: rgba(17, 17, 17, 0.15);
-    --layout-focus: #006FEE;
-
-    /* Content */
-    --content-1: #ffffff;
-    --content-2: #f4f4f5;
-    --content-3: #e4e4e7;
-    --content-4: #d4d4d8;
-
-    /* Misc */
-    --color-head-gradient: linear-gradient(to right, #18181b, #27272a, #18181b);
-    --color-body-bg: #fafafa;
-    --color-title-header: #11181c;
-    --color-title-span: #52525b;
-    --color-title-text: #3f3f46;
-    --color-title-muted: #71717a;
-    --color-button-solid-text: #ffffff;
-    --color-button-solid-bg: #006FEE;
-    --color-card-border: #e4e4e7;
-    --color-footer-bg: #18181b;
-    --color-footer-header: #ffffff;
-    --color-footer-text: #a1a1aa;
-    --color-footer-link: #d4d4d8;
-  }
-}
-
-/* =====================================================================
-   THEME: dark  (type: dark)
-   ===================================================================== */
-@layer base {
-  [data-theme="dark"] {
-    /* Base */
-    --base-default: #3f3f46;
-    --base-primary: #006FEE;
-    --base-secondary: #9353d3;
-    --base-success: #17c964;
-    --base-warning: #f5a524;
-    --base-danger: #f31260;
-
-    /* Default — reversed */
-    --default-50: #18181b;
-    --default-100: #27272a;
-    --default-200: #3f3f46;
-    --default-300: #52525b;
-    --default-400: #71717a;
-    --default-500: #a1a1aa;
-    --default-600: #d4d4d8;
-    --default-700: #e4e4e7;
-    --default-800: #f4f4f5;
-    --default-900: #fafafa;
-    --default-950: #ffffff;
-
-    /* Layout */
-    --layout-background: #000000;
-    --layout-foreground: #ecedee;
-    --layout-divider: rgba(255, 255, 255, 0.15);
-    --layout-focus: #006FEE;
-
-    /* Content */
-    --content-1: #18181b;
-    --content-2: #27272a;
-    --content-3: #3f3f46;
-    --content-4: #52525b;
-
-    /* Misc */
-    --color-body-bg: #000000;
-    --color-title-header: #ecedee;
-    --color-title-span: #a1a1aa;
-    --color-title-text: #d4d4d8;
-    --color-title-muted: #71717a;
-    --color-card-border: #3f3f46;
-    --color-footer-bg: #000000;
-    --color-footer-text: #71717a;
-    --color-footer-link: #a1a1aa;
-  }
+  /* Spacing */
+  --spacing-header: 4rem;
 }
 
 /* =====================================================================
    ADD MORE THEMES BELOW
-   Copy a block above, change [data-theme="yourname"], set your colors.
-   Then register it in theme-switcher.js:
-     ThemeSwitcher.register('yourname', 'light');   // or 'dark'
+   Copy a light/dark block above, change [data-theme="yourname"],
+   and remap the primitive references for your new palette.
+   Then register it in useTheme.ts THEMES array.
    ===================================================================== */
 </style>
