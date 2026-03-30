@@ -1,0 +1,108 @@
+@using DZP.RouteContext
+@{
+    var rc = RouteContext.Current;
+    var communityName = rc != null ? rc.CommunityName : "Community";
+    var communitySlug = rc != null ? rc.CommunitySlug : "";
+
+    /* ── Ondekt categories with sub-links ── */
+    var categories = new[] {
+        new {
+            Title = "VISIT " + communityName,
+            Desc = "Toeristische informatie en activiteiten in " + communityName + ".",
+            Icon = "map-pin",
+            Links = new[] {
+                new { Label = "Wandelroutes", Url = "/" + communitySlug + "/visit/wandelroutes" },
+                new { Label = "Fietsroutes",  Url = "/" + communitySlug + "/visit/fietsroutes" },
+                new { Label = "Evenementen",  Url = "/" + communitySlug + "/visit/evenementen" },
+                new { Label = "Overnachten",  Url = "/" + communitySlug + "/visit/overnachten" },
+            }
+        },
+        new {
+            Title = "Cadeaubon " + communityName,
+            Desc = "De lokale cadeaubon die je bij deelnemende winkels kunt besteden.",
+            Icon = "gift",
+            Links = new[] {
+                new { Label = "Koop een bon",         Url = "/" + communitySlug + "/cadeaubon/kopen" },
+                new { Label = "Deelnemende winkels",  Url = "/" + communitySlug + "/cadeaubon/winkels" },
+                new { Label = "Saldo checken",        Url = "/" + communitySlug + "/cadeaubon/saldo" },
+            }
+        },
+        new {
+            Title = "Gemeente " + communityName,
+            Desc = "Gemeentelijke informatie, vergunningen en lokale regelgeving.",
+            Icon = "landmark",
+            Links = new[] {
+                new { Label = "Vergunningen",    Url = "/" + communitySlug + "/gemeente/vergunningen" },
+                new { Label = "Bestemmingsplan", Url = "/" + communitySlug + "/gemeente/bestemmingsplan" },
+                new { Label = "Contact",         Url = "/" + communitySlug + "/gemeente/contact" },
+            }
+        },
+        new {
+            Title = "Ondernemend " + communityName,
+            Desc = "Netwerk en ondersteuning voor lokale ondernemers.",
+            Icon = "briefcase",
+            Links = new[] {
+                new { Label = "Netwerkevents",     Url = "/" + communitySlug + "/ondernemend/events" },
+                new { Label = "Subsidies",         Url = "/" + communitySlug + "/ondernemend/subsidies" },
+                new { Label = "Bedrijvenregister", Url = "/" + communitySlug + "/ondernemend/bedrijven" },
+            }
+        },
+        new {
+            Title = "Duurzaamheid",
+            Desc = "Initiatieven en projecten rondom verduurzaming in het gebied.",
+            Icon = "leaf",
+            Links = new[] {
+                new { Label = "Energiebesparing", Url = "/" + communitySlug + "/duurzaamheid/energie" },
+                new { Label = "Subsidies",         Url = "/" + communitySlug + "/duurzaamheid/subsidies" },
+                new { Label = "Groene projecten",  Url = "/" + communitySlug + "/duurzaamheid/projecten" },
+            }
+        },
+        new {
+            Title = "Ondernemersplein",
+            Desc = "Praktische informatie en hulp bij het runnen van je bedrijf.",
+            Icon = "store",
+            Links = new[] {
+                new { Label = "Starten",      Url = "/" + communitySlug + "/ondernemersplein/starten" },
+                new { Label = "Financiering", Url = "/" + communitySlug + "/ondernemersplein/financiering" },
+                new { Label = "Wetgeving",    Url = "/" + communitySlug + "/ondernemersplein/wetgeving" },
+            }
+        },
+    };
+}
+
+<section class="w-full">
+  <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Header -->
+    <div class="flex flex-col gap-2">
+      <h1 class="text-2xl font-bold text-foreground-900">Ondekt</h1>
+      <p class="text-sm text-foreground-500">Handige links en tools voor je community.</p>
+    </div>
+
+    <!-- Category cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
+      @foreach (var cat in categories) {
+      <div class="flex flex-col gap-4 p-5 rounded-2xl border border-divider bg-background hover:border-primary/30 transition">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10">
+            <i data-lucide="@cat.Icon" class="size-5 text-primary"></i>
+          </div>
+          <h2 class="text-sm font-bold text-foreground-900">@cat.Title</h2>
+        </div>
+        <p class="text-xs text-foreground-500 leading-relaxed grow">@cat.Desc</p>
+        <div class="flex flex-col gap-2">
+          @foreach (var link in cat.Links) {
+          <a href="@link.Url" class="flex items-center justify-between px-3 py-2 rounded-lg bg-content2 text-sm text-foreground-700 hover:text-primary hover:bg-primary/5 transition">
+            @link.Label
+            <i data-lucide="chevron-right" class="size-3.5 text-foreground-300"></i>
+          </a>
+          }
+        </div>
+      </div>
+      }
+    </div>
+
+  </div>
+</section>
+
+

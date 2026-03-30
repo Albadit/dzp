@@ -169,7 +169,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-6">
+    <nav class="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-6 min-w-[250px]">
     @foreach (var section in sections)
     {
         var sec = (Dictionary<string, object>)section;
@@ -286,17 +286,17 @@
                             if (isCommunityParent)
                             {
                                 var childPath = child.TabPath.Replace("//", "/").TrimStart('/');
-                                var parentPrefix = parentPath.Length > 0 ? parentPath + "/" : "";
-                                string relative;
-                                if (childPath.StartsWith(parentPrefix, StringComparison.OrdinalIgnoreCase))
+                                // Extract [community] token from parentPath dynamically
+                                var tokenEnd = parentPath.IndexOf(']');
+                                var communityToken = parentPath.Substring(0, tokenEnd + 1);
+                                if (childPath.StartsWith(communityToken, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    relative = childPath.Substring(parentPrefix.Length);
+                                    href = "/" + slug + childPath.Substring(communityToken.Length);
                                 }
                                 else
                                 {
-                                    relative = childName;
+                                    href = "/" + slug + "/" + childName;
                                 }
-                                href = "/" + slug + "/" + relative;
                             }
                             else
                             {

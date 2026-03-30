@@ -6,6 +6,7 @@
    ===================================================================== */
 @custom-variant dark (&:is([data-theme="dark"] *));
 
+
 /* =====================================================================
    PRIMITIVES — Raw color values (from Figma Primitives)
    These never change between themes.
@@ -287,11 +288,6 @@
 
     /* Force dark */
     --base-force-dark: var(--white);
-
-    /* Shadows */
-    --layout-shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --layout-shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --layout-shadow-nav: 0 1px 3px 0 rgb(0 0 0 / 0.08);
   }
 
   /* Dark theme */
@@ -424,11 +420,6 @@
 
     /* Force dark */
     --base-force-dark: var(--zinc-300);
-
-    /* Shadows */
-    --layout-shadow-card: none;
-    --layout-shadow-card-hover: none;
-    --layout-shadow-nav: none;
   }
 }
 
@@ -590,9 +581,9 @@
   --border-width-large: var(--layout-border-large);
 
   /* Shadows */
-  --shadow-card: var(--layout-shadow-card);
-  --shadow-card-hover: var(--layout-shadow-card-hover);
-  --shadow-nav: var(--layout-shadow-nav);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-nav: 0 1px 3px 0 rgb(0 0 0 / 0.08);
 
   /* Animations */
   --animate-fade-in: fade-in 0.3s ease-in-out;
