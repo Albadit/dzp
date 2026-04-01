@@ -3,6 +3,27 @@
     var config = Model.Config;
     var tid = Model.TableId;
 
+    // Auto-disable actions when their query is empty
+    if (config.IsSql)
+    {
+        if (string.IsNullOrEmpty(config.QueryInsert)) { config.AllowCreate = false; }
+        if (string.IsNullOrEmpty(config.QueryUpdate)) { config.AllowEdit = false; }
+        if (string.IsNullOrEmpty(config.QueryDelete)) { config.AllowDelete = false; }
+        if (string.IsNullOrEmpty(config.QueryBulkDelete)) { config.AllowBulkDelete = false; }
+    }
+
+    // Table columns: exclude hidden, and select/multiselect only if they are the primary key
+    var pk = config.PrimaryKey ?? "";
+    var tableColumns = (config.Columns ?? new AdvancedTable.Models.DataTableColumn[0])
+        .Where(c => c.Type != "hidden" && !((c.Type == "select" || c.Type == "multiselect") && c.Key == pk)).ToArray();
+
+    // Recalculate grid cols for table display
+    var gridParts = new List<string>();
+    if (config.AllowBulkDelete) { gridParts.Add("2.5rem"); }
+    foreach (var tc in tableColumns) { gridParts.Add(tc.Type == "readonly" ? "auto" : "1fr"); }
+    if (config.AllowEdit || config.AllowDelete) { gridParts.Add("6rem"); }
+    var gridCols = string.Join(" ", gridParts);
+
     // Execute lookup queries for "select" type columns
     var lookups = new Dictionary<string, List<KeyValuePair<string, string>>>();
     var selectCols = new List<AdvancedTable.Models.DataTableColumn>();
@@ -39,6 +60,19 @@
             {
                 conn.Open();
                 var cmd = new System.Data.SqlClient.SqlCommand(col.Pattern, conn);
+                try
+                {
+                    var rc = DZP.RouteContext.RouteContext.Current;
+                    if (rc != null)
+                    {
+                        if (col.Pattern.Contains("@rc_CommunityId")) { cmd.Parameters.AddWithValue("@rc_CommunityId", rc.CommunityId); }
+                        if (col.Pattern.Contains("@rc_CommunitySlug")) { cmd.Parameters.AddWithValue("@rc_CommunitySlug", (object)rc.CommunitySlug ?? System.DBNull.Value); }
+                        if (col.Pattern.Contains("@rc_CommunityName")) { cmd.Parameters.AddWithValue("@rc_CommunityName", (object)rc.CommunityName ?? System.DBNull.Value); }
+                        if (col.Pattern.Contains("@rc_CompanySlug")) { cmd.Parameters.AddWithValue("@rc_CompanySlug", (object)rc.CompanySlug ?? System.DBNull.Value); }
+                        if (col.Pattern.Contains("@rc_CompanyName")) { cmd.Parameters.AddWithValue("@rc_CompanyName", (object)rc.CompanyName ?? System.DBNull.Value); }
+                    }
+                }
+                catch (System.Exception) { /* ignore */ }
                 var rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                 {
@@ -73,7 +107,7 @@
     }
     @if (!string.IsNullOrEmpty(alertMsg))
     {
-        <div class="fixed bottom-4 right-5 flex items-center gap-2 rounded-lg px-4 py-3 text-sm dt-alert @(isSuccess ? "bg-success-50 border border-success-200 text-success-800" : "bg-danger-50 border border-danger-200 text-danger-800")" @(isSuccess ? Html.Raw("data-auto-dismiss=\"4000\"") : null)>
+        <div class="fixed bottom-4 right-5 z-9999 flex items-center gap-2 rounded-lg px-4 py-3 text-sm dt-alert @(isSuccess ? "bg-success-50 border border-success-200 text-success-800" : "bg-danger-50 border border-danger-200 text-danger-800")" @(isSuccess ? Html.Raw("data-auto-dismiss=\"4000\"") : null)>
             @if (isSuccess)
             {
                 <i data-lucide="circle-check"></i>
@@ -97,14 +131,14 @@
         <div class="flex gap-2">
             @if (config.AllowBulkDelete)
             {
-                <button type="button" class="dt-btn-bulk-del hidden items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-danger rounded-lg hover:bg-danger-700 transition" data-target="@tid">
+                <button type="button" class="dt-btn-bulk-del flex hidden items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-danger rounded-lg hover:bg-danger-700 transition" data-target="@tid">
                     <i data-lucide="trash-2" class="size-4"></i>
                     Delete <span class="dt-bulk-count"></span>
                 </button>
             }
             @if (config.AllowCreate)
             {
-                <button type="button" class="dt-btn-add inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition" data-target="@tid">
+                <button type="button" class="dt-btn-add flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition" data-target="@tid">
                     <i data-lucide="plus" class="size-4"></i>
                     New
                 </button>
@@ -114,7 +148,7 @@
 
     <!-- Table -->
     <div class="overflow-x-auto rounded-xl border border-divider bg-background shadow-card">
-        <div class="dt-table min-w-full text-sm" data-id="@tid" style="display:grid; grid-template-columns: @Model.GridCols;">
+        <div class="dt-table min-w-full text-sm" data-id="@tid" style="display:grid; grid-template-columns: @gridCols;">
 
             @* Header *@
             @if (config.AllowBulkDelete)
@@ -123,7 +157,7 @@
                     <input type="checkbox" class="dt-check-all size-4 rounded border-divider text-primary focus:ring-focus cursor-pointer" data-target="@tid" />
                 </div>
             }
-            @foreach (var col in Model.VisibleColumns)
+            @foreach (var col in tableColumns)
             {
                 if (col.Sortable)
                 {
@@ -132,7 +166,7 @@
                         <span class="inline-flex items-center gap-1">
                             @col.Label
                             <span class="inline-flex items-center gap-0.5">
-                                <span class="dt-sort-icon-wrap"><i data-lucide="arrow-down-up" class="size-3.5 opacity-40"></i></span>
+                                <span class="dt-sort-icon-wrap" style="visibility:hidden;"><i data-lucide="chevron-down" class="size-4 shrink-0"></i></span>
                                 <span class="dt-sort-num text-xs font-bold text-primary hidden"></span>
                             </span>
                         </span>
@@ -171,7 +205,7 @@
                                 <input type="checkbox" class="dt-check-row size-4 rounded border-divider text-primary focus:ring-focus cursor-pointer" value="@pkVal" data-target="@tid" />
                             </div>
                         }
-                        @foreach (var col in Model.VisibleColumns)
+                        @foreach (var col in tableColumns)
                         {
                             var cellVal = row.ContainsKey(col.Key) ? (row[col.Key] != null ? row[col.Key].ToString() : "") : "";
                             <div class="px-4 py-3 border-t border-default-100 flex items-center group-hover:bg-default-50/50 transition-colors" data-col="@col.Key"
@@ -252,7 +286,7 @@
 </div>
 
 <!-- Edit modal -->
-<div id="@(tid)-modal" class="dt-modal hidden fixed inset-0 z-[9999] flex items-center justify-center bg-overlay backdrop-blur-sm">
+<div id="@(tid)-modal" class="dt-modal hidden fixed inset-0 z-9999 flex items-center justify-center bg-overlay backdrop-blur-sm">
     <div class="bg-background rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b border-divider">
             <h3 class="font-semibold text-foreground-900">Edit row</h3>
@@ -263,6 +297,8 @@
         <div class="px-5 py-4 space-y-4">
             @foreach (var col in Model.EditableColumns)
             {
+                // Skip the primary key column in the edit modal — the row is already identified
+                if (col.Key == pk) { continue; }
                 <div>
                     <label class="block text-xs font-medium text-foreground-600 mb-1">
                         @col.Label @if (col.Required) { <span class="text-danger">*</span> }
@@ -297,7 +333,7 @@
 <!-- Create modal -->
 @if (config.AllowCreate)
 {
-<div id="@(tid)-create-modal" class="dt-create-modal hidden fixed inset-0 z-[9999] flex items-center justify-center bg-overlay backdrop-blur-sm">
+<div id="@(tid)-create-modal" class="dt-create-modal hidden fixed inset-0 z-9999 flex items-center justify-center bg-overlay backdrop-blur-sm">
         <div class="bg-background rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
             <div class="flex items-center justify-between px-5 py-4 border-b border-divider">
                 <h3 class="font-semibold text-foreground-900">Add new item</h3>
@@ -309,6 +345,9 @@
                 <div class="px-5 py-4 space-y-4">
                     @foreach (var col in Model.EditableColumns)
                     {
+                        // Skip columns not referenced in the insert query (edit-only columns)
+                        var insertQ = config.QueryInsert ?? "";
+                        if (!insertQ.Contains("@" + col.Key)) { continue; }
                         <div>
                             <label class="block text-xs font-medium text-foreground-600 mb-1">
                                 @col.Label @if (col.Required) { <span class="text-danger">*</span> }

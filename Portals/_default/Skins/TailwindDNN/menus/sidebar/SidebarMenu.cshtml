@@ -102,10 +102,38 @@
     // Hide dashboard link when user belongs to exactly one community
     var userComms    = DZP.RouteContext.RouteContext.GetUserCommunities(
                            DotNetNuke.Entities.Portals.PortalSettings.Current?.UserInfo);
-    var hideDashboard = userComms != null && userComms.Count == 1;
 
     // --- Portal / user info for shell ---
     var ps       = DotNetNuke.Entities.Portals.PortalSettings.Current;
+    var isSuperUser = ps != null && ps.UserInfo != null && ps.UserInfo.IsSuperUser;
+
+    var hideDashboard = !isSuperUser && userComms != null && userComms.Count == 1;
+
+    // --- Fresh role lookup from DB (bypasses cached auth cookie) ---
+    var freshRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    // DNN virtual roles: "All Users" applies to everyone, "Registered Users" to any logged-in user
+    freshRoles.Add("All Users");
+    if (ps != null && ps.UserInfo != null && ps.UserInfo.UserID > 0)
+    {
+        freshRoles.Add("Registered Users");
+        var csConn = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"];
+        if (csConn != null)
+        {
+            using (var roleConn = new System.Data.SqlClient.SqlConnection(csConn.ConnectionString))
+            {
+                using (var roleCmd = new System.Data.SqlClient.SqlCommand(
+                    "SELECT r.RoleName FROM UserRoles ur INNER JOIN Roles r ON r.RoleID = ur.RoleID WHERE ur.UserID = @uid AND (ur.ExpiryDate IS NULL OR ur.ExpiryDate > GETDATE()) AND ur.Status = 1", roleConn))
+                {
+                    roleCmd.Parameters.AddWithValue("@uid", ps.UserInfo.UserID);
+                    roleConn.Open();
+                    using (var rdr = roleCmd.ExecuteReader())
+                    {
+                        while (rdr.Read()) { freshRoles.Add(rdr.GetString(0)); }
+                    }
+                }
+            }
+        }
+    }
     var logoUrl  = (ps != null && !string.IsNullOrEmpty(ps.LogoFile)) ? ps.HomeDirectory + ps.LogoFile : "";
     var logoHref = hasCommunity ? "/" + slug + "/home" : "/dashboard";
     var skinPath = (ps != null && ps.ActiveTab != null && !string.IsNullOrEmpty(ps.ActiveTab.SkinPath))
@@ -236,10 +264,25 @@
 
             // Check the parent tab itself first
             DotNetNuke.Entities.Tabs.TabInfo parentTab = null;
-            if (!skipSection && tabsByPath.TryGetValue(parentPath, out parentTab))
+            var parentFound = tabsByPath.TryGetValue(parentPath, out parentTab);
+            if (!skipSection && parentFound)
             {
+                // Permission check using fresh DB roles (allow wins over deny, superusers bypass)
+                var canView = isSuperUser;
+                if (!canView && parentTab.TabPermissions != null)
+                {
+                    bool hasAllow = false;
+                    foreach (DotNetNuke.Security.Permissions.TabPermissionInfo perm in parentTab.TabPermissions)
+                    {
+                        if (perm.PermissionKey == "VIEW" && freshRoles.Contains(perm.RoleName))
+                        {
+                            if (perm.AllowAccess) { hasAllow = true; }
+                        }
+                    }
+                    canView = hasAllow;
+                }
                 if (!parentTab.IsVisible
-                    || !DotNetNuke.Security.Permissions.TabPermissionController.CanViewPage(parentTab)
+                    || !canView
                     || (parentTab.StartDate != DateTime.MinValue && parentTab.StartDate > DateTime.Now)
                     || (parentTab.EndDate != DateTime.MinValue && parentTab.EndDate < DateTime.Now))
                 {
@@ -275,8 +318,23 @@
                         // Skip ignored pages
                         if (ignoreSet.Contains(childName)) { continue; }
 
+                        // Permission check using fresh DB roles (allow wins over deny, superusers bypass)
+                        var childCanView = isSuperUser;
+                        if (!childCanView && child.TabPermissions != null)
+                        {
+                            bool chAllow = false;
+                            foreach (DotNetNuke.Security.Permissions.TabPermissionInfo perm in child.TabPermissions)
+                            {
+                                if (perm.PermissionKey == "VIEW" && freshRoles.Contains(perm.RoleName))
+                                {
+                                    if (perm.AllowAccess) { chAllow = true; }
+                                }
+                            }
+                            childCanView = chAllow;
+                        }
+
                         var childOk = child.IsVisible
-                            && DotNetNuke.Security.Permissions.TabPermissionController.CanViewPage(child)
+                            && childCanView
                             && (child.StartDate == DateTime.MinValue || child.StartDate <= DateTime.Now)
                             && (child.EndDate == DateTime.MinValue || child.EndDate >= DateTime.Now);
 
@@ -307,7 +365,8 @@
                             object iconVal;
                             var icon = (iconMap != null && iconMap.TryGetValue(childName, out iconVal) && iconVal != null)
                                 ? (string)iconVal : "";
-                            var text = char.ToUpper(child.TabName[0]) + child.TabName.Substring(1);
+                            var displayName = !string.IsNullOrEmpty(child.Title) ? child.Title : child.TabName;
+                            var text = char.ToUpper(displayName[0]) + displayName.Substring(1);
 
                             // Build tree node with children list
                             var childrenList = new System.Collections.ArrayList();
@@ -368,8 +427,22 @@
                         DotNetNuke.Entities.Tabs.TabInfo tab;
                         if (tabsByPath.TryGetValue(pathToCheck, out tab))
                         {
+                            // Permission check using fresh DB roles (allow wins over deny, superusers bypass)
+                            var tabCanView = isSuperUser;
+                            if (!tabCanView && tab.TabPermissions != null)
+                            {
+                                bool stAllow = false;
+                                foreach (DotNetNuke.Security.Permissions.TabPermissionInfo perm in tab.TabPermissions)
+                                {
+                                    if (perm.PermissionKey == "VIEW" && freshRoles.Contains(perm.RoleName))
+                                    {
+                                        if (perm.AllowAccess) { stAllow = true; }
+                                    }
+                                }
+                                tabCanView = stAllow;
+                            }
                             if (!tab.IsVisible
-                                || !DotNetNuke.Security.Permissions.TabPermissionController.CanViewPage(tab)
+                                || !tabCanView
                                 || (tab.StartDate != DateTime.MinValue && tab.StartDate > DateTime.Now)
                                 || (tab.EndDate != DateTime.MinValue && tab.EndDate < DateTime.Now))
                             {

@@ -5,67 +5,52 @@
 @using System.Linq
 @using System.Collections.Generic
 
-@* // -- Config --
-{
-TableId     = "dt-communities",
-Title       = "Communities",
-AllowCreate   = true,
-AllowEdit     = true,
-AllowDelete   = true,
-AllowBulkDelete = true,
-SqlSelect     = "SELECT * FROM Community ORDER BY CommunityID",
-SqlInsert     = "INSERT INTO Community (Name, Slug) VALUES (@Name, @Slug)",
-SqlUpdate     = "UPDATE Community SET Name = @Name, Slug = @Slug WHERE CommunityID = @pk",
-SqlDelete     = "DELETE FROM Community WHERE CommunityID = @pk",
-SqlBulkDelete = "DELETE FROM Community WHERE CommunityID IN ({ids})",
-}; *@
-
 <link rel="stylesheet" href="/DesktopModules/MVC/AdvancedTable/Resources/css/edit.css" />
 @Html.Partial("_Select")
 
 <div id="EditConfig-@Dnn.ModuleContext.ModuleId">
     <div class="at-edit" id="editForm">
-        <div class="at-collapse-toggle"><a href="#">Collapse All</a></div>
+        <div class="at-collapse-toggle"><a href="#">Expand All</a></div>
 
         <h2 class="at-section-head">
             <a href="#" class="at-expanded">Configure Data Table</a>
         </h2>
         <fieldset>
             <div class="at-field">
-                <label for="Title">Title</label>
+                <div><label for="Title">Title</label></div>
                 @Html.TextBoxFor(m => m.Title, new { maxlength = "256", placeholder = "Table title" })
             </div>
 
             <div class="at-field">
-                <label for="Mode">Data Source</label>
-                <div id="modeSelect" data-selected="@(Model.Mode != "api" ? "sql" : "api")"></div>
-                <input type="hidden" name="Mode" id="modeValue" value="@(Model.Mode != "api" ? "sql" : "api")" />
+                <div><label>Data Source</label></div>
+                <div id="modeSelect" data-selected="@(Model.Mode == "api" ? "api" : "sql")"></div>
+                <input type="hidden" name="Mode" id="modeValue" value="@(Model.Mode == "api" ? "api" : "sql")" />
             </div>
 
             <!-- SQL Fields -->
             <div id="sqlFields" style="@(Model.Mode == "api" ? "display:none;" : "")">
                 <div class="at-field">
-                    <label for="QuerySelect">Query Select</label>
-                    @Html.TextAreaFor(m => m.QuerySelect, new { rows = 1, placeholder = "SELECT * FROM MyTable", @class = "edit-code-area" })
+                    <div><label for="QuerySelect">Query Select</label></div>
+                    @Html.TextAreaFor(m => m.QuerySelect, new { rows = 4, placeholder = "SELECT * FROM MyTable", @class = "edit-code-area" })
                 </div>
 
                 <div class="at-field">
-                    <label for="QueryInsert">Query Insert</label>
-                    @Html.TextAreaFor(m => m.QueryInsert, new { rows = 1, placeholder = "INSERT INTO MyTable (Col1, Col2) VALUES (@@Col1, @@Col2)", @class = "edit-code-area" })
+                    <div><label for="QueryInsert">Query Insert</label></div>
+                    @Html.TextAreaFor(m => m.QueryInsert, new { rows = 3, placeholder = "INSERT INTO MyTable (Col1, Col2) VALUES (@@Col1, @@Col2)", @class = "edit-code-area" })
                 </div>
 
                 <div class="at-field">
-                    <label for="QueryUpdate">Query Update</label>
-                    @Html.TextAreaFor(m => m.QueryUpdate, new { rows = 1, placeholder = "UPDATE MyTable SET Col1=@@Col1 WHERE Id=@@pk", @class = "edit-code-area" })
+                    <div><label for="QueryUpdate">Query Update</label></div>
+                    @Html.TextAreaFor(m => m.QueryUpdate, new { rows = 3, placeholder = "UPDATE MyTable SET Col1=@@Col1 WHERE Id=@@pk", @class = "edit-code-area" })
                 </div>
 
                 <div class="at-field">
-                    <label for="QueryDelete">Query Delete</label>
+                    <div><label for="QueryDelete">Query Delete</label></div>
                     @Html.TextAreaFor(m => m.QueryDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id=@@pk", @class = "edit-code-area" })
                 </div>
 
                 <div class="at-field">
-                    <label for="QueryBulkDelete">Query Bulk Delete</label>
+                    <div><label for="QueryBulkDelete">Query Bulk Delete</label></div>
                     @Html.TextAreaFor(m => m.QueryBulkDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id IN ({ids})", @class = "edit-code-area" })
                 </div>
             </div>
@@ -73,153 +58,190 @@ SqlBulkDelete = "DELETE FROM Community WHERE CommunityID IN ({ids})",
             <!-- API Fields -->
             <div id="apiFields" style="@(Model.Mode != "api" ? "display:none;" : "")">
                 <div class="at-field">
-                    <label for="ApiBaseUrl">API Base URL</label>
-                    @Html.TextBoxFor(m => m.ApiBaseUrl, new { placeholder = "https://api.example.com", @class = "edit-wide-input" })
+                    <div><label for="ApiBaseUrl">API Base URL</label></div>
+                    @Html.TextBoxFor(m => m.ApiBaseUrl, new { placeholder = "https://api.example.com" })
                 </div>
 
                 <div class="at-field">
-                    <label for="ApiHeaders">Headers <small class="edit-hint">(one per line: Key: Value)</small></label>
-                    @Html.TextAreaFor(m => m.ApiHeaders, new { rows = 1, placeholder = "Authorization: Bearer YOUR_TOKEN\nContent-Type: application/json", @class = "edit-code-area" })
+                    <div><label for="ApiHeaders">Headers <small>(one per line: Key: Value)</small></label></div>
+                    @Html.TextAreaFor(m => m.ApiHeaders, new { rows = 3, placeholder = "Authorization: Bearer YOUR_TOKEN\nContent-Type: application/json", @class = "edit-code-area" })
                 </div>
 
-                <div class="at-method-grid">
-                    <div class="at-field">
-                        <label for="ApiSelectMethod">Select Method</label>
-                        <div class="api-method-ms" data-name="ApiSelectMethod" data-selected="@(Model.ApiSelectMethod ?? "GET")" data-options='[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"}]'></div>
+                <div class="at-field at-method-grid">
+                    <div>
+                        <label>Select Method</label>
+                        <div class="api-method-ms" data-selected="@(Model.ApiSelectMethod ?? "GET")" data-options='[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"}]'></div>
                         <input type="hidden" name="ApiSelectMethod" value="@(Model.ApiSelectMethod ?? "GET")" />
                     </div>
-                    <div class="at-field">
+                    <div>
                         <label for="ApiSelectPath">Select Path</label>
-                        @Html.TextBoxFor(m => m.ApiSelectPath, new { placeholder = "/items", @class = "edit-path-input" })
+                        @Html.TextBoxFor(m => m.ApiSelectPath, new { placeholder = "/items" })
                     </div>
-                    <div class="at-field">
-                        <label for="ApiInsertMethod">Insert Method</label>
-                        <div class="api-method-ms" data-name="ApiInsertMethod" data-selected="@(Model.ApiInsertMethod ?? "POST")" data-options='[{"value":"POST","label":"POST"},{"value":"PUT","label":"PUT"}]'></div>
+                </div>
+
+                <div class="at-field at-method-grid">
+                    <div>
+                        <label>Insert Method</label>
+                        <div class="api-method-ms" data-selected="@(Model.ApiInsertMethod ?? "POST")" data-options='[{"value":"POST","label":"POST"},{"value":"PUT","label":"PUT"}]'></div>
                         <input type="hidden" name="ApiInsertMethod" value="@(Model.ApiInsertMethod ?? "POST")" />
                     </div>
-                    <div class="at-field">
+                    <div>
                         <label for="ApiInsertPath">Insert Path</label>
-                        @Html.TextBoxFor(m => m.ApiInsertPath, new { placeholder = "/items", @class = "edit-path-input" })
+                        @Html.TextBoxFor(m => m.ApiInsertPath, new { placeholder = "/items" })
                     </div>
-                    <div class="at-field">
-                        <label for="ApiUpdateMethod">Update Method</label>
-                        <div class="api-method-ms" data-name="ApiUpdateMethod" data-selected="@(Model.ApiUpdateMethod ?? "PUT")" data-options='[{"value":"PUT","label":"PUT"},{"value":"PATCH","label":"PATCH"},{"value":"POST","label":"POST"}]'></div>
+                </div>
+
+                <div class="at-field at-method-grid">
+                    <div>
+                        <label>Update Method</label>
+                        <div class="api-method-ms" data-selected="@(Model.ApiUpdateMethod ?? "PUT")" data-options='[{"value":"PUT","label":"PUT"},{"value":"PATCH","label":"PATCH"},{"value":"POST","label":"POST"}]'></div>
                         <input type="hidden" name="ApiUpdateMethod" value="@(Model.ApiUpdateMethod ?? "PUT")" />
                     </div>
-                    <div class="at-field">
-                        <label for="ApiUpdatePath">Update Path <small class="edit-hint">({pk} = primary key)</small></label>
-                        @Html.TextBoxFor(m => m.ApiUpdatePath, new { placeholder = "/items/{pk}", @class = "edit-path-input" })
+                    <div>
+                        <label for="ApiUpdatePath">Update Path <small>({pk} = primary key)</small></label>
+                        @Html.TextBoxFor(m => m.ApiUpdatePath, new { placeholder = "/items/{pk}" })
                     </div>
-                    <div class="at-field">
-                        <label for="ApiDeleteMethod">Delete Method</label>
-                        <div class="api-method-ms" data-name="ApiDeleteMethod" data-selected="@(Model.ApiDeleteMethod ?? "DELETE")" data-options='[{"value":"DELETE","label":"DELETE"},{"value":"POST","label":"POST"}]'></div>
+                </div>
+
+                <div class="at-field at-method-grid">
+                    <div>
+                        <label>Delete Method</label>
+                        <div class="api-method-ms" data-selected="@(Model.ApiDeleteMethod ?? "DELETE")" data-options='[{"value":"DELETE","label":"DELETE"},{"value":"POST","label":"POST"}]'></div>
                         <input type="hidden" name="ApiDeleteMethod" value="@(Model.ApiDeleteMethod ?? "DELETE")" />
                     </div>
-                    <div class="at-field">
-                        <label for="ApiDeletePath">Delete Path <small class="edit-hint">({pk} = primary key)</small></label>
-                        @Html.TextBoxFor(m => m.ApiDeletePath, new { placeholder = "/items/{pk}", @class = "edit-path-input" })
+                    <div>
+                        <label for="ApiDeletePath">Delete Path <small>({pk} = primary key)</small></label>
+                        @Html.TextBoxFor(m => m.ApiDeletePath, new { placeholder = "/items/{pk}" })
                     </div>
                 </div>
             </div>
 
-            <h2 class="at-section-head">
-                <a href="#" class="at-expanded">Permissions <small class="edit-hint">(leave empty to allow all)</small></a>
-            </h2>
-            <fieldset>
-                <div class="edit-perm-info">
-                    Each rule grants permissions to one or more roles/users.
-                </div>
-                <div id="permissionsContainer">
-                    @if (Model.Permissions != null)
-                    {
-                        var grouped = Model.Permissions
-                            .GroupBy(p => new { p.Type, p.AllowCreate, p.AllowEdit, p.AllowDelete, p.AllowBulkDelete })
-                            .Select(g => new { g.Key.Type, Names = g.Select(p => p.Name).ToList(), g.Key.AllowCreate, g.Key.AllowEdit, g.Key.AllowDelete, g.Key.AllowBulkDelete });
-                        foreach (var perm in grouped)
-                        {
-                            <div class="perm-row">
-                                <div class="perm-type-ms" data-selected="@perm.Type"></div>
-                                <div class="perm-name-ms" data-type="@perm.Type" data-selected="@Html.Raw(JsonConvert.SerializeObject(perm.Names))"></div>
-                                <div class="perm-checks">
-                                    <label><input type="checkbox" class="perm-create" @(perm.AllowCreate ? "checked" : "") /> Create</label>
-                                    <label><input type="checkbox" class="perm-edit" @(perm.AllowEdit ? "checked" : "") /> Edit</label>
-                                    <label><input type="checkbox" class="perm-delete" @(perm.AllowDelete ? "checked" : "") /> Delete</label>
-                                    <label><input type="checkbox" class="perm-bulk" @(perm.AllowBulkDelete ? "checked" : "") /> Bulk Delete</label>
-                                </div>
-                                <button type="button" class="remove-perm"><i data-lucide="circle-x"></i></button>
-                            </div>
-                        }
-                    }
-                </div>
-                <button type="button" id="addPermission" class="at-add-btn">+ Add Permission Rule</button>
-            </fieldset>
-
-            <h2 class="at-section-head">
-                <a href="#" class="at-expanded">Columns <small class="edit-hint">(leave empty to auto-detect)</small></a>
-                <div class="at-detect-bar">
-                    <button type="button" id="detectColumns" class="at-add-btn">Detect Columns from Select</button>
-                    <span id="detectStatus" class="edit-hint"></span>
-                </div>
-            </h2>
-            <fieldset>
-                <div id="columnsContainer">
-                    @if (Model.Columns != null)
-                    {
-                        foreach (var col in Model.Columns)
-                        {
-                            var isSelectType = col.Type == "select" || col.Type == "multiselect";
-                            var colSourceMode = "sql";
-                            var colApiMethod = "GET";
-                            var colApiPath = "";
-                            var colSqlQuery = col.Pattern ?? "";
-                            if (isSelectType && !string.IsNullOrEmpty(col.Pattern) && col.Pattern.TrimStart().StartsWith("{"))
-                            {
-                                try
-                                {
-                                    var parsed = JsonConvert.DeserializeObject<Dictionary<string, string>>(col.Pattern);
-                                    if (parsed != null && parsed.ContainsKey("mode") && parsed["mode"] == "api")
-                                    {
-                                        colSourceMode = "api";
-                                        colApiMethod = parsed.ContainsKey("method") ? parsed["method"] : "GET";
-                                        colApiPath = parsed.ContainsKey("path") ? parsed["path"] : "";
-                                        colSqlQuery = "";
-                                    }
-                                }
-                                catch { }
-                            }
-                            <div class="column-row">
-                                <input type="text" class="col-key" value="@col.Key" placeholder="Column Key" />
-                                <input type="text" class="col-label" value="@col.Label" placeholder="Display Label" />
-                                <div class="col-type-ms" data-selected="@col.Type"></div>
-                                @if (isSelectType && !string.IsNullOrEmpty(col.Pattern))
-                                {
-                                    <div class="col-query-wrap">
-                                        <div class="col-source-mode-ms" data-selected="@colSourceMode"></div>
-                                        <div class="col-source-sql" style="@(colSourceMode == "api" ? "display:none;" : "")">
-                                            <textarea class="col-query edit-code-area" rows="1" placeholder="SELECT value, label FROM ...">@colSqlQuery</textarea>
-                                        </div>
-                                        <div class="col-source-api" style="@(colSourceMode != "api" ? "display:none;" : "")">
-                                            <div class="col-api-method-ms" data-selected="@colApiMethod" data-options='[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"}]'></div>
-                                            <input type="hidden" class="col-api-method-val" value="@colApiMethod" />
-                                            <input type="text" class="col-api-path" value="@colApiPath" placeholder="/api/items" />
-                                        </div>
-                                    </div>
-                                }
-                                <button type="button" class="remove-col"><i data-lucide="circle-x"></i></button>
-                            </div>
-                        }
-                    }
-                </div>
-                <button type="button" id="addColumn" class="at-add-btn">+ Add Column</button>
-            </fieldset>
-
-            <input type="hidden" name="ColumnsJson" id="columnsJson" />
-            <input type="hidden" name="PermissionsJson" id="permissionsJson" />
+            <div class="at-field">
+                <label style="display:flex;align-items:center;gap:0.375rem;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowCreate) Allow Create
+                </label>
+            </div>
+            <div class="at-field">
+                <label style="display:flex;align-items:center;gap:0.375rem;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowEdit) Allow Edit
+                </label>
+            </div>
+            <div class="at-field">
+                <label style="display:flex;align-items:center;gap:0.375rem;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowDelete) Allow Delete
+                </label>
+            </div>
+            <div class="at-field">
+                <label style="display:flex;align-items:center;gap:0.375rem;cursor:pointer;">
+                    @Html.CheckBoxFor(m => m.AllowBulkDelete) Allow Bulk Delete
+                </label>
+            </div>
         </fieldset>
-    </div>
-    <div class="at-actions">
-        <button type="submit" class="at-btn-primary" id="btnSave">Save</button>
-        <a id="cancelEdit" href="#" class="at-btn-secondary">Cancel</a>
+
+        <h2 class="at-section-head">
+            <a href="#" class="at-expanded">Permissions <small>(leave empty to use global Allow flags above)</small></a>
+        </h2>
+        <fieldset>
+            <div class="edit-perm-info">
+                When permission rules are defined, the Allow checkboxes above become defaults for users who match no rule.
+                Each rule grants permissions to a specific role or user.
+            </div>
+            <div id="permissionsContainer">
+                @if (Model.Permissions != null)
+                {
+                    foreach (var perm in Model.Permissions)
+                    {
+                        var selNames = new List<string>();
+                        if (!string.IsNullOrEmpty(perm.Name)) { selNames.Add(perm.Name); }
+                        <div class="perm-row">
+                            <div class="perm-type-ms" data-selected="@perm.Type"></div>
+                            <div class="perm-name-ms" data-selected="@Html.Raw(JsonConvert.SerializeObject(selNames))"></div>
+                            <div class="perm-checks">
+                                <label><input type="checkbox" class="perm-create" @(perm.AllowCreate ? "checked" : "") /> Create</label>
+                                <label><input type="checkbox" class="perm-edit" @(perm.AllowEdit ? "checked" : "") /> Edit</label>
+                                <label><input type="checkbox" class="perm-delete" @(perm.AllowDelete ? "checked" : "") /> Delete</label>
+                                <label><input type="checkbox" class="perm-bulk" @(perm.AllowBulkDelete ? "checked" : "") /> Bulk Delete</label>
+                            </div>
+                            <button type="button" class="remove-perm"><i data-lucide="circle-x"></i></button>
+                        </div>
+                    }
+                }
+            </div>
+            <button type="button" id="addPermission" class="at-add-btn">+ Add Permission Rule</button>
+        </fieldset>
+
+        <h2 class="at-section-head">
+            <a href="#" class="at-expanded">Columns <small>(leave empty to auto-detect)</small></a>
+        </h2>
+        <fieldset>
+            <div class="at-detect-bar">
+                <button type="button" id="detectColumns" class="at-add-btn">Detect Columns</button>
+                <span id="detectStatus" style="font-size:0.8125rem;color:var(--default-500);"></span>
+            </div>
+            <div id="columnsContainer">
+                @if (Model.Columns != null)
+                {
+                    foreach (var col in Model.Columns)
+                    {
+                        var isLookup = col.Type == "select" || col.Type == "multiselect";
+                        var sourceMode = "sql";
+                        var apiMethod = "GET";
+                        var apiPath = "";
+                        var sqlQuery = col.Pattern ?? "";
+                        if (isLookup && !string.IsNullOrEmpty(col.Pattern) && col.Pattern.TrimStart().StartsWith("{"))
+                        {
+                            try
+                            {
+                                var parsed = JsonConvert.DeserializeObject<Dictionary<string, string>>(col.Pattern);
+                                if (parsed != null && parsed.ContainsKey("mode") && parsed["mode"] == "api")
+                                {
+                                    sourceMode = "api";
+                                    apiMethod = parsed.ContainsKey("method") ? parsed["method"] : "GET";
+                                    apiPath = parsed.ContainsKey("path") ? parsed["path"] : "";
+                                    sqlQuery = "";
+                                }
+                            }
+                            catch { }
+                        }
+                        <div class="column-row">
+                            <input type="text" class="col-key" value="@col.Key" placeholder="Column Key" />
+                            <input type="text" class="col-label" value="@col.Label" placeholder="Display Label" />
+                            <div class="col-type-ms" data-selected="@col.Type"></div>
+                            @if (isLookup)
+                            {
+                                <div class="col-query-wrap">
+                                    <div class="col-source-mode-ms" data-selected="@sourceMode"></div>
+                                    <div class="col-source-sql" @(sourceMode == "api" ? Html.Raw("style=\"display:none;\"") : null)>
+                                        <textarea class="col-query edit-code-area" rows="1" placeholder="SELECT value, label FROM ...">@sqlQuery</textarea>
+                                    </div>
+                                    <div class="col-source-api" @(sourceMode != "api" ? Html.Raw("style=\"display:none;\"") : null)>
+                                        <div class="col-api-method-ms" data-selected="@apiMethod" data-options='[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"}]'></div>
+                                        <input type="hidden" class="col-api-method-val" value="@apiMethod" />
+                                        <input type="text" class="col-api-path" value="@apiPath" placeholder="/api/items" />
+                                    </div>
+                                </div>
+                            }
+                            <button type="button" class="remove-col"><i data-lucide="circle-x"></i></button>
+                        </div>
+                    }
+                }
+            </div>
+            <button type="button" id="addColumn" class="at-add-btn">+ Add Column</button>
+        </fieldset>
+
+        <input type="hidden" name="ColumnsJson" id="columnsJson" />
+        <input type="hidden" name="PermissionsJson" id="permissionsJson" />
+
+        <div class="at-actions">
+            <button type="submit" class="at-btn-primary" id="btnSave">Save</button>
+            <a id="cancelEdit" href="@Dnn.ModuleContext.NavigateUrl(Dnn.ModuleContext.TabId, "", false)" class="at-btn-secondary">Cancel</a>
+            <span style="flex:1"></span>
+            <button type="button" class="at-btn-secondary" id="btnExport">Export</button>
+            <label class="at-btn-secondary" style="cursor:pointer;margin:0;">
+                Import
+                <input type="file" id="btnImport" accept=".json" style="display:none;" />
+            </label>
+        </div>
     </div>
 </div>
 

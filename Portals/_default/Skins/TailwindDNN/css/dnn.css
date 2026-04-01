@@ -255,7 +255,7 @@
   padding: 2rem;
   background: white;
   border: 1px solid var(--default-200);
-  border-radius: var(--radius-card);
+  border-radius: var(--layout-rounded-small);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
@@ -605,7 +605,7 @@
    ========================================================================== */
 
 .dnnModuleManager .DnnModule.floating, .dnnModuleSorting .DnnModule.floating {
-  border-radius: 1rem;
+  border-radius: var(--layout-rounded-small);
 }
 
 /* ---- Drag Hint Card ---- */
@@ -618,7 +618,7 @@
   padding: 1.25rem 1.5rem;
   background: white;
   border: 1px solid var(--default-200);
-  border-radius: 1rem;
+  border-radius: var(--layout-rounded-small);
   box-shadow:
     0 10px 15px -3px rgb(0 0 0 / 0.1),
     0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -724,7 +724,7 @@
   width: 100%;
   border: 2px dashed var(--primary-400) !important;
   background: var(--primary-50) !important;
-  border-radius: var(--radius-card);
+  border-radius: var(--layout-rounded-small);
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -751,7 +751,7 @@
   outline: 2px dashed var(--default-300) !important;
   outline-offset: -1px;
   min-width: 110px !important;
-  border-radius: var(--radius-card);
+  border-radius: var(--layout-rounded-small);
 }
 
 /* ==========================================================================
@@ -761,7 +761,7 @@
 /* ---- Dialog Container ---- */
 .ui-dialog.dnnFormPopup {
   border: none !important;
-  border-radius: var(--radius-card) !important;
+  border-radius: var(--layout-rounded-small) !important;
   background: white !important;
   box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
   padding: 0 !important;
@@ -1109,7 +1109,7 @@
   cursor: pointer;
   background-color: white;
   border: 1px solid var(--default-300);
-  border-radius: 0.25rem;
+  border-radius: var(--layout-rounded-small);
   flex-shrink: 0;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }

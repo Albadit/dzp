@@ -70,18 +70,28 @@
     {
         if (user.IsSuperUser) { userRole = "Super User"; }
         else if (user.IsInRole("Administrators")) { userRole = "Administrators"; }
-        else if (user.Roles != null)
+        else if (hasCommunity)
         {
-            foreach (var r in user.Roles)
+            try
             {
-                if (!string.Equals(r, "Registered Users", StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(r, "Subscribers", StringComparison.OrdinalIgnoreCase))
+                var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
+                using (var conn = new System.Data.SqlClient.SqlConnection(connStr))
                 {
-                    userRole = r;
-                    break;
+                    conn.Open();
+                    using (var cmd = new System.Data.SqlClient.SqlCommand(
+                        "SELECT r.RoleName FROM UserCommunity uc INNER JOIN Roles r ON r.RoleID = uc.RoleID WHERE uc.UserID = @uid AND uc.CommunityID = @cid", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@uid", user.UserID);
+                        cmd.Parameters.AddWithValue("@cid", rc.CommunityId);
+                        var result = cmd.ExecuteScalar();
+                        if (result != null && result != System.DBNull.Value)
+                        {
+                            userRole = result.ToString();
+                        }
+                    }
                 }
             }
-            if (string.IsNullOrEmpty(userRole) && user.Roles.Length > 0) { userRole = user.Roles[0]; }
+            catch (System.Exception) { /* ignore */ }
         }
     }
 }

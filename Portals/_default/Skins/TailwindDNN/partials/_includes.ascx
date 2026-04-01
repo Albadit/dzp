@@ -26,6 +26,14 @@
   document.addEventListener('DOMContentLoaded', function() {
     if (window.lucide) lucide.createIcons();
   });
+  // Re-init Lucide when DOM changes (e.g. after 2sxc dialog closes), debounced
+  (function() {
+    var t;
+    new MutationObserver(function() {
+      clearTimeout(t);
+      t = setTimeout(function() { if (window.lucide) lucide.createIcons(); }, 200);
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  })();
 </script>
 
 <!-- Tailwind theme config for browser runtime to process -->

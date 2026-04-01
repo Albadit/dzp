@@ -1,0 +1,53 @@
+{
+  "Title": "User Community",
+  "Mode": "sql",
+  "QuerySelect": "SELECT \n    uc.UserID,\n    u.Username,\n    STRING_AGG(CAST(uc.CommunityID AS VARCHAR(20)), ',') AS CommunityID\nFROM UserCommunity uc\nINNER JOIN Users u ON u.UserID = uc.UserID\nGROUP BY uc.UserID, u.Username\nORDER BY u.Username",
+  "QueryInsert": "DECLARE @lidRid INT = (SELECT RoleID FROM Roles WHERE RoleName = 'Lid' AND PortalID = 0);\nINSERT INTO UserCommunity (UserID, CommunityID, RoleID)\nSELECT CAST(@UserID AS INT), CAST(value AS INT), @lidRid\nFROM STRING_SPLIT(@CommunityID, ',')\nWHERE RTRIM(LTRIM(value)) <> '';\nIF @lidRid IS NOT NULL AND NOT EXISTS (SELECT 1 FROM UserRoles WHERE UserID = CAST(@UserID AS INT) AND RoleID = @lidRid)\n  INSERT INTO UserRoles (UserID, RoleID, CreatedOnDate, LastModifiedOnDate, Status, IsOwner)\n  VALUES (CAST(@UserID AS INT), @lidRid, GETDATE(), GETDATE(), 1, 0)",
+  "QueryUpdate": "DECLARE @lidRid INT = (SELECT RoleID FROM Roles WHERE RoleName = 'Lid' AND PortalID = 0);\nDELETE FROM UserCommunity WHERE UserID = CAST(@pk AS INT);\nINSERT INTO UserCommunity (UserID, CommunityID, RoleID)\nSELECT CAST(@UserID AS INT), CAST(value AS INT), @lidRid\nFROM STRING_SPLIT(@CommunityID, ',')\nWHERE RTRIM(LTRIM(value)) <> '';\nIF NOT EXISTS (SELECT 1 FROM UserCommunity WHERE UserID = CAST(@pk AS INT))\n  BEGIN IF @lidRid IS NOT NULL DELETE FROM UserRoles WHERE UserID = CAST(@pk AS INT) AND RoleID = @lidRid END\nELSE IF @lidRid IS NOT NULL AND NOT EXISTS (SELECT 1 FROM UserRoles WHERE UserID = CAST(@pk AS INT) AND RoleID = @lidRid)\n  INSERT INTO UserRoles (UserID, RoleID, CreatedOnDate, LastModifiedOnDate, Status, IsOwner)\n  VALUES (CAST(@pk AS INT), @lidRid, GETDATE(), GETDATE(), 1, 0)",
+  "QueryDelete": "DECLARE @lidRid INT = (SELECT RoleID FROM Roles WHERE RoleName = 'Lid' AND PortalID = 0);\nDELETE FROM UserCommunity WHERE UserID = CAST(@pk AS INT);\nIF @lidRid IS NOT NULL DELETE FROM UserRoles WHERE UserID = CAST(@pk AS INT) AND RoleID = @lidRid",
+  "QueryBulkDelete": "DECLARE @lidRid INT = (SELECT RoleID FROM Roles WHERE RoleName = 'Lid' AND PortalID = 0);\nDELETE FROM UserCommunity WHERE UserID IN ({ids});\nIF @lidRid IS NOT NULL DELETE FROM UserRoles WHERE UserID IN ({ids}) AND RoleID = @lidRid",
+  "ApiBaseUrl": "",
+  "ApiHeaders": "",
+  "ApiSelectMethod": "GET",
+  "ApiSelectPath": "",
+  "ApiInsertMethod": "POST",
+  "ApiInsertPath": "",
+  "ApiUpdateMethod": "PUT",
+  "ApiUpdatePath": "",
+  "ApiDeleteMethod": "DELETE",
+  "ApiDeletePath": "",
+  "AllowCreate": true,
+  "AllowEdit": true,
+  "AllowDelete": true,
+  "AllowBulkDelete": true,
+  "Columns": [
+    {
+      "Key": "UserID",
+      "Label": "Naam",
+      "Type": "select",
+      "Pattern": "SELECT u.UserID, u.Username FROM Users u INNER JOIN UserPortals up ON up.UserId = u.UserID WHERE up.PortalId = 0 AND u.UserID NOT IN (SELECT UserID FROM UserCommunity) ORDER BY u.Username",
+      "Required": false,
+      "Sortable": true,
+      "Filterable": true
+    },
+    {
+      "Key": "Username",
+      "Label": "Naam",
+      "Type": "readonly",
+      "Pattern": null,
+      "Required": false,
+      "Sortable": true,
+      "Filterable": true
+    },
+    {
+      "Key": "CommunityID",
+      "Label": "Community",
+      "Type": "multiselect",
+      "Pattern": "SELECT CommunityID, Name FROM Community ORDER BY Name",
+      "Required": false,
+      "Sortable": true,
+      "Filterable": true
+    }
+  ],
+  "Permissions": []
+}

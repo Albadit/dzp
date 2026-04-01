@@ -1,0 +1,71 @@
+{
+  "Title": "Leden",
+  "Mode": "sql",
+  "QuerySelect": "SELECT u.UserID, u.DisplayName, u.Email, ISNULL(r.RoleName, '') AS RoleName, CONVERT(varchar, u.CreatedOnDate, 105) AS JoinedDate FROM UserCommunity uc INNER JOIN Users u ON u.UserID = uc.UserID LEFT JOIN Roles r ON r.RoleID = uc.RoleID WHERE uc.CommunityID = @rc_CommunityId ORDER BY u.DisplayName",
+  "QueryInsert": "DECLARE @rid INT = (SELECT RoleID FROM Roles WHERE RoleName = @RoleName AND PortalID = 0); INSERT INTO UserCommunity (UserID, CommunityID, RoleID) VALUES (@UserID, @rc_CommunityId, @rid); IF @rid IS NOT NULL AND NOT EXISTS (SELECT 1 FROM UserRoles WHERE UserID = @UserID AND RoleID = @rid) INSERT INTO UserRoles (UserID, RoleID, CreatedOnDate, LastModifiedOnDate, Status, IsOwner) VALUES (@UserID, @rid, GETDATE(), GETDATE(), 1, 0)",
+  "QueryUpdate": "DECLARE @oldRid INT = (SELECT RoleID FROM UserCommunity WHERE UserID = @pk AND CommunityID = @rc_CommunityId);\nDECLARE @newRid INT = (SELECT RoleID FROM Roles WHERE RoleName = @RoleName AND PortalID = 0);\nUPDATE UserCommunity SET RoleID = @newRid WHERE UserID = @pk AND CommunityID = @rc_CommunityId;\nIF @oldRid IS NOT NULL AND @oldRid <> ISNULL(@newRid, 0)\n  AND NOT EXISTS (SELECT 1 FROM UserCommunity WHERE UserID = @pk AND RoleID = @oldRid AND CommunityID <> @rc_CommunityId)\n    DELETE FROM UserRoles WHERE UserID = @pk AND RoleID = @oldRid;\nIF @newRid IS NOT NULL AND NOT EXISTS (SELECT 1 FROM UserRoles WHERE UserID = @pk AND RoleID = @newRid)\n  INSERT INTO UserRoles (UserID, RoleID, CreatedOnDate, LastModifiedOnDate, Status, IsOwner)\n  VALUES (@pk, @newRid, GETDATE(), GETDATE(), 1, 0)",
+  "QueryDelete": "DECLARE @oldRid INT = (SELECT RoleID FROM UserCommunity WHERE UserID = @pk AND CommunityID = @rc_CommunityId);\nDELETE FROM UserCommunity WHERE UserID = @pk AND CommunityID = @rc_CommunityId;\nIF @oldRid IS NOT NULL\n  AND NOT EXISTS (SELECT 1 FROM UserCommunity WHERE UserID = @pk AND RoleID = @oldRid)\n    DELETE FROM UserRoles WHERE UserID = @pk AND RoleID = @oldRid;\nIF NOT EXISTS (SELECT 1 FROM UserCommunity WHERE UserID = @pk)\n  DELETE FROM UserRoles WHERE UserID = @pk AND RoleID = 1013",
+  "QueryBulkDelete": "DELETE FROM UserRoles WHERE EXISTS (SELECT 1 FROM UserCommunity uc WHERE uc.UserID = UserRoles.UserID AND uc.RoleID = UserRoles.RoleID AND uc.CommunityID = @rc_CommunityId AND uc.UserID IN ({ids})); DELETE FROM UserCommunity WHERE UserID IN ({ids}) AND CommunityID = @rc_CommunityId",
+  "ApiBaseUrl": "",
+  "ApiHeaders": "",
+  "ApiSelectMethod": "GET",
+  "ApiSelectPath": "",
+  "ApiInsertMethod": "POST",
+  "ApiInsertPath": "",
+  "ApiUpdateMethod": "PUT",
+  "ApiUpdatePath": "",
+  "ApiDeleteMethod": "DELETE",
+  "ApiDeletePath": "",
+  "AllowCreate": true,
+  "AllowEdit": true,
+  "AllowDelete": true,
+  "AllowBulkDelete": true,
+  "Columns": [
+    {
+      "Key": "UserID",
+      "Label": "Gebruiker",
+      "Type": "select",
+      "Pattern": "SELECT u.UserID, u.DisplayName FROM Users u INNER JOIN UserPortals up ON up.UserId = u.UserID WHERE up.PortalId = 0 AND u.UserID NOT IN (SELECT uc.UserID FROM UserCommunity uc WHERE uc.CommunityID = @rc_CommunityId) ORDER BY u.DisplayName",
+      "Required": false,
+      "Sortable": true,
+      "Filterable": true
+    },
+    {
+      "Key": "DisplayName",
+      "Label": "Naam",
+      "Type": "readonly",
+      "Pattern": null,
+      "Required": false,
+      "Sortable": true,
+      "Filterable": true
+    },
+    {
+      "Key": "Email",
+      "Label": "E-mail",
+      "Type": "email",
+      "Pattern": null,
+      "Required": false,
+      "Sortable": true,
+      "Filterable": true
+    },
+    {
+      "Key": "RoleName",
+      "Label": "Rol",
+      "Type": "select",
+      "Pattern": "SELECT r.RoleName, r.RoleName FROM Roles r WHERE r.PortalID = 0 AND r.RoleID > 0 AND r.RoleName NOT LIKE 'Community -%' ORDER BY r.RoleName",
+      "Required": false,
+      "Sortable": true,
+      "Filterable": true
+    },
+    {
+      "Key": "JoinedDate",
+      "Label": "Lid sinds",
+      "Type": "readonly",
+      "Pattern": null,
+      "Required": false,
+      "Sortable": true,
+      "Filterable": true
+    }
+  ],
+  "Permissions": []
+}

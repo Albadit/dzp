@@ -1,5 +1,50 @@
+@using System.Web.UI
+@using System.Web.UI.HtmlControls
 @{
     Layout = "Shared/_Layout.cshtml";
+
+    /* ── SEO ── */
+    var seoTitle = "DZP Connect – Dé communicatie-app voor winkelgebieden";
+    var seoDescription = "Nieuws, events, documenten en bedrijfsprofielen in één veilige app. Overzichtelijk en altijd bij de hand voor jouw winkelgebied.";
+    var seoUrl = HttpContext.Current.Request.Url;
+    var seoOrigin = seoUrl.GetLeftPart(UriPartial.Authority);
+
+    var page = HttpContext.Current.Handler as Page;
+    if (page?.Header != null) {
+        page.Title = seoTitle;
+
+        page.Header.Controls.Add(new HtmlMeta { Name = "description", Content = seoDescription });
+        page.Header.Controls.Add(new HtmlMeta { Name = "robots", Content = "index, follow" });
+
+        var ogTags = new Dictionary<string, string> {
+            { "og:title",       seoTitle },
+            { "og:description", seoDescription },
+            { "og:type",        "website" },
+            { "og:url",         seoUrl.AbsoluteUri },
+            { "og:locale",      "nl_NL" },
+            { "og:site_name",   "DZP Connect" },
+        };
+        foreach (var og in ogTags) {
+            var m = new HtmlMeta();
+            m.Attributes["property"] = og.Key;
+            m.Content = og.Value;
+            page.Header.Controls.Add(m);
+        }
+
+        foreach (var tw in new Dictionary<string, string> {
+            { "twitter:card",        "summary_large_image" },
+            { "twitter:title",       seoTitle },
+            { "twitter:description", seoDescription },
+        }) {
+            page.Header.Controls.Add(new HtmlMeta { Name = tw.Key, Content = tw.Value });
+        }
+
+        /* canonical */
+        var canonical = new HtmlLink();
+        canonical.Attributes["rel"] = "canonical";
+        canonical.Href = seoUrl.AbsoluteUri;
+        page.Header.Controls.Add(canonical);
+    }
 
     /* ── Hero check marks ── */
     var heroChecks = new[] {
@@ -79,10 +124,66 @@
     };
 }
 
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "Organization",
+    "name": "DZP Connect",
+    "url": "@seoOrigin",
+    "description": "Dé zakelijke community-app voor winkelgebieden. Structuur, samenwerking en overzicht op één plek.",
+    "email": "info@@dzpconnect.nl",
+    "telephone": "+31201234567",
+    "contactPoint": {
+        "@@type": "ContactPoint",
+        "telephone": "+31201234567",
+        "contactType": "sales",
+        "availableLanguage": "Dutch"
+    }
+}
+</script>
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "SoftwareApplication",
+    "name": "DZP Connect",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "description": "@seoDescription",
+    "offers": {
+        "@@type": "AggregateOffer",
+        "priceCurrency": "EUR",
+        "availability": "https://schema.org/InStock"
+    },
+    "featureList": [
+        "Realtime nieuws & eventfeed",
+        "Veilige documentenbibliotheek",
+        "Slim zoeken met tags & filters",
+        "Rollen & rechten per gebied",
+        "Dashboard",
+        "Tijdlijn",
+        "Bedrijfsprofielen",
+        "Beheerpaneel"
+    ]
+}
+</script>
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "BreadcrumbList",
+    "itemListElement": [{
+        "@@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "@seoOrigin"
+    }]
+}
+</script>
+
 <!-- ============================================ -->
 <!-- 2) HERO                                      -->
 <!-- ============================================ -->
-<section class="w-full relative overflow-hidden bg-linear-to-br from-indigo-50 via-background to-indigo-50 flex flex-col items-center">
+<section aria-label="Hero" class="w-full relative overflow-hidden bg-linear-to-br from-indigo-50 via-background to-indigo-50 flex flex-col items-center">
     <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
         <div class="grid lg:grid-cols-2 gap-12 items-center">
             <!-- Text -->
@@ -163,7 +264,7 @@
 <!-- ============================================ -->
 <!-- 3) PROBLEEM → OPLOSSING                      -->
 <!-- ============================================ -->
-<section id="product" class="w-full bg-background py-20 flex flex-col items-center">
+<section id="product" aria-label="Waarom DZP Connect" class="w-full bg-background py-20 flex flex-col items-center">
     <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
         <h2 class="text-3xl font-bold text-foreground-900 text-center">
             Waarom DZP Connect?
@@ -206,7 +307,7 @@
 <!-- ============================================ -->
 <!-- 4) HOE HET WERKT - 3 STAPPEN                -->
 <!-- ============================================ -->
-<section class="w-full bg-content2 py-20 flex flex-col items-center">
+<section aria-label="Hoe het werkt" class="w-full bg-content2 py-20 flex flex-col items-center">
     <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-4 text-center">
         <h2 class="text-3xl font-bold text-foreground-900">
             Hoe werkt het?
@@ -231,7 +332,7 @@
 <!-- ============================================ -->
 <!-- 5) FUNCTIONALITEITEN (MVP)                   -->
 <!-- ============================================ -->
-<section id="functionaliteiten" class="w-full bg-background py-20 flex flex-col items-center">
+<section id="functionaliteiten" aria-label="Functionaliteiten" class="w-full bg-background py-20 flex flex-col items-center">
     <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
         <div class="flex flex-col items-center text-center gap-4">
             <h2 class="text-3xl font-bold text-foreground-900">
@@ -258,7 +359,7 @@
 <!-- ============================================ -->
 <!-- 6) VOOR WIE                                  -->
 <!-- ============================================ -->
-<section id="voor-wie" class="w-full bg-content2 py-20 flex flex-col items-center">
+<section id="voor-wie" aria-label="Voor wie is DZP Connect" class="w-full bg-content2 py-20 flex flex-col items-center">
     <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
         <div class="flex flex-col items-center text-center">
             <h2 class="text-3xl font-bold text-foreground-900">
@@ -287,7 +388,7 @@
 <!-- ============================================ -->
 <!-- 7) ROLLEN & GOVERNANCE                       -->
 <!-- ============================================ -->
-<section class="w-full bg-background py-20 flex flex-col items-center">
+<section aria-label="Rollen en governance" class="w-full bg-background py-20 flex flex-col items-center">
     <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
         <div class="max-w-3xl flex flex-col items-center text-center gap-4">
             <h2 class="text-3xl font-bold text-foreground-900">
@@ -316,7 +417,7 @@
 <!-- ============================================ -->
 <!-- 8) PRIVACY & VEILIGHEID                      -->
 <!-- ============================================ -->
-<section id="privacy" class="w-full bg-content2 py-20 flex flex-col items-center">
+<section id="privacy" aria-label="Privacy en veiligheid" class="w-full bg-content2 py-20 flex flex-col items-center">
     <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
         <div class="max-w-3xl flex flex-col items-center text-center">
             <h2 class="text-3xl font-bold text-foreground-900">
@@ -342,7 +443,7 @@
 <!-- ============================================ -->
 <!-- 9) PAKKETTEN                                 -->
 <!-- ============================================ -->
-<section id="pakketten" class="w-full bg-background py-20 flex flex-col items-center">
+<section id="pakketten" aria-label="Pakketten en prijzen" class="w-full bg-background py-20 flex flex-col items-center">
     <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
         <div class="flex flex-col items-center text-center">
             <h2 class="text-3xl font-bold text-foreground-900">
@@ -384,7 +485,7 @@
 <!-- ============================================ -->
 <!-- 10) ROADMAP TEASER                           -->
 <!-- ============================================ -->
-<section class="w-full bg-content2 py-20 flex flex-col items-center">
+<section aria-label="Roadmap" class="w-full bg-content2 py-20 flex flex-col items-center">
     <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
         <div class="max-w-3xl flex flex-col items-center text-center gap-4">
             <h2 class="text-3xl font-bold text-foreground-900">

@@ -153,18 +153,15 @@ function initDataTable(tid) {
   root.querySelectorAll('.dt-sort').forEach(function (th) {
     th.addEventListener('click', function () {
       var col = this.dataset.col;
-      var idx = -1;
-      for (var i = 0; i < sortColumns.length; i++) {
-        if (sortColumns[i].col === col) { idx = i; break; }
-      }
-      if (idx >= 0) {
-        if (sortColumns[idx].dir === 'asc') {
-          sortColumns[idx].dir = 'desc';
-        } else {
-          sortColumns.splice(idx, 1);
+      var existing = sortColumns.length === 1 && sortColumns[0].col === col ? sortColumns[0] : null;
+      sortColumns = [];
+      if (existing) {
+        if (existing.dir === 'asc') {
+          sortColumns = [{ col: col, dir: 'desc' }];
         }
+        // else: was desc, clear sort entirely
       } else {
-        sortColumns.push({ col: col, dir: 'asc' });
+        sortColumns = [{ col: col, dir: 'asc' }];
       }
       updateSortIndicators();
       currentPage = 1;
@@ -175,28 +172,24 @@ function initDataTable(tid) {
   function updateSortIndicators() {
     root.querySelectorAll('.dt-sort').forEach(function (th) {
       var col = th.dataset.col;
-      var numEl = th.querySelector('.dt-sort-num');
       var wrapEl = th.querySelector('.dt-sort-icon-wrap');
-      var idx = -1;
-      for (var i = 0; i < sortColumns.length; i++) {
-        if (sortColumns[i].col === col) { idx = i; break; }
-      }
-      if (idx >= 0) {
-        var dir = sortColumns[idx].dir;
+      var numEl = th.querySelector('.dt-sort-num');
+      var active = sortColumns.length === 1 && sortColumns[0].col === col;
+      if (active) {
+        var dir = sortColumns[0].dir;
         th.dataset.dir = dir;
-        if (numEl) {
-          numEl.textContent = sortColumns.length > 1 ? (idx + 1) : '';
-          numEl.classList.toggle('hidden', sortColumns.length <= 1);
-        }
+        if (numEl) { numEl.textContent = ''; numEl.classList.add('hidden'); }
         if (wrapEl) {
-          var icon = dir === 'asc' ? 'move-up' : 'move-down';
-          wrapEl.innerHTML = '<i data-lucide="' + icon + '" class="size-3.5 shrink-0 text-primary"></i>';
+          var rot = dir === 'asc' ? ' style="transform:rotate(180deg)"' : '';
+          wrapEl.innerHTML = '<i data-lucide="chevron-down" class="size-4 shrink-0 text-foreground-500"' + rot + '></i>';
+          wrapEl.style.visibility = 'visible';
         }
       } else {
         th.dataset.dir = '';
         if (numEl) { numEl.textContent = ''; numEl.classList.add('hidden'); }
         if (wrapEl) {
-          wrapEl.innerHTML = '<i data-lucide="arrow-down-up" class="size-3.5 shrink-0 opacity-40"></i>';
+          wrapEl.innerHTML = '<i data-lucide="chevron-down" class="size-4 shrink-0"></i>';
+          wrapEl.style.visibility = 'hidden';
         }
       }
     });

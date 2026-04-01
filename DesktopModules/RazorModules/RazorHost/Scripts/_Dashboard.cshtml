@@ -7,8 +7,8 @@
         ? RouteContext.GetUserCommunities(user)
         : new List<RouteContext.CommunityInfo>();
 
-    // Single community → skip dashboard and go straight to it
-    if (communities.Count == 1)
+    // Single community → skip dashboard and go straight to it (unless superuser)
+    if (communities.Count == 1 && (user == null || !user.IsSuperUser))
     {
         Response.Redirect("/" + communities[0].Slug + "/home", true);
         return;

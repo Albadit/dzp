@@ -483,16 +483,167 @@
     });
     updateCollapseToggle();
 
-    $(function () {
-        $('#cancelEdit').click(function (e) {
-            e.preventDefault();
-            if (typeof dnnModal !== 'undefined' && dnnModal.closePopUp) {
-                dnnModal.closePopUp(false);
-            } else {
-                window.history.back();
+    // ── Gather current config as object ──
+    function gatherConfig() {
+        var mode = modeHidden.value || 'sql';
+        var cfg = {
+            Title: form.querySelector('[name="Title"]').value,
+            Mode: mode,
+            QuerySelect: form.querySelector('[name="QuerySelect"]') ? form.querySelector('[name="QuerySelect"]').value : null,
+            QueryInsert: form.querySelector('[name="QueryInsert"]') ? form.querySelector('[name="QueryInsert"]').value : null,
+            QueryUpdate: form.querySelector('[name="QueryUpdate"]') ? form.querySelector('[name="QueryUpdate"]').value : null,
+            QueryDelete: form.querySelector('[name="QueryDelete"]') ? form.querySelector('[name="QueryDelete"]').value : null,
+            QueryBulkDelete: form.querySelector('[name="QueryBulkDelete"]') ? form.querySelector('[name="QueryBulkDelete"]').value : null,
+            ApiBaseUrl: form.querySelector('[name="ApiBaseUrl"]') ? form.querySelector('[name="ApiBaseUrl"]').value : null,
+            ApiHeaders: form.querySelector('[name="ApiHeaders"]') ? form.querySelector('[name="ApiHeaders"]').value : null,
+            ApiSelectMethod: form.querySelector('[name="ApiSelectMethod"]') ? form.querySelector('[name="ApiSelectMethod"]').value : null,
+            ApiSelectPath: form.querySelector('[name="ApiSelectPath"]') ? form.querySelector('[name="ApiSelectPath"]').value : null,
+            ApiInsertMethod: form.querySelector('[name="ApiInsertMethod"]') ? form.querySelector('[name="ApiInsertMethod"]').value : null,
+            ApiInsertPath: form.querySelector('[name="ApiInsertPath"]') ? form.querySelector('[name="ApiInsertPath"]').value : null,
+            ApiUpdateMethod: form.querySelector('[name="ApiUpdateMethod"]') ? form.querySelector('[name="ApiUpdateMethod"]').value : null,
+            ApiUpdatePath: form.querySelector('[name="ApiUpdatePath"]') ? form.querySelector('[name="ApiUpdatePath"]').value : null,
+            ApiDeleteMethod: form.querySelector('[name="ApiDeleteMethod"]') ? form.querySelector('[name="ApiDeleteMethod"]').value : null,
+            ApiDeletePath: form.querySelector('[name="ApiDeletePath"]') ? form.querySelector('[name="ApiDeletePath"]').value : null,
+            AllowCreate: form.querySelector('[name="AllowCreate"]').checked,
+            AllowEdit: form.querySelector('[name="AllowEdit"]').checked,
+            AllowDelete: form.querySelector('[name="AllowDelete"]').checked,
+            AllowBulkDelete: form.querySelector('[name="AllowBulkDelete"]').checked,
+            Columns: [],
+            Permissions: []
+        };
+        // Columns
+        var colRows = container.querySelectorAll('.column-row');
+        for (var i = 0; i < colRows.length; i++) {
+            var r = colRows[i];
+            var key = r.querySelector('.col-key').value.trim();
+            var label = r.querySelector('.col-label').value.trim();
+            var tMs = r.querySelector('.col-type-ms');
+            var type = tMs._ms ? tMs._ms.getValue() : '';
+            var qEl = r.querySelector('.col-query');
+            var cWrap = r.querySelector('.col-query-wrap');
+            var query = '';
+            if ((type === 'select' || type === 'multiselect') && cWrap) {
+                var sMs = cWrap.querySelector('.col-source-mode-ms');
+                var sMode = (sMs && sMs._ms) ? sMs._ms.getValue() : 'sql';
+                if (sMode === 'api') {
+                    var mE = cWrap.querySelector('.col-api-method-val');
+                    var pE = cWrap.querySelector('.col-api-path');
+                    query = JSON.stringify({ mode: 'api', method: mE ? mE.value : 'GET', path: pE ? pE.value.trim() : '' });
+                } else {
+                    query = qEl ? qEl.value.trim() : '';
+                }
             }
-            return false;
-        });
+            if (key) {
+                cfg.Columns.push({ Key: key, Label: label || key, Type: type, Pattern: query || null, Required: false, Sortable: true, Filterable: true });
+            }
+        }
+        // Permissions
+        var pRows = permContainer.querySelectorAll('.perm-row');
+        for (var j = 0; j < pRows.length; j++) {
+            var pr = pRows[j];
+            var ptMs = pr.querySelector('.perm-type-ms');
+            var pType = ptMs._ms ? ptMs._ms.getValue() : '';
+            var pnMs = pr.querySelector('.perm-name-ms');
+            var selNames = pnMs._ms ? pnMs._ms.getSelected() : [];
+            if (pType && selNames.length > 0) {
+                for (var n = 0; n < selNames.length; n++) {
+                    cfg.Permissions.push({
+                        Type: pType,
+                        Name: selNames[n],
+                        AllowCreate: pr.querySelector('.perm-create').checked,
+                        AllowEdit: pr.querySelector('.perm-edit').checked,
+                        AllowDelete: pr.querySelector('.perm-delete').checked,
+                        AllowBulkDelete: pr.querySelector('.perm-bulk').checked
+                    });
+                }
+            }
+        }
+        return cfg;
+    }
+
+    // ── Export ──
+    document.getElementById('btnExport').addEventListener('click', function () {
+        var cfg = gatherConfig();
+        var json = JSON.stringify(cfg, null, 2);
+        var blob = new Blob([json], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = (cfg.Title || 'table-config').replace(/[^a-zA-Z0-9_-]/g, '_') + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // ── Import ──
+    document.getElementById('btnImport').addEventListener('change', function (e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+            try {
+                var cfg = JSON.parse(ev.target.result);
+            } catch (err) {
+                alert('Invalid JSON file.');
+                return;
+            }
+            // Title
+            var titleEl = form.querySelector('[name="Title"]');
+            if (titleEl) titleEl.value = cfg.Title || '';
+            // Mode
+            var mode = cfg.Mode === 'api' ? 'api' : 'sql';
+            modeHidden.value = mode;
+            if (modeMs && modeMs.setOptions) {
+                modeMs.setOptions([{ value: 'sql', label: 'SQL' }, { value: 'api', label: 'API' }], [mode]);
+            }
+            sqlFields.style.display = mode === 'api' ? 'none' : '';
+            apiFields.style.display = mode === 'api' ? '' : 'none';
+            // SQL fields
+            var fields = ['QuerySelect', 'QueryInsert', 'QueryUpdate', 'QueryDelete', 'QueryBulkDelete',
+                          'ApiBaseUrl', 'ApiHeaders', 'ApiSelectPath', 'ApiInsertPath', 'ApiUpdatePath', 'ApiDeletePath'];
+            for (var fi = 0; fi < fields.length; fi++) {
+                var el = form.querySelector('[name="' + fields[fi] + '"]');
+                if (el) { el.value = cfg[fields[fi]] || ''; }
+            }
+            // API method hiddens
+            var methodFields = ['ApiSelectMethod', 'ApiInsertMethod', 'ApiUpdateMethod', 'ApiDeleteMethod'];
+            for (var mi = 0; mi < methodFields.length; mi++) {
+                var hid = form.querySelector('input[name="' + methodFields[mi] + '"]');
+                if (hid) hid.value = cfg[methodFields[mi]] || '';
+                var msEl = hid ? hid.previousElementSibling : null;
+                if (msEl && msEl._ms) {
+                    var opts = JSON.parse(msEl.getAttribute('data-options') || '[]');
+                    msEl._ms.setOptions(opts, cfg[methodFields[mi]] ? [cfg[methodFields[mi]]] : []);
+                }
+            }
+            // Allow flags
+            form.querySelector('[name="AllowCreate"]').checked = !!cfg.AllowCreate;
+            form.querySelector('[name="AllowEdit"]').checked = !!cfg.AllowEdit;
+            form.querySelector('[name="AllowDelete"]').checked = !!cfg.AllowDelete;
+            form.querySelector('[name="AllowBulkDelete"]').checked = !!cfg.AllowBulkDelete;
+            // Columns — clear and rebuild
+            container.innerHTML = '';
+            if (cfg.Columns && cfg.Columns.length) {
+                for (var ci = 0; ci < cfg.Columns.length; ci++) {
+                    var c = cfg.Columns[ci];
+                    container.appendChild(createColumnRow(c.Key || '', c.Label || '', c.Type || 'text', c.Pattern || ''));
+                }
+            }
+            // Permissions — clear and rebuild
+            permContainer.innerHTML = '';
+            if (cfg.Permissions && cfg.Permissions.length) {
+                for (var pi = 0; pi < cfg.Permissions.length; pi++) {
+                    var p = cfg.Permissions[pi];
+                    permContainer.appendChild(createPermRow(p.Type || '', p.Name ? [p.Name] : [], !!p.AllowCreate, !!p.AllowEdit, !!p.AllowDelete, !!p.AllowBulkDelete));
+                }
+            }
+            // Re-init icons and auto-resize
+            if (window.lucide) lucide.createIcons();
+            initAutoResize();
+        };
+        reader.readAsText(file);
+        e.target.value = '';
     });
 
 }(jQuery, window.Sys));
