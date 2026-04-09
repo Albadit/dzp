@@ -138,21 +138,6 @@
   {
     debugLog.Add("Posts query ERROR: " + ex.Message);
   }
-  // Fallback dummy if no posts found
-  if (latestPosts.Count == 0) {
-    latestPosts.Add(new {
-      Title  = "Voortgang Centrale As",
-      Teaser = "Een belangrijk thema voor het centrumgebied. Het BIZ-bestuur heeft een brief opgesteld aan ondernemers die zijn gevestigd aan de Burgemeester de Zeeuwstraat...",
-      Image  = "https://picsum.photos/seed/post1/400/300",
-      Date   = ""
-    });
-    latestPosts.Add(new {
-      Title  = "Artikel in Het Kompas",
-      Teaser = "In Het Kompas staat een positief redactioneel artikel met als titel Gezellig winkelen in het hart van Numansdorp. Het BIZ-bestuur dankt iedereen die hieraan mee heeft gewerkt.",
-      Image  = "https://picsum.photos/seed/post2/400/300",
-      Date   = ""
-    });
-  }
 
   /* ── Ondekt (quick-links grid) ── */
   var ondektLinks = new[] {
@@ -224,31 +209,9 @@
 
   debugLog.Add("Render start");
 
-  /* ── Permission check: user must be a member of this community ── */
-  var isMember = false;
-  if (user != null && user.UserID > 0 && rc != null)
-  {
-    foreach (var g in groups)
-    {
-      if (g.Slug == communitySlug) { isMember = true; break; }
-    }
-  }
 }
 
-@if (!isMember) {
-<main class="max-w-7xl w-full">
-  <div class="flex flex-col items-center justify-center gap-4 py-24 px-4 text-center">
-    <div class="flex items-center justify-center size-16 rounded-full bg-danger-100">
-      <i data-lucide="shield-x" class="size-8 text-danger"></i>
-    </div>
-    <h1 class="text-xl font-bold text-foreground-900">Geen toegang</h1>
-    <p class="text-sm text-foreground-500 max-w-md">Je hebt geen toestemming om deze pagina te bekijken. Je bent geen lid van deze community.</p>
-    <a href="/dashboard" class="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition">
-      <i data-lucide="arrow-left" class="size-4"></i> Terug naar dashboard
-    </a>
-  </div>
-</main>
-} else {
+
 @* <div class="bg-yellow-50 border border-yellow-300 rounded-xl p-4 m-4 text-xs font-mono text-yellow-900">
   <strong>DEBUG _CommunityHome</strong>
   <ul class="mt-1">
@@ -287,9 +250,8 @@
             </a>
           </div>
           @if (latestPosts.Count == 0) {
-          <div class="flex flex-col items-center gap-3 py-8 text-center">
+          <div class="flex flex-col items-center gap-3 py-8 text-center bg-content1 rounded-2xl border border-divider">
             <p class="text-sm text-foreground-400">Er zijn nog geen berichten in deze community.</p>
-            <a href="/@communitySlug/timeline" class="text-sm font-medium text-primary hover:underline">Ga naar tijdlijn &rarr;</a>
           </div>
           } else {
           foreach (var post in latestPosts) {
@@ -343,10 +305,10 @@
       </div>
     </div>
     <div class="w-full px-4 sm:px-6 lg:px-8">
-      <div class="flex gap-4 w-full max-w-7xl overflow-x-auto">
+      <div class="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
         @foreach (var g in groups) {
           var groupImg = "https://picsum.photos/seed/" + g.Slug + "/300/400";
-          <a href="/@g.Slug/home" class="relative w-32 h-40 sm:w-36 sm:h-44 rounded-2xl group ">
+          <a href="/@g.Slug/home" class="relative w-32 h-40 sm:w-36 sm:h-44 shrink-0 rounded-2xl overflow-hidden group snap-start">
             <img src="@groupImg" alt="@g.Name" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent"></div>
             <div class="relative flex items-end h-full p-3">
@@ -382,7 +344,7 @@
         @foreach (var member in teamMembers) {
         <div class="flex flex-col items-center gap-1.5 sm:gap-2 shrink-0 snap-start">
           <div class="size-16 sm:size-20 rounded-full overflow-hidden border-2 border-divider">
-            <img src="@member.Image" alt="@member.Name" class="w-full h-full object-cover" />
+            <img src="@member.Image" alt="@member.Name" class="w-full h-full object-cover rounded-full" />
           </div>
           <div class="flex flex-col items-center gap-0.5">
             <span class="text-sm font-semibold text-foreground-900">@member.Name</span>
@@ -395,4 +357,3 @@
     }
   </section>
 </main>
-}

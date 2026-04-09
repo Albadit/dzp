@@ -79,7 +79,7 @@
                 {
                     conn.Open();
                     using (var cmd = new System.Data.SqlClient.SqlCommand(
-                        "SELECT r.RoleName FROM UserCommunity uc INNER JOIN Roles r ON r.RoleID = uc.RoleID WHERE uc.UserID = @uid AND uc.CommunityID = @cid", conn))
+                        "SELECT r.RoleName FROM UserCommunity uc INNER JOIN Roles r ON r.RoleID = uc.RoleId WHERE uc.UserId = @uid AND uc.CommunityId = @cid", conn))
                     {
                         cmd.Parameters.AddWithValue("@uid", user.UserID);
                         cmd.Parameters.AddWithValue("@cid", rc.CommunityId);
@@ -175,4 +175,4 @@
     </div>
 </div>
 
-<script src="@(skinPath)js/header.js"></script>
+<script src="@(skinPath)resources/js/header.js"></script>

@@ -1,0 +1,20 @@
+-- Configure AdvancedTable module 11413 (community/manage/groups)
+-- Group management with multiselect users
+-- NOTE: This was inserted via parameterized PowerShell (see conversation).
+--       The JSON below is for reference only; re-run via SqlParameter to avoid escaping issues.
+
+-- JSON config (reference):
+-- {
+--   "Title": "Groepen",
+--   "Columns": [
+--     { "Key": "Name",        "Label": "Naam",          "Type": "text",        "Required": true  },
+--     { "Key": "Description", "Label": "Beschrijving",  "Type": "text",        "Required": false },
+--     { "Key": "Users",       "Label": "Gebruikers",    "Type": "multiselect",
+--       "Pattern": "SELECT u.UserID, u.DisplayName FROM Users u INNER JOIN UserCommunity uc ON uc.UserID = u.UserID WHERE uc.CommunityID = @rc_CommunityId ORDER BY u.DisplayName" }
+--   ],
+--   "QuerySelect":     "SELECT g.Id, g.Name, g.Description, ISNULL(STRING_AGG(CAST(ucg.UserId AS VARCHAR(20)), ','), '') AS Users FROM CommunityGroups g LEFT JOIN UserCommunityGroups ucg ON ucg.CommunityGroupId = g.Id WHERE g.CommunityId = @rc_CommunityId GROUP BY g.Id, g.Name, g.Description ORDER BY g.Name",
+--   "QueryInsert":     "INSERT INTO CommunityGroups (CommunityId, Name, Description) VALUES (@rc_CommunityId, @Name, @Description); DECLARE @gid INT = SCOPE_IDENTITY(); INSERT INTO UserCommunityGroups (UserId, CommunityGroupId) SELECT CAST(value AS INT), @gid FROM STRING_SPLIT(@Users, ',') WHERE RTRIM(LTRIM(value)) <> ''",
+--   "QueryUpdate":     "UPDATE CommunityGroups SET Name = @Name, Description = @Description WHERE Id = @pk; DELETE FROM UserCommunityGroups WHERE CommunityGroupId = @pk; INSERT INTO UserCommunityGroups (UserId, CommunityGroupId) SELECT CAST(value AS INT), @pk FROM STRING_SPLIT(@Users, ',') WHERE RTRIM(LTRIM(value)) <> ''",
+--   "QueryDelete":     "DELETE FROM UserCommunityGroups WHERE CommunityGroupId = @pk; DELETE FROM CommunityGroups WHERE Id = @pk",
+--   "QueryBulkDelete": "DELETE FROM UserCommunityGroups WHERE CommunityGroupId IN ({ids}); DELETE FROM CommunityGroups WHERE Id IN ({ids})"
+-- }

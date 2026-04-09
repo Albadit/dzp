@@ -4,51 +4,57 @@ function initDataTable(tid) {
 
   var pageSize = parseInt(root.dataset.pageSize) || 10;
   var currentPage = 1;
-  var sortColumns = [];
+  var sortCol = null, sortDir = null;
 
-  var table  = root.querySelector('.dt-table');
-  var allRows  = Array.from(table.querySelectorAll('.dt-tbody .dt-row'));
+  var table    = root.querySelector('.dt-table');
+  var tbody    = table.querySelector('.dt-tbody');
+  var allRows  = Array.from(tbody.querySelectorAll('.dt-row'));
   var filtered = allRows.slice();
 
-  var searchInput    = root.querySelector('.dt-search');
-  var pageSizeSelect = root.querySelector('.dt-page-size');
-  var prevBtn        = root.querySelector('.dt-page-prev');
-  var nextBtn        = root.querySelector('.dt-page-next');
-  var pageInput      = root.querySelector('.dt-page-input');
-  var pageTotal      = root.querySelector('.dt-page-total');
-  var checkAll       = root.querySelector('.dt-check-all');
-  var bulkBtn        = root.querySelector('.dt-btn-bulk-del');
-  var addBtn         = root.querySelector('.dt-btn-add');
-  var pagination     = root.querySelector('.dt-pagination');
-  var rowCount       = root.querySelector('.dt-row-count');
+  var el = function (sel) { return root.querySelector(sel); };
+  var searchInput = el('.dt-search'), pageSizeSelect = el('.dt-page-size');
+  var prevBtn = el('.dt-page-prev'), nextBtn = el('.dt-page-next');
+  var pageInput = el('.dt-page-input'), pageTotal = el('.dt-page-total');
+  var checkAll = el('.dt-check-all'), bulkBtn = el('.dt-btn-bulk-del');
+  var addBtn = el('.dt-btn-add'), pagination = el('.dt-pagination'), rowCount = el('.dt-row-count');
 
   var modal       = document.getElementById(tid + '-modal');
   var delModal    = document.getElementById(tid + '-del-modal');
   var createModal = document.getElementById(tid + '-create-modal');
 
-  if (modal) document.body.appendChild(modal);
-  if (delModal) document.body.appendChild(delModal);
-  if (createModal) document.body.appendChild(createModal);
+  var modals = [modal, delModal, createModal];
+  modals.forEach(function (m) { if (m) document.body.appendChild(m); });
 
-  function lockScroll() { document.body.style.overflow = 'hidden'; }
+  function lockScroll()   { document.body.style.overflow = 'hidden'; }
   function unlockScroll() { document.body.style.overflow = ''; }
 
-  // Initialize MultiSelect widgets for lookup columns
+  function showModal(m) { m.classList.remove('hidden'); lockScroll(); }
+  function hideModal(m) { m.classList.add('hidden'); unlockScroll(); }
+
+  function bindModalClose(m, closeClass, onClose) {
+    if (!m) return;
+    m.querySelectorAll('.' + closeClass).forEach(function (btn) {
+      btn.addEventListener('click', function () { hideModal(m); if (onClose) onClose(); });
+    });
+    m.addEventListener('click', function (e) {
+      if (e.target === m) { hideModal(m); if (onClose) onClose(); }
+    });
+  }
+
   var lookupData = window['__dtLookups_' + tid] || {};
+
+  function lookupOpts(col) {
+    return (lookupData[col] || []).map(function (o) { return { value: String(o.value), label: o.label }; });
+  }
 
   function initLookupWidgets(container, cssClass) {
     if (!container) return;
     container.querySelectorAll('.' + cssClass).forEach(function (el) {
-      var col = el.dataset.col;
-      var isMulti = el.dataset.multi === 'true';
-      var opts = (lookupData[col] || []).map(function (o) {
-        return { value: String(o.value), label: o.label };
-      });
       el._ms = MultiSelect.create(el, {
         placeholder: '-- Select --',
-        options: opts,
+        options: lookupOpts(el.dataset.col),
         selected: [],
-        single: !isMulti
+        single: el.dataset.multi !== 'true'
       });
     });
   }
@@ -62,41 +68,27 @@ function initDataTable(tid) {
       fields[prefix + inp.dataset.col] = inp.value;
     });
     container.querySelectorAll('.' + lookupClass).forEach(function (el) {
-      if (el._ms) {
-        var isMulti = el.dataset.multi === 'true';
-        fields[prefix + el.dataset.col] = isMulti ? el._ms.getSelected().join(',') : el._ms.getValue();
-      }
+      if (!el._ms) return;
+      fields[prefix + el.dataset.col] = el.dataset.multi === 'true'
+        ? el._ms.getSelected().join(',') : el._ms.getValue();
     });
     return fields;
   }
 
-  function setModalLookupValue(container, lookupClass, col, val) {
+  function setLookup(container, lookupClass, col, val) {
     container.querySelectorAll('.' + lookupClass).forEach(function (el) {
-      if (el.dataset.col === col && el._ms) {
-        var isMulti = el.dataset.multi === 'true';
-        var selArr;
-        if (isMulti && val) {
-          selArr = String(val).split(',').map(function (v) { return v.trim(); }).filter(function (v) { return v !== ''; });
-        } else {
-          selArr = val ? [String(val)] : [];
-        }
-        el._ms.setOptions(
-          (lookupData[col] || []).map(function (o) { return { value: String(o.value), label: o.label }; }),
-          selArr
-        );
-      }
+      if (el.dataset.col !== col || !el._ms) return;
+      var isMulti = el.dataset.multi === 'true';
+      var selArr = (isMulti && val)
+        ? String(val).split(',').map(function (v) { return v.trim(); }).filter(Boolean)
+        : (val ? [String(val)] : []);
+      el._ms.setOptions(lookupOpts(col), selArr);
     });
   }
 
   function resetLookups(container, lookupClass) {
     container.querySelectorAll('.' + lookupClass).forEach(function (el) {
-      if (el._ms) {
-        var col = el.dataset.col;
-        el._ms.setOptions(
-          (lookupData[col] || []).map(function (o) { return { value: String(o.value), label: o.label }; }),
-          []
-        );
-      }
+      if (el._ms) el._ms.setOptions(lookupOpts(el.dataset.col), []);
     });
   }
 
@@ -116,34 +108,33 @@ function initDataTable(tid) {
     form.submit();
   }
 
-  var editPk = null;
-  var delMode = null;
-  var delPkVal = null;
+  function validateInputs(container, cls) {
+    var valid = true;
+    container.querySelectorAll('.' + cls).forEach(function (inp) {
+      if (!inp.checkValidity()) { inp.reportValidity(); valid = false; }
+    });
+    return valid;
+  }
+
+  var editPk = null, delMode = null, delPkVal = null;
 
   if (searchInput) {
     searchInput.addEventListener('input', function () {
       var q = this.value.toLowerCase();
-      filtered = allRows.filter(function (r) {
-        return r.textContent.toLowerCase().indexOf(q) >= 0;
-      });
+      filtered = allRows.filter(function (r) { return r.textContent.toLowerCase().indexOf(q) >= 0; });
       currentPage = 1;
       applySortAndRender();
     });
   }
 
   if (pageSizeSelect) {
-    var pageSizeMs = MultiSelect.create(pageSizeSelect, {
+    MultiSelect.create(pageSizeSelect, {
       placeholder: '10',
-      options: [
-        { value: '10', label: '10' },
-        { value: '25', label: '25' },
-        { value: '50', label: '50' },
-        { value: '100', label: '100' }
-      ],
+      options: ['10','25','50','100'].map(function (v) { return { value: v, label: v }; }),
       selected: [String(pageSize)],
       single: true,
       onChange: function (sel) {
-        pageSize = parseInt(sel.length ? sel[0] : '10') || 10;
+        pageSize = parseInt(sel[0] || '10') || 10;
         currentPage = 1;
         render();
       }
@@ -153,15 +144,11 @@ function initDataTable(tid) {
   root.querySelectorAll('.dt-sort').forEach(function (th) {
     th.addEventListener('click', function () {
       var col = this.dataset.col;
-      var existing = sortColumns.length === 1 && sortColumns[0].col === col ? sortColumns[0] : null;
-      sortColumns = [];
-      if (existing) {
-        if (existing.dir === 'asc') {
-          sortColumns = [{ col: col, dir: 'desc' }];
-        }
-        // else: was desc, clear sort entirely
+      if (sortCol === col) {
+        if (sortDir === 'asc') { sortDir = 'desc'; }
+        else { sortCol = null; sortDir = null; }
       } else {
-        sortColumns = [{ col: col, dir: 'asc' }];
+        sortCol = col; sortDir = 'asc';
       }
       updateSortIndicators();
       currentPage = 1;
@@ -174,19 +161,16 @@ function initDataTable(tid) {
       var col = th.dataset.col;
       var wrapEl = th.querySelector('.dt-sort-icon-wrap');
       var numEl = th.querySelector('.dt-sort-num');
-      var active = sortColumns.length === 1 && sortColumns[0].col === col;
-      if (active) {
-        var dir = sortColumns[0].dir;
-        th.dataset.dir = dir;
-        if (numEl) { numEl.textContent = ''; numEl.classList.add('hidden'); }
+      if (numEl) { numEl.textContent = ''; numEl.classList.add('hidden'); }
+      if (sortCol === col) {
+        th.dataset.dir = sortDir;
         if (wrapEl) {
-          var rot = dir === 'asc' ? ' style="transform:rotate(180deg)"' : '';
+          var rot = sortDir === 'asc' ? ' style="transform:rotate(180deg)"' : '';
           wrapEl.innerHTML = '<i data-lucide="chevron-down" class="size-4 shrink-0 text-foreground-500"' + rot + '></i>';
           wrapEl.style.visibility = 'visible';
         }
       } else {
         th.dataset.dir = '';
-        if (numEl) { numEl.textContent = ''; numEl.classList.add('hidden'); }
         if (wrapEl) {
           wrapEl.innerHTML = '<i data-lucide="chevron-down" class="size-4 shrink-0"></i>';
           wrapEl.style.visibility = 'hidden';
@@ -197,41 +181,34 @@ function initDataTable(tid) {
   }
 
   function applySortAndRender() {
-    if (sortColumns.length > 0) {
+    if (sortCol) {
+      var sc = sortCol, sd = sortDir;
       filtered.sort(function (a, b) {
-        for (var i = 0; i < sortColumns.length; i++) {
-          var s = sortColumns[i];
-          var aVal = getCellText(a, s.col).toLowerCase();
-          var bVal = getCellText(b, s.col).toLowerCase();
-          var cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
-          if (cmp !== 0) return s.dir === 'desc' ? -cmp : cmp;
-        }
-        return 0;
+        var cmp = getCellText(a, sc).toLowerCase().localeCompare(
+          getCellText(b, sc).toLowerCase(), undefined, { numeric: true });
+        return sd === 'desc' ? -cmp : cmp;
       });
     }
-    var tbody = table.querySelector('.dt-tbody');
-    if (tbody) {
-      filtered.forEach(function (row) { tbody.appendChild(row); });
-    }
+    if (tbody) filtered.forEach(function (row) { tbody.appendChild(row); });
     render();
   }
 
   function getCellText(row, col) {
     var cell = row.querySelector('[data-col="' + col + '"]');
     if (!cell) return '';
-    if (cell.hasAttribute('data-raw')) return cell.getAttribute('data-raw');
-    return (cell.textContent || '').trim();
+    return cell.hasAttribute('data-raw') ? cell.getAttribute('data-raw') : (cell.textContent || '').trim();
   }
+
+  function totalPages() { return Math.max(1, Math.ceil(filtered.length / pageSize)); }
 
   function render() {
     var total = filtered.length;
-    var pages = Math.max(1, Math.ceil(total / pageSize));
+    var pages = totalPages();
     if (currentPage > pages) currentPage = pages;
     var start = (currentPage - 1) * pageSize;
-    var end = start + pageSize;
 
     allRows.forEach(function (r) { r.style.display = 'none'; });
-    for (var i = start; i < Math.min(end, total); i++) {
+    for (var i = start; i < Math.min(start + pageSize, total); i++) {
       filtered[i].style.display = 'contents';
     }
 
@@ -251,32 +228,22 @@ function initDataTable(tid) {
       var numEl = rowCount.querySelector('.dt-row-count-num');
       if (numEl) numEl.textContent = total;
     }
-
     updateBulkState();
   }
 
-  if (prevBtn) {
-    prevBtn.addEventListener('click', function () {
-      if (currentPage > 1) { currentPage--; render(); }
-    });
-  }
-  if (nextBtn) {
-    nextBtn.addEventListener('click', function () {
-      var pages = Math.max(1, Math.ceil(filtered.length / pageSize));
-      if (currentPage < pages) { currentPage++; render(); }
-    });
-  }
-  if (pageInput) {
-    pageInput.addEventListener('change', function () {
-      var pages = Math.max(1, Math.ceil(filtered.length / pageSize));
-      var v = parseInt(this.value) || 1;
-      if (v < 1) v = 1;
-      if (v > pages) v = pages;
-      this.value = v;
-      currentPage = v;
-      render();
-    });
-  }
+  if (prevBtn) prevBtn.addEventListener('click', function () {
+    if (currentPage > 1) { currentPage--; render(); }
+  });
+  if (nextBtn) nextBtn.addEventListener('click', function () {
+    if (currentPage < totalPages()) { currentPage++; render(); }
+  });
+  if (pageInput) pageInput.addEventListener('change', function () {
+    var pages = totalPages();
+    var v = Math.min(Math.max(parseInt(this.value) || 1, 1), pages);
+    this.value = v;
+    currentPage = v;
+    render();
+  });
 
   if (checkAll) {
     checkAll.addEventListener('change', function () {
@@ -294,26 +261,18 @@ function initDataTable(tid) {
       return cb.closest('.dt-row').style.display !== 'none';
     });
   }
-
   function getSelectedIds() {
     return getVisibleCheckboxes().filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
   }
 
   function updateBulkState() {
     if (!bulkBtn) return;
-    var ids = getSelectedIds();
-    var visible = getVisibleCheckboxes();
-    if (ids.length > 0) {
-      bulkBtn.classList.remove('hidden');
-      bulkBtn.querySelector('.dt-bulk-count').textContent = ids.length;
-    } else {
-      bulkBtn.classList.add('hidden');
-    }
+    var ids = getSelectedIds(), visible = getVisibleCheckboxes();
+    bulkBtn.classList.toggle('hidden', ids.length === 0);
+    if (ids.length > 0) bulkBtn.querySelector('.dt-bulk-count').textContent = ids.length;
     if (checkAll) {
-      var allChecked = visible.length > 0 && ids.length === visible.length;
-      var someChecked = ids.length > 0 && !allChecked;
-      checkAll.checked = allChecked;
-      checkAll.indeterminate = someChecked;
+      checkAll.checked = visible.length > 0 && ids.length === visible.length;
+      checkAll.indeterminate = ids.length > 0 && !checkAll.checked;
     }
   }
 
@@ -323,47 +282,27 @@ function initDataTable(tid) {
     resetLookups(createModal, 'dt-create-lookup');
   }
 
+  // --- Create modal ---
   if (addBtn && createModal) {
     addBtn.addEventListener('click', function () {
-      createModal.classList.remove('hidden');
-      lockScroll();
-      var firstInput = createModal.querySelector('.dt-create-input');
-      if (firstInput) firstInput.focus();
+      showModal(createModal);
+      var first = createModal.querySelector('.dt-create-input');
+      if (first) first.focus();
     });
   }
-
   if (createModal) {
     var createSaveBtn = createModal.querySelector('.dt-create-save');
-    if (createSaveBtn) {
-      createSaveBtn.addEventListener('click', function () {
-        var valid = true;
-        createModal.querySelectorAll('.dt-create-input').forEach(function (inp) {
-          if (!inp.checkValidity()) { inp.reportValidity(); valid = false; }
-        });
-        if (!valid) return;
-        var fields = { '_dt_action': 'create' };
-        var inputFields = getModalFields(createModal, 'dt-create-input', 'dt-create-lookup', '_dt_new_');
-        for (var k in inputFields) { fields[k] = inputFields[k]; }
-        postForm(fields);
-      });
-    }
-
-    createModal.querySelectorAll('.dt-create-modal-close').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        createModal.classList.add('hidden');
-        unlockScroll();
-        resetCreateForm();
-      });
+    if (createSaveBtn) createSaveBtn.addEventListener('click', function () {
+      if (!validateInputs(createModal, 'dt-create-input')) return;
+      var fields = { '_dt_action': 'create' };
+      var mf = getModalFields(createModal, 'dt-create-input', 'dt-create-lookup', '_dt_new_');
+      for (var k in mf) fields[k] = mf[k];
+      postForm(fields);
     });
-    createModal.addEventListener('click', function (e) {
-      if (e.target === createModal) {
-        createModal.classList.add('hidden');
-        unlockScroll();
-        resetCreateForm();
-      }
-    });
+    bindModalClose(createModal, 'dt-create-modal-close', resetCreateForm);
   }
 
+  // --- Edit modal ---
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.dt-btn-edit[data-target="' + tid + '"]');
     if (!btn) return;
@@ -372,94 +311,65 @@ function initDataTable(tid) {
     modal.querySelectorAll('.dt-modal-input').forEach(function (inp) {
       inp.value = getCellText(row, inp.dataset.col);
     });
-    modal.querySelectorAll('.dt-modal-lookup').forEach(function (el) {
-      setModalLookupValue(modal, 'dt-modal-lookup', el.dataset.col, getCellText(row, el.dataset.col));
+    modal.querySelectorAll('.dt-modal-lookup').forEach(function (lk) {
+      setLookup(modal, 'dt-modal-lookup', lk.dataset.col, getCellText(row, lk.dataset.col));
     });
-    modal.classList.remove('hidden');
-    lockScroll();
-    var firstInput = modal.querySelector('.dt-modal-input');
-    if (firstInput) firstInput.focus();
+    showModal(modal);
+    var first = modal.querySelector('.dt-modal-input');
+    if (first) first.focus();
   });
-
   if (modal) {
     modal.querySelector('.dt-modal-save').addEventListener('click', function () {
-      var valid = true;
-      modal.querySelectorAll('.dt-modal-input').forEach(function (inp) {
-        if (!inp.checkValidity()) { inp.reportValidity(); valid = false; }
-      });
-      if (!valid) return;
+      if (!validateInputs(modal, 'dt-modal-input')) return;
       var fields = { '_dt_action': 'update', '_dt_edit_pk': editPk };
-      var inputFields = getModalFields(modal, 'dt-modal-input', 'dt-modal-lookup', '_dt_edit_');
-      for (var k in inputFields) { fields[k] = inputFields[k]; }
+      var mf = getModalFields(modal, 'dt-modal-input', 'dt-modal-lookup', '_dt_edit_');
+      for (var k in mf) fields[k] = mf[k];
       postForm(fields);
     });
-    modal.querySelectorAll('.dt-modal-close').forEach(function (btn) {
-      btn.addEventListener('click', function () { modal.classList.add('hidden'); unlockScroll(); });
-    });
-    modal.addEventListener('click', function (e) {
-      if (e.target === modal) { modal.classList.add('hidden'); unlockScroll(); }
-    });
+    bindModalClose(modal, 'dt-modal-close');
   }
 
+  // --- Delete modal ---
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.dt-btn-del[data-target="' + tid + '"]');
     if (!btn) return;
-    delMode = 'single';
-    delPkVal = btn.dataset.pk;
+    delMode = 'single'; delPkVal = btn.dataset.pk;
     delModal.querySelector('.dt-del-msg').textContent = 'This item will be permanently deleted.';
-    delModal.classList.remove('hidden');
-    lockScroll();
+    showModal(delModal);
   });
-
-  if (bulkBtn) {
-    bulkBtn.addEventListener('click', function () {
-      var ids = getSelectedIds();
-      if (ids.length === 0) return;
-      delMode = 'bulk';
-      delPkVal = ids.join(',');
-      delModal.querySelector('.dt-del-msg').textContent = ids.length + ' item(s) will be permanently deleted.';
-      delModal.classList.remove('hidden');
-      lockScroll();
-    });
-  }
-
+  if (bulkBtn) bulkBtn.addEventListener('click', function () {
+    var ids = getSelectedIds();
+    if (!ids.length) return;
+    delMode = 'bulk'; delPkVal = ids.join(',');
+    delModal.querySelector('.dt-del-msg').textContent = ids.length + ' item(s) will be permanently deleted.';
+    showModal(delModal);
+  });
   if (delModal) {
     delModal.querySelector('.dt-del-confirm').addEventListener('click', function () {
-      if (delMode === 'single') {
-        postForm({ '_dt_action': 'delete', '_dt_del_pk': delPkVal });
-      } else {
-        postForm({ '_dt_action': 'bulkdelete', '_dt_bulk_ids': delPkVal });
-      }
+      postForm(delMode === 'single'
+        ? { '_dt_action': 'delete', '_dt_del_pk': delPkVal }
+        : { '_dt_action': 'bulkdelete', '_dt_bulk_ids': delPkVal });
     });
-    delModal.querySelector('.dt-del-cancel').addEventListener('click', function () {
-      delModal.classList.add('hidden');
-      unlockScroll();
-    });
-    delModal.addEventListener('click', function (e) {
-      if (e.target === delModal) { delModal.classList.add('hidden'); unlockScroll(); }
-    });
+    bindModalClose(delModal, 'dt-del-cancel');
   }
 
   if (window.lucide) lucide.createIcons({ attrs: { class: 'shrink-0' } });
 
-  root.querySelectorAll('.dt-alert[data-auto-dismiss]').forEach(function (el) {
+  root.querySelectorAll('.dt-alert[data-auto-dismiss]').forEach(function (al) {
     setTimeout(function () {
-      el.style.transition = 'opacity 0.5s';
-      el.style.opacity = '0';
-      setTimeout(function () { el.remove(); }, 500);
-    }, parseInt(el.dataset.autoDismiss));
+      al.style.transition = 'opacity 0.5s'; al.style.opacity = '0';
+      setTimeout(function () { al.remove(); }, 500);
+    }, parseInt(al.dataset.autoDismiss));
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      if (modal && !modal.classList.contains('hidden')) { modal.classList.add('hidden'); unlockScroll(); }
-      if (delModal && !delModal.classList.contains('hidden')) { delModal.classList.add('hidden'); unlockScroll(); }
-      if (createModal && !createModal.classList.contains('hidden')) {
-        createModal.classList.add('hidden');
-        unlockScroll();
-        resetCreateForm();
+    if (e.key !== 'Escape') return;
+    modals.forEach(function (m) {
+      if (m && !m.classList.contains('hidden')) {
+        hideModal(m);
+        if (m === createModal) resetCreateForm();
       }
-    }
+    });
   });
 
   render();

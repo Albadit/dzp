@@ -86,6 +86,7 @@ img.dnn-scale-img {
 .dnnFormItem input[type=password],
 .dnnFormItem input[type=search],
 .dnnFormItem input[type=text],
+.dnnFormItem input[type=checkbox],
 .dnnFormItem select,
 .dnnFormItem textarea {
   background: var(--dnn-color-background, #fff);
