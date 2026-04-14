@@ -1,0 +1,8 @@
+<h3>Table DZP v01.00.00</h3>
+<ul>
+    <li>Initial release</li>
+    <li>Item listing (Index view)</li>
+    <li>Item create/edit (Edit view)</li>
+    <li>Item delete</li>
+    <li>SQL data provider with stored procedures</li>
+</ul>

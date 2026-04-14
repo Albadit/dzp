@@ -1,4 +1,4 @@
-@using DZP.RouteContext
+@using DZP.CommunityAuth
 @using DotNetNuke.Entities.Users
 @using DotNetNuke.Entities.Portals
 @using System.Web
@@ -9,15 +9,15 @@
   var debugLog = new List<string>();
   debugLog.Add("Page started");
 
-  RouteContext rc = null;
+  CommunityAuth rc = null;
   try
   {
-    rc = RouteContext.Current;
-    debugLog.Add("RouteContext.Current = " + (rc != null ? "OK" : "NULL"));
+    rc = CommunityAuth.Current;
+    debugLog.Add("CommunityAuth.Current = " + (rc != null ? "OK" : "NULL"));
   }
   catch (Exception ex)
   {
-    debugLog.Add("RouteContext.Current ERROR: " + ex.Message);
+    debugLog.Add("CommunityAuth.Current ERROR: " + ex.Message);
   }
 
   var user = Dnn.User;
@@ -62,15 +62,15 @@
 
   /* ── Groepen (communities this user belongs to) ── */
   var groups = user != null && user.UserID > 0
-    ? RouteContext.GetUserCommunities(user)
-    : new List<RouteContext.CommunityInfo>();
+    ? CommunityAuth.GetUserCommunities(user)
+    : new List<CommunityAuth.CommunityInfo>();
 
   /* ── Community Groups for current community ── */
   var communityId = rc != null ? rc.CommunityId : 0;
-  var allCommunityGroups = RouteContext.GetAllCommunityGroups(communityId);
+  var allCommunityGroups = CommunityAuth.GetAllCommunityGroups(communityId);
   var userGroups = user != null && user.UserID > 0
-    ? RouteContext.GetUserGroups(user)
-    : new List<RouteContext.GroupInfo>();
+    ? CommunityAuth.GetUserGroups(user)
+    : new List<CommunityAuth.GroupInfo>();
 
   /* ── Build visible tags (same logic as Blog6/ListMain) ── */
   var visibleTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

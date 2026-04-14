@@ -1,0 +1,25 @@
+-- MVC Module Uninstall Script
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_GetItems]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_GetItems]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_GetItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_GetItem]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_AddItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_AddItem]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_UpdateItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_UpdateItem]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_DeleteItem]') AND type in (N'P'))
+    DROP PROCEDURE {databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_DeleteItem]
+GO
+
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_Items]') AND type in (N'U'))
+    DROP TABLE {databaseOwner}[{objectQualifier}Dnn_Modules_TableDZP_Items]
+GO

@@ -180,8 +180,9 @@
         }
         var row = document.createElement('div');
         row.className = 'column-row';
+        row.setAttribute('draggable', 'true');
         row.innerHTML =
-            '<span class="col-drag-handle" title="Drag to reorder"><i data-lucide="grip-vertical"></i></span>' +
+            '<span class="drag-handle" title="Drag to reorder"><i data-lucide="grip-vertical"></i></span>' +
             '<input type="text" class="col-key" value="' + escHtml(key || '') + '" placeholder="Column Key" />' +
             '<input type="text" class="col-label" value="' + escHtml(label || '') + '" placeholder="Display Label" />' +
             '<div class="col-type-ms"></div>' +
@@ -210,39 +211,33 @@
         if (window.lucide) lucide.createIcons();
     });
 
-    // ── Column drag-and-drop reorder (handle-only) ──
+    container.addEventListener('click', function (e) {
+        var btn = e.target.closest('.remove-col');
+        if (btn) btn.closest('.column-row').remove();
+    });
+
+    // ── Drag-and-drop column reorder ──
 
     var dragRow = null;
-
-    container.addEventListener('mousedown', function (e) {
-        var handle = e.target.closest('.col-drag-handle');
-        if (!handle) return;
-        var row = handle.closest('.column-row');
-        if (row) row.setAttribute('draggable', 'true');
-    });
-
-    document.addEventListener('mouseup', function () {
-        var rows = container.querySelectorAll('.column-row[draggable]');
-        for (var i = 0; i < rows.length; i++) rows[i].removeAttribute('draggable');
-    });
 
     container.addEventListener('dragstart', function (e) {
         var row = e.target.closest('.column-row');
         if (!row) return;
         dragRow = row;
-        row.classList.add('col-dragging');
+        row.classList.add('column-dragging');
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', '');
     });
 
     container.addEventListener('dragend', function (e) {
         if (dragRow) {
-            dragRow.classList.remove('col-dragging');
-            dragRow.removeAttribute('draggable');
+            dragRow.classList.remove('column-dragging');
+            dragRow = null;
         }
-        dragRow = null;
         var rows = container.querySelectorAll('.column-row');
-        for (var i = 0; i < rows.length; i++) rows[i].classList.remove('col-drag-over');
+        for (var i = 0; i < rows.length; i++) {
+            rows[i].classList.remove('column-drag-over');
+        }
     });
 
     container.addEventListener('dragover', function (e) {
@@ -251,8 +246,10 @@
         var target = e.target.closest('.column-row');
         if (!target || target === dragRow) return;
         var rows = container.querySelectorAll('.column-row');
-        for (var i = 0; i < rows.length; i++) rows[i].classList.remove('col-drag-over');
-        target.classList.add('col-drag-over');
+        for (var i = 0; i < rows.length; i++) {
+            rows[i].classList.remove('column-drag-over');
+        }
+        target.classList.add('column-drag-over');
     });
 
     container.addEventListener('drop', function (e) {
@@ -260,18 +257,14 @@
         var target = e.target.closest('.column-row');
         if (!target || !dragRow || target === dragRow) return;
         var rows = Array.prototype.slice.call(container.querySelectorAll('.column-row'));
-        var fromIdx = rows.indexOf(dragRow);
-        var toIdx = rows.indexOf(target);
-        if (fromIdx < toIdx) {
+        var dragIdx = rows.indexOf(dragRow);
+        var targetIdx = rows.indexOf(target);
+        if (dragIdx < targetIdx) {
             target.parentNode.insertBefore(dragRow, target.nextSibling);
         } else {
             target.parentNode.insertBefore(dragRow, target);
         }
-    });
-
-    container.addEventListener('click', function (e) {
-        var btn = e.target.closest('.remove-col');
-        if (btn) btn.closest('.column-row').remove();
+        target.classList.remove('column-drag-over');
     });
 
     // ── Detect columns ──
@@ -297,7 +290,7 @@
             }
             detectBtn.disabled = true;
             detectStatus.textContent = 'Detecting...';
-            fetch('/DesktopModules/MVC/AdvancedTable/DetectColumns.ashx', { method: 'POST', body: fd })
+            fetch('/DesktopModules/MVC/Dnn.Modules.TableDZP/DetectColumns.ashx', { method: 'POST', body: fd })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     detectBtn.disabled = false;
@@ -443,7 +436,8 @@
             cfg.Columns.push({
                 Key: key, Label: r.querySelector('.col-label').value.trim() || key,
                 Type: type, Pattern: getColumnQuery(r, type) || null,
-                Required: false, Sortable: true, Filterable: true
+                Required: false, Sortable: true, Filterable: true,
+                SortOrder: i
             });
         }
         var pRows = permContainer.querySelectorAll('.perm-row');

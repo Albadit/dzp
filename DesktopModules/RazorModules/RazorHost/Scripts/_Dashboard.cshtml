@@ -1,11 +1,11 @@
-@using DZP.RouteContext
+@using DZP.CommunityAuth
 @using System.Web
 
 @{
     var user = Dnn.User;
     var communities = (user != null && user.UserID > 0)
-        ? RouteContext.GetUserCommunities(user)
-        : new List<RouteContext.CommunityInfo>();
+        ? CommunityAuth.GetUserCommunities(user)
+        : new List<CommunityAuth.CommunityInfo>();
 
     // Single community → skip dashboard and go straight to it (unless superuser)
     if (communities.Count == 1 && (user == null || !user.IsSuperUser))

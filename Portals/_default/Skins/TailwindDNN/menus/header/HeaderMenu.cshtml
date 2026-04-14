@@ -20,7 +20,7 @@
     var popupLinks = config["popupLinks"] as System.Collections.ArrayList;
 
     // --- Route context (validated community/company, cached per request) ---
-    var rc = DZP.RouteContext.RouteContext.Current;
+    var rc = DZP.CommunityAuth.CommunityAuth.Current;
 
     // --- URL state ---
     var rawUrl = HttpContext.Current.Request.RawUrl;
@@ -49,7 +49,7 @@
         }
     }
 
-    // Community from RouteContext (already validated + membership checked)
+    // Community from CommunityAuth (already validated + membership checked)
     var hasCommunity = rc != null && !string.IsNullOrEmpty(rc.CommunitySlug);
     var communityName = hasCommunity ? rc.CommunityName : "";
     var slug          = hasCommunity ? rc.CommunitySlug : "";

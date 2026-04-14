@@ -108,13 +108,46 @@ function initDataTable(tid) {
     form.submit();
   }
 
-  function validateInputs(container, cls) {
-    var valid = true;
+  function clearValidation(container, cls) {
     container.querySelectorAll('.' + cls).forEach(function (inp) {
-      if (!inp.checkValidity()) { inp.reportValidity(); valid = false; }
+      inp.classList.remove('dt-invalid');
+      var err = inp.parentElement.querySelector('.dt-field-error');
+      if (err) err.remove();
     });
+  }
+
+  function validateInputs(container, cls) {
+    clearValidation(container, cls);
+    var valid = true;
+    var firstInvalid = null;
+    container.querySelectorAll('.' + cls).forEach(function (inp) {
+      if (!inp.checkValidity()) {
+        valid = false;
+        inp.classList.add('dt-invalid');
+        var msg = inp.validationMessage || 'This field is required';
+        var span = document.createElement('span');
+        span.className = 'dt-field-error';
+        span.textContent = msg;
+        inp.parentElement.appendChild(span);
+        if (!firstInvalid) firstInvalid = inp;
+      }
+    });
+    if (firstInvalid) firstInvalid.focus();
     return valid;
   }
+
+  function bindLiveValidation(container, cls) {
+    container.addEventListener('input', function (e) {
+      if (!e.target.classList.contains(cls)) return;
+      if (e.target.checkValidity()) {
+        e.target.classList.remove('dt-invalid');
+        var err = e.target.parentElement.querySelector('.dt-field-error');
+        if (err) err.remove();
+      }
+    });
+  }
+  if (modal) bindLiveValidation(modal, 'dt-modal-input');
+  if (createModal) bindLiveValidation(createModal, 'dt-create-input');
 
   var editPk = null, delMode = null, delPkVal = null;
 
@@ -280,6 +313,7 @@ function initDataTable(tid) {
     if (!createModal) return;
     createModal.querySelectorAll('.dt-create-input').forEach(function (inp) { inp.value = ''; });
     resetLookups(createModal, 'dt-create-lookup');
+    clearValidation(createModal, 'dt-create-input');
   }
 
   // --- Create modal ---
@@ -326,7 +360,7 @@ function initDataTable(tid) {
       for (var k in mf) fields[k] = mf[k];
       postForm(fields);
     });
-    bindModalClose(modal, 'dt-modal-close');
+    bindModalClose(modal, 'dt-modal-close', function () { clearValidation(modal, 'dt-modal-input'); });
   }
 
   // --- Delete modal ---

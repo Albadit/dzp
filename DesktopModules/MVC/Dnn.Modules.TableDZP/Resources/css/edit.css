@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Edit.cshtml – AdvancedTable config form styles
+   Edit.cshtml – Dnn.Modules.TableDZP config form styles
    ========================================================================== */
 
 /* ---- DNN base style reset ---- */
@@ -35,7 +35,7 @@
 
 /* ---- Outer wrapper ---- */
 [id^="EditConfig-"] {
-  max-width: 48rem;
+  width: 48rem;
   padding: 0 8px;
 }
 
@@ -46,7 +46,7 @@
 
 /* ---- Form Container ---- */
 .at-edit {
-  /* max-width: 44rem; */
+  max-width: 45rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -327,38 +327,44 @@
   padding: 0.375rem 4rem 0.375rem 0;
   flex-wrap: wrap;
   position: relative;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
-.at-edit .column-row.col-dragging {
-  opacity: 0.4;
-}
-
-.at-edit .column-row.col-drag-over {
-  border-top: 2px solid var(--primary-500, #0ea5e9);
-}
-
-.at-edit .col-drag-handle {
+/* ---- Drag Handle ---- */
+.at-edit .drag-handle {
   display: flex;
   align-items: center;
+  justify-content: center;
   cursor: grab;
   color: var(--default-400);
   padding: 0.25rem;
-  flex: 0 0 auto;
+  flex-shrink: 0;
   transition: color 0.15s ease;
+  touch-action: none;
 }
 
-.at-edit .col-drag-handle:hover {
+.at-edit .drag-handle:hover {
   color: var(--default-600);
 }
 
-.at-edit .col-drag-handle:active {
+.at-edit .drag-handle:active {
   cursor: grabbing;
 }
 
-.at-edit .col-drag-handle svg {
+.at-edit .drag-handle svg {
   width: 1rem;
   height: 1rem;
+}
+
+/* ---- Dragging States ---- */
+.at-edit .column-row.column-dragging {
+  opacity: 0.4;
+  background-color: var(--default-100);
+  border-radius: var(--layout-rounded-small);
+}
+
+.at-edit .column-row.column-drag-over {
+  border-top: 2px solid var(--primary-500);
 }
 
 .at-edit .column-row input[type="text"] {

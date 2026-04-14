@@ -93,14 +93,14 @@
         }
     }
 
-    // Community from RouteContext (already validated + membership checked)
-    var rc           = DZP.RouteContext.RouteContext.Current;
+    // Community from CommunityAuth (already validated + membership checked)
+    var rc           = DZP.CommunityAuth.CommunityAuth.Current;
     var hasCommunity = rc != null && !string.IsNullOrEmpty(rc.CommunitySlug);
     var slug         = hasCommunity ? rc.CommunitySlug : "";
     if (hasCommunity) { ctx = "community"; }
 
     // Hide dashboard link when user belongs to exactly one community
-    var userComms    = DZP.RouteContext.RouteContext.GetUserCommunities(
+    var userComms    = DZP.CommunityAuth.CommunityAuth.GetUserCommunities(
                            DotNetNuke.Entities.Portals.PortalSettings.Current?.UserInfo);
 
     // --- Portal / user info for shell ---
@@ -109,7 +109,7 @@
 
     var hideDashboard = !isSuperUser && userComms != null && userComms.Count == 1;
 
-    // --- Build role set from RouteContext (no extra SQL needed) ---
+    // --- Build role set from CommunityAuth (no extra SQL needed) ---
     var freshRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     freshRoles.Add("All Users");
     if (ps != null && ps.UserInfo != null && ps.UserInfo.UserID > 0)

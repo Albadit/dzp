@@ -70,3 +70,18 @@
 .dt-check-row:active {
   transform: scale(0.93);
 }
+
+/* Validation errors */
+.dt-invalid {
+  border-color: var(--base-danger, #ef4444) !important;
+}
+.dt-invalid:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--base-danger, #ef4444) 25%, transparent) !important;
+}
+.dt-field-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--base-danger, #ef4444);
+}

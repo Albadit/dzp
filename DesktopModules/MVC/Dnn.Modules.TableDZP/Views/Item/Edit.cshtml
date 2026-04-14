@@ -1,11 +1,11 @@
-@model AdvancedTable.Models.DataTableConfig
+@model Dnn.Modules.TableDZP.Models.DataTableConfig
 
 @using DotNetNuke.Web.Mvc.Helpers
 @using Newtonsoft.Json
 @using System.Linq
 @using System.Collections.Generic
 
-<link rel="stylesheet" href="/DesktopModules/MVC/AdvancedTable/Resources/css/edit.css" />
+<link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/edit.css" />
 @Html.Partial("_Select")
 
 <div id="EditConfig-@Dnn.ModuleContext.ModuleId">
@@ -203,8 +203,8 @@
                             }
                             catch { }
                         }
-                        <div class="column-row">
-                            <span class="col-drag-handle" title="Drag to reorder"><i data-lucide="grip-vertical"></i></span>
+                        <div class="column-row" draggable="true">
+                            <span class="drag-handle" title="Drag to reorder"><i data-lucide="grip-vertical"></i></span>
                             <input type="text" class="col-key" value="@col.Key" placeholder="Column Key" />
                             <input type="text" class="col-label" value="@col.Label" placeholder="Display Label" />
                             <div class="col-type-ms" data-selected="@col.Type"></div>
@@ -252,4 +252,4 @@
         users: @Html.Raw(JsonConvert.SerializeObject((List<string>)ViewBag.DnnUsers))
     };
 </script>
-<script type="text/javascript" src="/DesktopModules/MVC/AdvancedTable/Resources/js/edit.js"></script>
+<script type="text/javascript" src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/edit.js"></script>

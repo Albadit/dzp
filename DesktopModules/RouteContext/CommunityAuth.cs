@@ -5,7 +5,7 @@ using System.Web;
 using DotNetNuke.Entities.Portals;
 using DotNetNuke.Entities.Users;
 
-namespace DZP.RouteContext
+namespace DZP.CommunityAuth
 {
     /// <summary>
     /// Validated per-request route context. Returns null when:
@@ -15,9 +15,9 @@ namespace DZP.RouteContext
     ///  - [company] slug is in the route but not in the Company table
     /// Result is cached in HttpContext.Items for the entire request.
     /// </summary>
-    public class RouteContext
+    public class CommunityAuth
     {
-        private const string CacheKey = "RouteContext";
+        private const string CacheKey = "CommunityAuth";
         private static bool _permissionsSynced;
 
         public int CommunityId { get; private set; }
@@ -32,13 +32,13 @@ namespace DZP.RouteContext
         /// Returns the validated context for this request, or null if
         /// the route is inactive or any slug failed DB validation.
         /// </summary>
-        public static RouteContext Current
+        public static CommunityAuth Current
         {
             get
             {
                 var items = HttpContext.Current.Items;
                 if (items.Contains(CacheKey))
-                    return items[CacheKey] as RouteContext;
+                    return items[CacheKey] as CommunityAuth;
 
                 var ctx = Resolve(items);
                 items[CacheKey] = ctx; // cache null too — don't re-query
@@ -46,7 +46,7 @@ namespace DZP.RouteContext
             }
         }
 
-        private static RouteContext Resolve(System.Collections.IDictionary items)
+        private static CommunityAuth Resolve(System.Collections.IDictionary items)
         {
             // 1. RouteActive must be set by DynamicRoutes
             if (items["RouteActive"] == null)
@@ -62,7 +62,7 @@ namespace DZP.RouteContext
                 EnsureTabPermissions(connStr);
             }
 
-            var ctx = new RouteContext();
+            var ctx = new CommunityAuth();
             var ps = PortalSettings.Current;
             var user = ps?.UserInfo;
 
@@ -292,7 +292,7 @@ namespace DZP.RouteContext
         /// Used during 2sxc AJAX module re-renders where the request URL
         /// does not contain the community slug.
         /// </summary>
-        public static RouteContext ResolveFromReferer()
+        public static CommunityAuth ResolveFromReferer()
         {
             var request = HttpContext.Current?.Request;
             if (request == null) return null;
@@ -309,7 +309,7 @@ namespace DZP.RouteContext
 
             var ps = PortalSettings.Current;
             var user = ps?.UserInfo;
-            var ctx = new RouteContext
+            var ctx = new CommunityAuth
             {
                 CommunityId = community.Id,
                 CommunitySlug = community.Slug,

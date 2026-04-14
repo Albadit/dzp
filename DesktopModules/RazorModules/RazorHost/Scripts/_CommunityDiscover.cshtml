@@ -1,6 +1,6 @@
-@using DZP.RouteContext
+@using DZP.CommunityAuth
 @{
-    var rc = RouteContext.Current;
+    var rc = CommunityAuth.Current;
     var communityName = rc != null ? rc.CommunityName : "Community";
     var communitySlug = rc != null ? rc.CommunitySlug : "";
 
