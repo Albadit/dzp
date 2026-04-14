@@ -1,11 +1,11 @@
 {
   "Title": "Communities",
   "Mode": "sql",
-  "QuerySelect": "SELECT * FROM Community ORDER BY CommunityID",
+  "QuerySelect": "SELECT * FROM Community ORDER BY Id",
   "QueryInsert": "INSERT INTO Community (Name, Slug) VALUES (@Name, @Slug)",
-  "QueryUpdate": "UPDATE Community SET Name = @Name, Slug = @Slug WHERE CommunityID = @pk",
-  "QueryDelete": "DELETE FROM Community WHERE CommunityID = @pk",
-  "QueryBulkDelete": "DELETE FROM Community WHERE CommunityID IN ({ids})",
+  "QueryUpdate": "UPDATE Community SET Name = @Name, Slug = @Slug WHERE Id = @pk",
+  "QueryDelete": "DELETE FROM Community WHERE Id = @pk",
+  "QueryBulkDelete": "DELETE FROM Community WHERE Id IN ({ids})",
   "ApiBaseUrl": "",
   "ApiHeaders": "",
   "ApiSelectMethod": "GET",
@@ -22,8 +22,8 @@
   "AllowBulkDelete": true,
   "Columns": [
     {
-      "Key": "Slug",
-      "Label": "Slug",
+      "Key": "Name",
+      "Label": "Name",
       "Type": "text",
       "Pattern": null,
       "Required": false,
@@ -31,8 +31,8 @@
       "Filterable": true
     },
     {
-      "Key": "Name",
-      "Label": "Name",
+      "Key": "Slug",
+      "Label": "Slug",
       "Type": "text",
       "Pattern": null,
       "Required": false,
