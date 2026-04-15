@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph Platform Niveau
+        SA[Super Beheerder<br/>Platformbreed beheer<br/>Alle gebieden + gebruikers]
+        B[Beheerder<br/>Gebieden aanmaken<br/>Versies toewijzen<br/>Global nieuws]
+    end
+
+    subgraph Gebied Niveau
+        CB[Community Beheerder<br/>Gebruikers/rollen beheren<br/>Tags + content modereren<br/>Documenten + bedrijven beheren<br/>Nieuws plaatsen]
+        AB[Algemeen Bestuur<br/>Officiële communicatie<br/>Inzage alle gebiedscontent<br/>Bestuursdocumenten]
+    end
+
+    subgraph Bedrijf Niveau
+        BE[Bedrijfseigenaar<br/>Bedrijfsprofiel beheren<br/>Managers/medewerkers toevoegen<br/>Eventueel publiceren]
+        BM[Bedrijfsmanager<br/>Bedrijfsinfo deels beheren<br/>Content consumeren<br/>Deelnemen enquêtes]
+    end
+
+    subgraph Gebruiker Niveau
+        ON[Ondernemer<br/>Nieuws lezen + filteren<br/>Deelnemen enquêtes<br/>Profiel beheren]
+        PE[Pandeigenaar<br/>Nieuws lezen + filteren<br/>Documenten bekijken<br/>Profiel beheren]
+        WM[Winkelmedewerker<br/>Vooral consumeren<br/>Minimale profielrechten<br/>Geen beheer]
+    end
+
+    SA --> B
+    B --> CB
+    CB --> AB
+    CB --> BE
+    BE --> BM
+    CB --> ON
+    CB --> PE
+    ON --> WM
+    BM --> WM

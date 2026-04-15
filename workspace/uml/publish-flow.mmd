@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor Auteur as Community Beheerder
+    participant NB as Nieuwsberichten
+    participant GEB as Gebiedsfilter
+    participant TL as Tijdlijn
+    actor Lezer as Ondernemer
+
+    Note over Auteur,Lezer: Bericht aanmaken & publiceren
+
+    Auteur->>NB: Nieuw bericht aanmaken
+    NB->>NB: Type kiezen (nieuws/event/enquête/waarschuwing)
+    NB->>NB: Gebied selecteren
+    NB->>NB: Tags toevoegen
+    NB->>NB: Bijlagen uploaden
+    NB->>NB: Publicatiedatum instellen
+
+    alt Concept opslaan
+        Auteur->>NB: Opslaan als concept
+        NB-->>Auteur: Concept bewaard
+    else Direct publiceren
+        Auteur->>NB: Publiceren
+        NB->>GEB: Bericht naar gebied(en)
+        GEB->>TL: Bericht zichtbaar in tijdlijn
+    end
+
+    Note over Auteur,Lezer: Bericht lezen & filteren
+
+    Lezer->>TL: Tijdlijn openen
+    TL->>GEB: Alleen eigen gebieden ophalen
+    GEB-->>TL: Berichten gefilterd op gebied
+    TL-->>Lezer: Chronologische feed
+
+    Lezer->>TL: Filter op type + tags
+    TL-->>Lezer: Gefilterde resultaten
+
+    Lezer->>TL: Zoeken
+    TL-->>Lezer: Zoekresultaten

@@ -1,0 +1,53 @@
+flowchart TB
+    subgraph DZP Community Platform
+
+        subgraph Kernmodules MVP
+            HOME[Home / Dashboard<br/>Laatste nieuws<br/>Aankomende events<br/>Snelle links]
+            TL[Tijdlijn / Feed<br/>Chronologische berichten<br/>Filter op type + tags<br/>Zoeken]
+            NB[Nieuwsberichten<br/>Aanmaken / Beheren<br/>Types: nieuws, event,<br/>enquête, waarschuwing]
+            DOC[Documentenbibliotheek<br/>Mappenstructuur<br/>Upload / Download<br/>Rolgebaseerd beheer]
+            BDR[Bedrijven<br/>Bedrijfsprofielen<br/>Contactpersonen<br/>Categorieën]
+            GB[Gebiedenbeheer<br/>Gebieden aanmaken<br/>Versie toewijzen<br/>Gebruikers + rollen]
+        end
+
+        subgraph Toegang & Autorisatie
+            AUTH[Authenticatie<br/>Login / Registratie]
+            RBAC[Rolgebaseerde<br/>Toegangscontrole]
+            PRIV[Privacy<br/>Profielzichtbaarheid<br/>Bedrijfsvelden]
+        end
+
+        subgraph Gebiedsmodel
+            GEB[Gebied<br/>Harde scheiding<br/>content + toegang]
+            VER[Abonnement<br/>Bronze / Silver / Gold<br/>Feature toggles]
+        end
+
+        subgraph Content
+            TYPES[Berichttypen<br/>Nieuws - Evenement<br/>Enquête - Waarschuwing]
+            TAGS[Tags & Filters<br/>Categorisatie<br/>Zoek & Filter]
+            BIJL[Bijlagen<br/>Bestanden bij<br/>berichten]
+        end
+
+    end
+
+    AUTH --> RBAC
+    RBAC --> HOME
+    RBAC --> TL
+    RBAC --> NB
+    RBAC --> DOC
+    RBAC --> BDR
+    RBAC --> GB
+
+    GEB --> HOME
+    GEB --> TL
+    GEB --> NB
+    GEB --> DOC
+    GEB --> BDR
+    VER --> GEB
+
+    NB --> TYPES
+    NB --> TAGS
+    NB --> BIJL
+    TYPES --> TL
+    TAGS --> TL
+
+    PRIV --> BDR

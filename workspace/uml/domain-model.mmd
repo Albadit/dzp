@@ -1,0 +1,152 @@
+classDiagram
+    direction TB
+
+    class Gebied {
+        +int Id
+        +string Naam
+        +string Slug
+        +GebiedType Type
+        +string Omschrijving
+        +AbonnementVersie Versie
+        +bool IsActief
+    }
+
+    class User {
+        +int Id
+        +string Naam
+        +string Email
+        +string Functie
+        +ProfielZichtbaarheid Zichtbaarheid
+        +bool IsActief
+    }
+
+    class Bedrijf {
+        +int Id
+        +string Bedrijfsnaam
+        +string Omschrijving
+        +string Contactgegevens
+        +string Telefoon
+        +string Logo
+        +string Categorie
+    }
+
+    class Bericht {
+        +int Id
+        +string Titel
+        +string Inhoud
+        +BerichtType Type
+        +DateTime Publicatiedatum
+        +bool IsGlobal
+        +bool IsConcept
+    }
+
+    class Evenement {
+        +DateTime StartDatum
+        +DateTime EindDatum
+        +string Locatie
+    }
+
+    class Enquete {
+        +DateTime SluitingsDatum
+    }
+
+    class EnqueteVraag {
+        +string Vraag
+        +VraagType Type
+    }
+
+    class Waarschuwing {
+        +PrioriteitNiveau Prioriteit
+    }
+
+    class Document {
+        +int Id
+        +string Naam
+        +string Bestandspad
+        +DateTime UploadDatum
+    }
+
+    class DocumentMap {
+        +int Id
+        +string Naam
+        +int ParentMapId
+    }
+
+    class Tag {
+        +int Id
+        +string Naam
+    }
+
+    class Bijlage {
+        +int Id
+        +string Bestandsnaam
+        +string Pad
+    }
+
+    class GebiedGebruiker {
+        +Rol Rol
+        +DateTime ToegevoegdOp
+    }
+
+    class BedrijfGebruiker {
+        +BedrijfsRol Rol
+    }
+
+    class AbonnementVersie {
+        <<enumeration>>
+        Bronze
+        Silver
+        Gold
+    }
+
+    class GebiedType {
+        <<enumeration>>
+        Winkelcentrum
+        Winkelstraat
+        Bedrijventerrein
+        Stadsdeel
+        Ondernemersvereniging
+    }
+
+    class BerichtType {
+        <<enumeration>>
+        Nieuws
+        Evenement
+        Enquete
+        Waarschuwing
+    }
+
+    class Rol {
+        <<enumeration>>
+        SuperBeheerder
+        Beheerder
+        CommunityBeheerder
+        AlgemeenBestuur
+        Ondernemer
+        Pandeigenaar
+        Bedrijfseigenaar
+        Bedrijfsmanager
+        Winkelmedewerker
+    }
+
+    Gebied "1" -- "*" GebiedGebruiker
+    User "1" -- "*" GebiedGebruiker
+    Gebied "1" -- "*" Bericht
+    Gebied "1" -- "*" Bedrijf
+    Gebied "1" -- "*" DocumentMap
+    Gebied "1" -- "1" AbonnementVersie
+
+    User "1" -- "*" Bericht : publiceert
+    Bericht "*" -- "*" Tag
+    Bericht "1" -- "*" Bijlage
+
+    Evenement --|> Bericht
+    Enquete --|> Bericht
+    Waarschuwing --|> Bericht
+    Enquete "1" -- "*" EnqueteVraag
+
+    DocumentMap "1" -- "*" Document
+    DocumentMap "0..1" -- "*" DocumentMap : parent
+
+    Bedrijf "1" -- "*" BedrijfGebruiker
+    User "1" -- "*" BedrijfGebruiker
