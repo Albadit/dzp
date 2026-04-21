@@ -1,0 +1,140 @@
+@*
+    Shared select dropdown — Razor + Tailwind.
+    Uses <details>/<summary> for native toggle and peer-checked: for visual state.
+    Requires: Tailwind CSS v4 browser build + Lucide icons (loaded by TailwindDNN skin).
+
+    Include once per page via @Html.Partial("_Select").
+    Provides:
+      1. Server-rendered <details> widget when ViewData options are supplied.
+      2. Inline MultiSelect.create() bridge (emitted once) so edit.js / module.js
+         can dynamically create matching widgets at runtime.
+
+    ViewData parameters (all optional):
+      "ms-id"           – unique id for the component
+      "ms-name"         – form input name (defaults to ms-id)
+      "ms-placeholder"  – placeholder text
+      "ms-options"      – JSON string of [{value,label}]
+      "ms-selected"     – JSON string of ["val1","val2"]
+      "ms-single"       – "true" for single-select (radio), omit for multi-select (checkbox)
+*@
+@{
+    var msId        = ViewData["ms-id"] != null ? ViewData["ms-id"].ToString() : "";
+    var msName      = ViewData["ms-name"] != null ? ViewData["ms-name"].ToString() : msId;
+    var placeholder = ViewData["ms-placeholder"] != null ? ViewData["ms-placeholder"].ToString() : "Select\u2026";
+    var optionsJson = ViewData["ms-options"] != null ? ViewData["ms-options"].ToString() : "[]";
+    var selectedJson= ViewData["ms-selected"] != null ? ViewData["ms-selected"].ToString() : "[]";
+    var isSingle    = ViewData["ms-single"] != null && ViewData["ms-single"].ToString() == "true";
+
+    var optionsArr  = Newtonsoft.Json.Linq.JArray.Parse(optionsJson);
+    var selectedArr = Newtonsoft.Json.Linq.JArray.Parse(selectedJson);
+    var selectedSet = new System.Collections.Generic.HashSet<string>();
+    foreach (var s in selectedArr) { selectedSet.Add(s.ToString()); }
+
+    // Build trigger display text
+    var displayText  = placeholder;
+    var isPlaceholder = true;
+    if (isSingle && selectedSet.Count > 0)
+    {
+        foreach (var opt in optionsArr)
+        {
+            if (selectedSet.Contains(opt["value"].ToString()))
+            {
+                displayText   = opt["label"].ToString();
+                isPlaceholder = false;
+                break;
+            }
+        }
+    }
+    else if (!isSingle && selectedSet.Count > 0)
+    {
+        var labels = new System.Collections.Generic.List<string>();
+        foreach (var opt in optionsArr)
+        {
+            if (selectedSet.Contains(opt["value"].ToString()))
+            {
+                labels.Add(opt["label"].ToString());
+            }
+        }
+        displayText   = string.Join(", ", labels);
+        isPlaceholder = false;
+    }
+
+    var inputType = isSingle ? "radio" : "checkbox";
+}
+@if (!string.IsNullOrEmpty(msId))
+{
+    <details id="@msId" class="group relative inline-block w-full text-sm font-[inherit]">
+        <summary class="flex items-center gap-[0.3rem] min-h-10 px-2.5 py-[0.35rem]
+                        bg-white border border-default-300 rounded-lg
+                        cursor-pointer select-none outline-none
+                        transition-[border-color,box-shadow] duration-150
+                        hover:border-default-400
+                        group-open:border-primary-500 group-open:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]
+                        list-none [&::-webkit-details-marker]:hidden">
+            @if (isPlaceholder)
+            {
+                <span class="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap leading-[1.75] text-[0.8125rem] text-default-400">@displayText</span>
+            }
+            else if (isSingle)
+            {
+                <span class="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap leading-[1.75] text-sm text-default-900">@displayText</span>
+            }
+            else
+            {
+                <span class="flex flex-1 flex-wrap gap-1 min-w-0">
+                    @foreach (var opt in optionsArr)
+                    {
+                        if (selectedSet.Contains(opt["value"].ToString()))
+                        {
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700">@opt["label"]</span>
+                        }
+                    }
+                </span>
+            }
+            <span class="shrink-0 ml-auto flex items-center text-default-400
+                         transition-transform duration-200 group-open:rotate-180">
+                <i data-lucide="chevron-up" class="size-4"></i>
+            </span>
+        </summary>
+
+        <div class="absolute z-99999 left-0 right-0 mt-1
+                    bg-white border border-default-200 rounded-xl
+                    shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col">
+            <div class="overflow-y-auto max-h-72 py-1">
+                @if (optionsArr.Count == 0)
+                {
+                    <div class="py-3 px-4 text-center text-[0.8125rem] text-default-400">No options</div>
+                }
+                @foreach (var opt in optionsArr)
+                {
+                    var val   = opt["value"].ToString();
+                    var label = opt["label"].ToString();
+                    var isSel = selectedSet.Contains(val);
+                    <label class="flex items-center justify-between gap-4 px-4 py-2.5
+                                  cursor-pointer select-none transition-colors
+                                  has-checked:bg-primary-50
+                                  hover:bg-primary-50 has-checked:hover:bg-primary-100">
+                        @if (isSel)
+                        {
+                            <input type="@inputType" name="@msName" value="@val" checked="checked" class="peer sr-only" />
+                        }
+                        else
+                        {
+                            <input type="@inputType" name="@msName" value="@val" class="peer sr-only" />
+                        }
+                        <span class="text-sm font-normal text-default-800 whitespace-nowrap
+                                     peer-checked:font-medium peer-checked:text-primary-700">@label</span>
+                        <span class="hidden peer-checked:flex shrink-0 items-center text-primary-600 leading-none">
+                            <i data-lucide="check" class="size-4"></i>
+                        </span>
+                    </label>
+                }
+            </div>
+        </div>
+    </details>
+}
+@if (HttpContext.Current.Items["_select_bridge_loaded"] == null)
+{
+    HttpContext.Current.Items["_select_bridge_loaded"] = true;
+<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/select.js"></script>
+}

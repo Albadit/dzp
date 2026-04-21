@@ -166,7 +166,7 @@
         }
     }
 
-    function createColumnRow(key, label, type, query) {
+    function createColumnRow(key, label, type, query, required) {
         var isSelect = type === 'select' || type === 'multiselect';
         var sourceMode = 'sql', apiMethod = 'GET', apiPath = '', sqlQuery = query || '';
         if (isSelect && query && query.charAt(0) === '{') {
@@ -187,6 +187,7 @@
             '<input type="text" class="col-label" value="' + escHtml(label || '') + '" placeholder="Display Label" />' +
             '<div class="col-type-ms"></div>' +
             (isSelect ? buildQueryWrapHtml(sourceMode, sqlQuery, apiMethod, apiPath) : '') +
+            '<label class="col-required-lbl" title="Required"><input type="checkbox" class="col-required"' + (required ? ' checked' : '') + ' /> Required</label>' +
             '<button type="button" class="remove-col"><i data-lucide="circle-x"></i></button>';
         var typeMs = row.querySelector('.col-type-ms');
         typeMs._ms = initColTypeSelect(typeMs, type || '');
@@ -207,7 +208,7 @@
     }
 
     document.getElementById('addColumn').addEventListener('click', function () {
-        container.appendChild(createColumnRow('', '', 'text', ''));
+        container.appendChild(createColumnRow('', '', 'text', '', false));
         if (window.lucide) lucide.createIcons();
     });
 
@@ -306,7 +307,7 @@
                     for (var j = 0; j < data.columns.length; j++) {
                         if (!existing[data.columns[j].Key.toLowerCase()]) {
                             var c = data.columns[j];
-                            container.appendChild(createColumnRow(c.Key, c.Label, c.Type, ''));
+                            container.appendChild(createColumnRow(c.Key, c.Label, c.Type, '', false));
                             added++;
                         }
                     }
@@ -433,10 +434,11 @@
             if (!key) continue;
             var tMs = r.querySelector('.col-type-ms');
             var type = tMs._ms ? tMs._ms.getValue() : '';
+            var reqEl = r.querySelector('.col-required');
             cfg.Columns.push({
                 Key: key, Label: r.querySelector('.col-label').value.trim() || key,
                 Type: type, Pattern: getColumnQuery(r, type) || null,
-                Required: false, Sortable: true, Filterable: true,
+                Required: !!(reqEl && reqEl.checked), Sortable: true, Filterable: true,
                 SortOrder: i
             });
         }
@@ -525,7 +527,7 @@
             if (cfg.Columns) {
                 for (var ci = 0; ci < cfg.Columns.length; ci++) {
                     var c = cfg.Columns[ci];
-                    container.appendChild(createColumnRow(c.Key || '', c.Label || '', c.Type || 'text', c.Pattern || ''));
+                    container.appendChild(createColumnRow(c.Key || '', c.Label || '', c.Type || 'text', c.Pattern || '', !!c.Required));
                 }
             }
             permContainer.innerHTML = '';

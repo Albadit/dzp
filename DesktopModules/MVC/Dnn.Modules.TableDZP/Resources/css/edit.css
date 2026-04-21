@@ -46,7 +46,6 @@
 
 /* ---- Form Container ---- */
 .at-edit {
-  max-width: 45rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -321,11 +320,13 @@
 
 /* ---- Column Row ---- */
 .at-edit .column-row {
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: auto minmax(8rem, 1fr) minmax(8rem, 1fr) 10rem auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 0.5rem;
+  row-gap: 0.375rem;
   align-items: center;
-  padding: 0.375rem 4rem 0.375rem 0;
-  flex-wrap: wrap;
+  padding: 0.375rem 0;
   position: relative;
   transition: background-color 0.15s ease, opacity 0.15s ease;
 }
@@ -368,22 +369,39 @@
 }
 
 .at-edit .column-row input[type="text"] {
-  width: auto !important;
+  width: 100% !important;
   max-width: none !important;
-  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.at-edit .column-row .col-required-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--default-700);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.at-edit .column-row .col-required-lbl input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
 }
 
 .at-edit .col-type-ms {
-  width: 10rem;
-  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
 }
 
 .at-edit .col-query-wrap {
-  flex: 1 1 100%;
+  grid-column: 2 / 6;
+  grid-row: 2;
   display: flex;
-  flex-wrap: wrap;
   gap: 0.5rem;
-  align-items: center;
+  align-items: flex-start;
+  min-width: 0;
 }
 
 .at-edit .col-query-wrap .col-source-mode-ms {
@@ -417,10 +435,10 @@
 }
 
 .at-edit .column-row .remove-col {
-  position: absolute;
-  top: 50%;
-  right: 1rem;
-  transform: translateY(-50%);
+  grid-column: 6;
+  grid-row: 1 / -1;
+  align-self: center;
+  justify-self: center;
   padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
   line-height: 1;

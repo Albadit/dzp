@@ -94,7 +94,7 @@
 <link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/module.css" />
 @Html.Partial("_Select")
 
-<div id="@tid" class="w-full max-w-5xl mx-auto flex flex-col gap-4 py-6" data-page-size="10" data-total="@Model.TotalRows">
+<div id="@tid" class="w-full max-w-7xl mx-auto flex flex-col gap-4 py-6" data-page-size="10" data-total="@Model.TotalRows">
 
     @if (!string.IsNullOrEmpty(config.Title))
     {
@@ -107,14 +107,14 @@
     }
     @if (!string.IsNullOrEmpty(alertMsg))
     {
-        <div class="fixed bottom-4 right-5 z-1100 flex items-center gap-2 rounded-lg px-4 py-3 text-sm dt-alert @(isSuccess ? "bg-success-50 border border-success-200 text-success-800" : "bg-danger-50 border border-danger-200 text-danger-800")" @(isSuccess ? Html.Raw("data-auto-dismiss=\"4000\"") : null)>
+        <div class="fixed bottom-4 right-5 z-1100 w-full max-w-[350px] flex items-center gap-2 rounded-lg px-4 py-3 text-sm dt-alert @(isSuccess ? "bg-success-50 border border-success-200 text-success-800" : "bg-danger-50 border border-danger-200 text-danger-800")" @(isSuccess ? Html.Raw("data-auto-dismiss=\"4000\"") : null)>
             @if (isSuccess)
             {
-                <i data-lucide="circle-check"></i>
+                <i data-lucide="circle-check" class="size-4 shrink-0"></i>
             }
             else
             {
-                <i data-lucide="circle-x"></i>
+                <i data-lucide="circle-x" class="size-4 shrink-0"></i>
             }
             @alertMsg
         </div>
@@ -208,7 +208,7 @@
                         @foreach (var col in tableColumns)
                         {
                             var cellVal = row.ContainsKey(col.Key) ? (row[col.Key] != null ? row[col.Key].ToString() : "") : "";
-                            <div class="px-4 py-3 border-t border-default-100 flex items-center group-hover:bg-default-50/50 transition-colors" data-col="@col.Key"
+                            <div class="px-4 py-3 border-t border-default-100 flex items-center group-hover:bg-default-50/50 transition-colors whitespace-nowrap" data-col="@col.Key"
                                  @if (col.Type == "select" || col.Type == "multiselect") { @Html.Raw("data-raw=\"" + Html.Encode(cellVal) + "\"") }>
                                 @if (col.Type == "select" && lookups.ContainsKey(col.Key))
                                 {
@@ -306,11 +306,11 @@
                         </label>
                         @if (col.Type == "select" && lookups.ContainsKey(col.Key))
                         {
-                            <div class="dt-modal-lookup" data-col="@col.Key"></div>
+                            <div class="dt-modal-lookup" data-col="@col.Key" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
                         }
                         else if (col.Type == "multiselect" && lookups.ContainsKey(col.Key))
                         {
-                            <div class="dt-modal-lookup" data-col="@col.Key" data-multi="true"></div>
+                            <div class="dt-modal-lookup" data-col="@col.Key" data-multi="true" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
                         }
                         else
                         {
@@ -356,11 +356,11 @@
                             </label>
                             @if (col.Type == "select" && lookups.ContainsKey(col.Key))
                             {
-                                <div class="dt-create-lookup" data-col="@col.Key"></div>
+                                <div class="dt-create-lookup" data-col="@col.Key" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
                             }
                             else if (col.Type == "multiselect" && lookups.ContainsKey(col.Key))
                             {
-                                <div class="dt-create-lookup" data-col="@col.Key" data-multi="true"></div>
+                                <div class="dt-create-lookup" data-col="@col.Key" data-multi="true" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
                             }
                             else
                             {

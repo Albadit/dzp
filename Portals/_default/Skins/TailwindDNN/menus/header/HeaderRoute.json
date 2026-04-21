@@ -6,13 +6,6 @@
   },
   "popupLinks": [
     {
-      "label": "Community",
-      "href": "[community]/home",
-      "css": "text-foreground-700",
-      "separator": "border-b border-divider",
-      "context": ["!dashboard"]
-    },
-    {
       "label": "Gebruikersprofiel bewerken",
       "href": "settings/profile",
       "css": "text-foreground-700"

@@ -1,0 +1,272 @@
+@using DZP.CommunityAuth
+@using DotNetNuke.Entities.Users
+@using DotNetNuke.Entities.Portals
+@using System.Web
+@using System.Data.SqlClient
+@using System.Configuration
+@using System.Linq
+@{
+    var rc = CommunityAuth.Current;
+    var user = Dnn.User;
+    var portalId = PortalSettings.Current != null ? PortalSettings.Current.PortalId : 0;
+
+    var communityName = rc != null ? rc.CommunityName : "Community";
+    var communitySlug = rc != null ? rc.CommunitySlug : "";
+    var communityId   = rc != null ? rc.CommunityId : 0;
+    var bannerImage   = "https://picsum.photos/seed/" + communitySlug + "/1200/400";
+
+    /* ── Fetch companies for this community ── */
+    var companies = new List<dynamic>();
+    if (communityId > 0)
+    {
+        var cs = ConfigurationManager.ConnectionStrings["SiteSqlServer"];
+        var connStr = cs != null ? cs.ConnectionString : "";
+        if (!string.IsNullOrEmpty(connStr))
+        {
+            using (var conn = new SqlConnection(connStr))
+            {
+            using (var cmd = new SqlCommand(@"
+                SELECT c.Id, c.Slug, c.Name, c.CompanyInfo,
+                       (SELECT COUNT(*) FROM UserCompany uc WHERE uc.CompanyId = c.Id) AS MemberCount
+                FROM Company c
+                WHERE c.CommunityId = @cid
+                ORDER BY c.Name", conn))
+            {
+                cmd.Parameters.AddWithValue("@cid", communityId);
+                conn.Open();
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var infoJson = reader.IsDBNull(3) ? "" : reader.GetString(3);
+                        // Try to extract a short description from CompanyInfo JSON
+                        var shortDesc = "";
+                        var address = "";
+                        if (!string.IsNullOrEmpty(infoJson))
+                        {
+                            try
+                            {
+                                var json = System.Web.Helpers.Json.Decode(infoJson);
+                                if (json != null)
+                                {
+                                    shortDesc = json.about ?? json.description ?? "";
+                                    address = json.address ?? "";
+                                }
+                            }
+                            catch { /* not valid JSON, treat as plain text */ }
+                        }
+                        if (string.IsNullOrEmpty(shortDesc) && !string.IsNullOrEmpty(infoJson) && !infoJson.TrimStart().StartsWith("{"))
+                        {
+                            shortDesc = infoJson;
+                        }
+                        if (!string.IsNullOrEmpty(shortDesc) && shortDesc.Length > 150)
+                        {
+                            shortDesc = shortDesc.Substring(0, 150) + "...";
+                        }
+
+                        companies.Add(new {
+                            Id          = reader.GetInt32(0),
+                            Slug        = reader.GetString(1),
+                            Name        = reader.GetString(2),
+                            Description = shortDesc,
+                            Address     = address,
+                            MemberCount = reader.GetInt32(4)
+                        });
+                    }
+                }
+            }
+            }
+        }
+    }
+}
+
+<main class="max-w-7xl w-full">
+    <!-- ============================================ -->
+    <!-- 1) BANNER                                     -->
+    <!-- ============================================ -->
+    <section class="w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <div class="relative min-h-48 sm:min-h-64 rounded-xl overflow-hidden">
+                <img src="@bannerImage" alt="@communityName" class="absolute inset-0 w-full h-full object-cover" />
+                <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent"></div>
+                <div class="relative flex flex-col justify-end h-full p-6 gap-1">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-white leading-tight">Bedrijven</h1>
+                    <p class="text-sm text-white/80">Alle bedrijven in @communityName</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 2) SEARCH / FILTER BAR                        -->
+    <!-- ============================================ -->
+    <section class="w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-8 pb-2">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-foreground-400 pointer-events-none"></i>
+                    <input type="text" id="companySearch" placeholder="Zoek een bedrijf..."
+                           class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-divider bg-background text-sm text-foreground-900 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-foreground-400 shrink-0">@companies.Count bedrijven</span>
+                    <div class="flex items-center rounded-lg border border-divider bg-background p-0.5">
+                        <button type="button" id="btnGrid" onclick="setView('grid')" title="Rasterweergave"
+                                class="flex items-center justify-center size-8 rounded-md transition bg-primary text-white">
+                            <i data-lucide="layout-grid" class="size-4"></i>
+                        </button>
+                        <button type="button" id="btnList" onclick="setView('list')" title="Lijstweergave"
+                                class="flex items-center justify-center size-8 rounded-md transition text-foreground-400 hover:text-foreground-700">
+                            <i data-lucide="list" class="size-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 3) COMPANIES GRID                             -->
+    <!-- ============================================ -->
+    <section class="w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            @if (companies.Count == 0)
+            {
+                <div class="flex flex-col items-center gap-3 py-16 text-center">
+                    <div class="flex items-center justify-center size-16 rounded-full bg-content2">
+                        <i data-lucide="building-2" class="size-8 text-foreground-300"></i>
+                    </div>
+                    <p class="text-sm text-foreground-400">Er zijn nog geen bedrijven in deze community.</p>
+                </div>
+            }
+            else
+            {
+                <!-- GRID VIEW -->
+                <div id="companiesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach (var company in companies)
+                    {
+                        <a href="/@communitySlug/companies/@company.Slug"
+                           class="company-card group flex flex-col gap-3 p-5 rounded-xl border border-divider bg-background hover:border-primary/40 hover:shadow-card-hover transition"
+                           data-name="@company.Name.ToLower()">
+
+                            <div class="flex items-start gap-4">
+                                <div class="flex items-center justify-center size-12 rounded-xl bg-primary/10 shrink-0">
+                                    <i data-lucide="building-2" class="size-5 text-primary"></i>
+                                </div>
+                                <div class="flex flex-col gap-1 min-w-0 flex-1">
+                                    <h3 class="text-base font-semibold text-foreground-900 group-hover:text-primary transition truncate">
+                                        @company.Name
+                                    </h3>
+                                    @if (!string.IsNullOrEmpty((string)company.Address))
+                                    {
+                                        <div class="flex items-center gap-1.5 text-xs text-foreground-400">
+                                            <i data-lucide="map-pin" class="size-3 shrink-0"></i>
+                                            <span class="truncate">@company.Address</span>
+                                        </div>
+                                    }
+                                </div>
+                                <i data-lucide="chevron-right" class="size-5 text-foreground-300 group-hover:text-primary shrink-0 mt-1 transition"></i>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty((string)company.Description))
+                            {
+                                <p class="text-sm text-foreground-500 leading-relaxed line-clamp-2">@company.Description</p>
+                            }
+
+                            <div class="flex items-center gap-3 pt-1 border-t border-divider">
+                                <div class="flex items-center gap-1.5 text-xs text-foreground-400">
+                                    <i data-lucide="users" class="size-3.5"></i>
+                                    <span>@company.MemberCount @(company.MemberCount == 1 ? "medewerker" : "medewerkers")</span>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                </div>
+
+                <!-- LIST VIEW -->
+                <div id="companiesList" class="hidden flex flex-col gap-2">
+                    @foreach (var company in companies)
+                    {
+                        <a href="/@communitySlug/companies/@company.Slug"
+                           class="company-card group flex items-center gap-4 px-4 py-3 rounded-xl border border-divider bg-background hover:border-primary/40 hover:shadow-card-hover transition"
+                           data-name="@company.Name.ToLower()">
+
+                            <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 shrink-0">
+                                <i data-lucide="building-2" class="size-4 text-primary"></i>
+                            </div>
+
+                            <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                                <h3 class="text-sm font-semibold text-foreground-900 group-hover:text-primary transition truncate">
+                                    @company.Name
+                                </h3>
+                                @if (!string.IsNullOrEmpty((string)company.Address))
+                                {
+                                    <span class="text-xs text-foreground-400 truncate">@company.Address</span>
+                                }
+                            </div>
+
+                            <div class="hidden sm:flex items-center gap-1.5 text-xs text-foreground-400 shrink-0">
+                                <i data-lucide="users" class="size-3.5"></i>
+                                <span>@company.MemberCount</span>
+                            </div>
+
+                            <i data-lucide="chevron-right" class="size-4 text-foreground-300 group-hover:text-primary shrink-0 transition"></i>
+                        </a>
+                    }
+                </div>
+
+                <div id="noResults" class="hidden flex-col items-center gap-3 py-16 text-center">
+                    <p class="text-sm text-foreground-400">Geen bedrijven gevonden.</p>
+                </div>
+            }
+        </div>
+    </section>
+</main>
+
+<script>
+(function() {
+    var input = document.getElementById('companySearch');
+    var gridEl = document.getElementById('companiesGrid');
+    var listEl = document.getElementById('companiesList');
+    var btnGrid = document.getElementById('btnGrid');
+    var btnList = document.getElementById('btnList');
+    var activeClass = 'bg-primary text-white';
+    var inactiveClass = 'text-foreground-400 hover:text-foreground-700';
+
+    function setView(mode) {
+        if (!gridEl || !listEl) return;
+        var isGrid = mode === 'grid';
+        gridEl.classList.toggle('hidden', !isGrid);
+        listEl.classList.toggle('hidden', isGrid);
+        listEl.classList.toggle('flex', !isGrid);
+        btnGrid.className = 'flex items-center justify-center size-8 rounded-md transition ' + (isGrid ? activeClass : inactiveClass);
+        btnList.className = 'flex items-center justify-center size-8 rounded-md transition ' + (isGrid ? inactiveClass : activeClass);
+        try { localStorage.setItem('companiesView', mode); } catch(e) {}
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    window.setView = setView;
+
+    try { var saved = localStorage.getItem('companiesView'); if (saved) setView(saved); } catch(e) {}
+
+    if (input) {
+        input.addEventListener('input', function() {
+            var q = this.value.toLowerCase().trim();
+            var cards = document.querySelectorAll('.company-card');
+            var visible = 0;
+            cards.forEach(function(card) {
+                var name = card.getAttribute('data-name') || '';
+                var show = !q || name.indexOf(q) !== -1;
+                card.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+            var noRes = document.getElementById('noResults');
+            if (noRes) {
+                noRes.classList.toggle('hidden', visible > 0);
+                noRes.classList.toggle('flex', visible === 0);
+            }
+        });
+    }
+})();
+</script>
+
+

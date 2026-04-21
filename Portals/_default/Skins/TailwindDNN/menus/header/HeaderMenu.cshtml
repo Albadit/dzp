@@ -70,28 +70,9 @@
     {
         if (user.IsSuperUser) { userRole = "Super User"; }
         else if (user.IsInRole("Administrators")) { userRole = "Administrators"; }
-        else if (hasCommunity)
+        else if (hasCommunity && rc.CommunityRoleNames != null && rc.CommunityRoleNames.Count > 0)
         {
-            try
-            {
-                var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
-                using (var conn = new System.Data.SqlClient.SqlConnection(connStr))
-                {
-                    conn.Open();
-                    using (var cmd = new System.Data.SqlClient.SqlCommand(
-                        "SELECT r.RoleName FROM UserCommunity uc INNER JOIN Roles r ON r.RoleID = uc.RoleId WHERE uc.UserId = @uid AND uc.CommunityId = @cid", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@uid", user.UserID);
-                        cmd.Parameters.AddWithValue("@cid", rc.CommunityId);
-                        var result = cmd.ExecuteScalar();
-                        if (result != null && result != System.DBNull.Value)
-                        {
-                            userRole = result.ToString();
-                        }
-                    }
-                }
-            }
-            catch (System.Exception) { /* ignore */ }
+            userRole = string.Join(", ", rc.CommunityRoleNames);
         }
     }
 }
@@ -109,7 +90,7 @@
     </div>
     <div class="w-full flex justify-between">
         <div class="flex gap-2.5 @(string.IsNullOrEmpty(communityName) ? "invisible" : "")">
-            <div class="sm:flex hidden h-full aspect-square object-cover rounded-xs bg-default-200 justify-center items-center font-bold">Logo</div>
+            <img src="https://picsum.photos/seed/@slug/64/64" alt="@communityName" class="sm:flex hidden h-full aspect-square object-cover rounded-sm bg-default-200" />
             <div class="lg:w-80 w-45 flex flex-col lg:justify-between justify-center">
                 <span class="lg:text-base text-sm font-bold w-full text-ellipsis overflow-hidden whitespace-nowrap">@communityName</span>
                 <div class="flex gap-2 items-center">

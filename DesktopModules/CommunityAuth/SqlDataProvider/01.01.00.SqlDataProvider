@@ -1,0 +1,33 @@
+-- ═══════════════════════════════════════════════════════════════
+--  Schema: Company & UserCompany
+--  A company belongs to exactly one community.
+--  Multiple users can belong to a company.
+-- ═══════════════════════════════════════════════════════════════
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Company' AND schema_id = SCHEMA_ID('dbo'))
+CREATE TABLE [dbo].[Company] (
+    [Id]          INT            IDENTITY(1,1) NOT NULL,
+    [CommunityId] INT           NOT NULL,
+    [Slug]        NVARCHAR(256) NOT NULL,
+    [Name]        NVARCHAR(256) NOT NULL,
+    [CompanyInfo] NVARCHAR(MAX) NULL,
+    [CreatedOn]   DATETIME2     NOT NULL CONSTRAINT [DF_Company_CreatedOn] DEFAULT (GETUTCDATE()),
+    CONSTRAINT [PK_Company]              PRIMARY KEY ([Id]),
+    CONSTRAINT [UQ_Company_Slug]         UNIQUE ([Slug]),
+    CONSTRAINT [FK_Company_Community]    FOREIGN KEY ([CommunityId])
+        REFERENCES [dbo].[Community]([Id])
+);
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'UserCompany' AND schema_id = SCHEMA_ID('dbo'))
+CREATE TABLE [dbo].[UserCompany] (
+    [Id]        INT        IDENTITY(1,1) NOT NULL,
+    [UserId]    INT        NOT NULL,
+    [CompanyId] INT        NOT NULL,
+    [CreatedOn] DATETIME2  NOT NULL CONSTRAINT [DF_UserCompany_CreatedOn] DEFAULT (GETUTCDATE()),
+    CONSTRAINT [PK_UserCompany]                PRIMARY KEY ([Id]),
+    CONSTRAINT [UQ_UserCompany_User_Company]   UNIQUE ([UserId], [CompanyId]),
+    CONSTRAINT [FK_UserCompany_Users]          FOREIGN KEY ([UserId])
+        REFERENCES [dbo].[Users]([UserID]),
+    CONSTRAINT [FK_UserCompany_Company]        FOREIGN KEY ([CompanyId])
+        REFERENCES [dbo].[Company]([Id])
+);

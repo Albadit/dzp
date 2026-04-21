@@ -9,8 +9,7 @@
       "label": null,
       "pages": [
         { "page": "dashboard", "icon": "layout-dashboard" }
-      ],
-      "context": ["!settings"]
+      ]
     },
     {
       "label": "Community",
@@ -20,7 +19,8 @@
       "icons": {
         "home": "home",
         "timeline": "message-square-text",
-        "discover": "library-big"
+        "discover": "library-big",
+        "companies": "building-2"
       },
       "context": ["community"]
     },
@@ -54,7 +54,7 @@
       "icons": {
         "profile": "user",
         "password": "key-round",
-        "notifications": "bell"
+        "notification": "bell"
       },
       "context": ["settings"]
     }

@@ -1,5 +1,8 @@
 -- Uninstall: drop CommunityAuth tables in dependency order
 
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Company' AND schema_id = SCHEMA_ID('dbo'))
+    DROP TABLE [dbo].[Company];
+
 IF EXISTS (SELECT * FROM sys.tables WHERE name = 'UserCommunityGroups' AND schema_id = SCHEMA_ID('dbo'))
     DROP TABLE [dbo].[UserCommunityGroups];
 

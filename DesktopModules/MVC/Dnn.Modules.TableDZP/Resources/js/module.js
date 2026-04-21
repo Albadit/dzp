@@ -146,6 +146,36 @@ function initDataTable(tid) {
       }
     });
   }
+
+  function clearLookupValidation(container, cls) {
+    container.querySelectorAll('.' + cls + '[data-required]').forEach(function (el) {
+      el.classList.remove('dt-invalid');
+      var err = el.parentElement.querySelector('.dt-field-error');
+      if (err) err.remove();
+    });
+  }
+
+  function validateLookups(container, cls) {
+    clearLookupValidation(container, cls);
+    var valid = true;
+    var firstInvalid = null;
+    container.querySelectorAll('.' + cls + '[data-required]').forEach(function (el) {
+      if (!el._ms) return;
+      var val = el.dataset.multi === 'true' ? el._ms.getSelected() : [el._ms.getValue()];
+      var empty = !val.length || (val.length === 1 && !val[0]);
+      if (empty) {
+        valid = false;
+        el.classList.add('dt-invalid');
+        var span = document.createElement('span');
+        span.className = 'dt-field-error';
+        span.textContent = 'This field is required';
+        el.parentElement.appendChild(span);
+        if (!firstInvalid) firstInvalid = el;
+      }
+    });
+    if (firstInvalid) firstInvalid.scrollIntoView({ block: 'center' });
+    return valid;
+  }
   if (modal) bindLiveValidation(modal, 'dt-modal-input');
   if (createModal) bindLiveValidation(createModal, 'dt-create-input');
 
@@ -314,6 +344,7 @@ function initDataTable(tid) {
     createModal.querySelectorAll('.dt-create-input').forEach(function (inp) { inp.value = ''; });
     resetLookups(createModal, 'dt-create-lookup');
     clearValidation(createModal, 'dt-create-input');
+    clearLookupValidation(createModal, 'dt-create-lookup');
   }
 
   // --- Create modal ---
@@ -327,7 +358,9 @@ function initDataTable(tid) {
   if (createModal) {
     var createSaveBtn = createModal.querySelector('.dt-create-save');
     if (createSaveBtn) createSaveBtn.addEventListener('click', function () {
-      if (!validateInputs(createModal, 'dt-create-input')) return;
+      var inputsOk = validateInputs(createModal, 'dt-create-input');
+      var lookupsOk = validateLookups(createModal, 'dt-create-lookup');
+      if (!inputsOk || !lookupsOk) return;
       var fields = { '_dt_action': 'create' };
       var mf = getModalFields(createModal, 'dt-create-input', 'dt-create-lookup', '_dt_new_');
       for (var k in mf) fields[k] = mf[k];
@@ -354,13 +387,15 @@ function initDataTable(tid) {
   });
   if (modal) {
     modal.querySelector('.dt-modal-save').addEventListener('click', function () {
-      if (!validateInputs(modal, 'dt-modal-input')) return;
+      var inputsOk = validateInputs(modal, 'dt-modal-input');
+      var lookupsOk = validateLookups(modal, 'dt-modal-lookup');
+      if (!inputsOk || !lookupsOk) return;
       var fields = { '_dt_action': 'update', '_dt_edit_pk': editPk };
       var mf = getModalFields(modal, 'dt-modal-input', 'dt-modal-lookup', '_dt_edit_');
       for (var k in mf) fields[k] = mf[k];
       postForm(fields);
     });
-    bindModalClose(modal, 'dt-modal-close', function () { clearValidation(modal, 'dt-modal-input'); });
+    bindModalClose(modal, 'dt-modal-close', function () { clearValidation(modal, 'dt-modal-input'); clearLookupValidation(modal, 'dt-modal-lookup'); });
   }
 
   // --- Delete modal ---

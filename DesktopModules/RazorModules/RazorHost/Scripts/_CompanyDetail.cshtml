@@ -1,0 +1,413 @@
+@using DZP.CommunityAuth
+@using DotNetNuke.Entities.Users
+@using DotNetNuke.Entities.Portals
+@using System.Web
+@using System.Linq
+@{
+    var rc = CommunityAuth.Current;
+    var user = Dnn.User;
+    var portalId = PortalSettings.Current != null ? PortalSettings.Current.PortalId : 0;
+
+    var communityName = rc != null ? rc.CommunityName : "Community";
+    var communitySlug = rc != null ? rc.CommunitySlug : "";
+    var communityId   = rc != null ? rc.CommunityId : 0;
+    var companySlug   = rc != null ? rc.CompanySlug : "";
+    var companyName   = rc != null ? rc.CompanyName : "";
+    var companyId     = rc != null ? rc.CompanyId : 0;
+    var ownerId       = rc != null ? rc.CompanyOwnerId : 0;
+    var companyInfo   = rc != null ? rc.CompanyInfoJson ?? "" : "";
+
+    var about         = "";
+    var address       = "";
+    var mapsUrl       = "";
+    var phone         = "";
+    var email         = "";
+    var website       = "";
+    var bannerImage   = "https://picsum.photos/seed/" + companySlug + "/1200/400";
+
+    /* ── Opening hours structured data ── */
+    var dayOrder = new[] { "mon", "tue", "wed", "thu", "fri", "sat", "sun" };
+    var dayToNl = new Dictionary<string, string> {
+        { "mon", "Ma" }, { "tue", "Di" }, { "wed", "Wo" },
+        { "thu", "Do" }, { "fri", "Vr" }, { "sat", "Za" }, { "sun", "Zo" }
+    };
+    var hoursMap = new Dictionary<string, string[]>(); // day -> [open, close] or absent = closed
+    var hoursDisplay = new List<dynamic>();             // grouped rows for display
+    var isOpen = false;
+    var todayKey = "";
+
+    var managers = new List<dynamic>();
+
+    if (companyId > 0 && !string.IsNullOrEmpty(companyInfo))
+    {
+            try
+            {
+                var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+                var root = serializer.Deserialize<Dictionary<string, object>>(companyInfo);
+                if (root != null)
+                {
+                    Func<string, string> str = key => root.ContainsKey(key) && root[key] != null ? root[key].ToString() : "";
+                    about   = str("about") != "" ? str("about") : str("description");
+                    address = str("address");
+                    mapsUrl = str("mapsUrl") != "" ? str("mapsUrl") : (str("googleMaps") != "" ? str("googleMaps") : str("maps"));
+                    phone   = str("phone") != "" ? str("phone") : str("telefoon");
+                    email   = str("email");
+                    website = str("website") != "" ? str("website") : str("url");
+                    if (root.ContainsKey("banner") && root["banner"] != null) { bannerImage = root["banner"].ToString(); }
+
+                    /* ── Parse openingHours dict ── */
+                    if (root.ContainsKey("openingHours") && root["openingHours"] is Dictionary<string, object> hoursObj)
+                    {
+                        foreach (var day in dayOrder)
+                        {
+                            if (hoursObj.ContainsKey(day) && hoursObj[day] is System.Collections.ArrayList arr && arr.Count == 2)
+                            {
+                                hoursMap[day] = new[] { arr[0].ToString(), arr[1].ToString() };
+                            }
+                        }
+
+                        /* ── Group consecutive days with same hours ── */
+                        var i = 0;
+                        while (i < dayOrder.Length)
+                        {
+                            var day = dayOrder[i];
+                            var hasTimes = hoursMap.ContainsKey(day);
+                            var times = hasTimes ? hoursMap[day] : null;
+                            var rangeStart = i;
+                            while (i + 1 < dayOrder.Length)
+                            {
+                                var nextDay = dayOrder[i + 1];
+                                var nextHas = hoursMap.ContainsKey(nextDay);
+                                var nextTimes = nextHas ? hoursMap[nextDay] : null;
+                                if (hasTimes == nextHas && (times == null && nextTimes == null || times != null && nextTimes != null && times[0] == nextTimes[0] && times[1] == nextTimes[1]))
+                                { i++; }
+                                else { break; }
+                            }
+                            var nlStart = dayToNl[dayOrder[rangeStart]];
+                            var nlEnd   = dayToNl[dayOrder[i]];
+                            var label   = rangeStart == i ? nlStart : nlStart + " - " + nlEnd;
+                            hoursDisplay.Add(new {
+                                Days     = label,
+                                Hours    = hasTimes ? times[0] + " - " + times[1] : "Gesloten",
+                                IsClosed = !hasTimes
+                            });
+                            i++;
+                        }
+
+                        /* ── Determine open/closed right now ── */
+                        var dayOfWeekMap = new Dictionary<DayOfWeek, string> {
+                            { DayOfWeek.Monday, "mon" }, { DayOfWeek.Tuesday, "tue" }, { DayOfWeek.Wednesday, "wed" },
+                            { DayOfWeek.Thursday, "thu" }, { DayOfWeek.Friday, "fri" }, { DayOfWeek.Saturday, "sat" },
+                            { DayOfWeek.Sunday, "sun" }
+                        };
+                        var now = DateTime.Now;
+                        todayKey = dayOfWeekMap[now.DayOfWeek];
+                        if (hoursMap.ContainsKey(todayKey))
+                        {
+                            TimeSpan openTime;
+                            TimeSpan closeTime;
+                            if (TimeSpan.TryParse(hoursMap[todayKey][0], out openTime) && TimeSpan.TryParse(hoursMap[todayKey][1], out closeTime))
+                            {
+                                var nowTime = now.TimeOfDay;
+                                if (closeTime < openTime)
+                                {
+                                    isOpen = nowTime >= openTime || nowTime <= closeTime;
+                                }
+                                else
+                                {
+                                    isOpen = nowTime >= openTime && nowTime <= closeTime;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                about = companyInfo;
+            }
+        }
+
+        /* ── Generate Google Maps link from address if none provided ── */
+        if (string.IsNullOrEmpty(mapsUrl) && !string.IsNullOrEmpty(address))
+        {
+            mapsUrl = "https://www.google.com/maps/search/?api=1&query=" + HttpUtility.UrlEncode(address);
+        }
+
+        /* ── Fetch managers (users linked to this company who opted to show in team) ── */
+        if (companyId > 0)
+        {
+            var userIds = CommunityAuth.GetCompanyTeamUserIds(companyId);
+            foreach (var uid in userIds)
+            {
+                var u = UserController.Instance.GetUserById(portalId, uid);
+                if (u != null)
+                {
+                    managers.Add(new {
+                        Name  = u.DisplayName,
+                        Email = u.Email ?? "",
+                        Image = "/DnnImageHandler.ashx?mode=profilepic&userId=" + u.UserID + "&w=80&h=80"
+                    });
+                }
+            }
+        }
+
+    /* ── Check if current user can edit this company (owner or superuser) ── */
+    var canEdit = false;
+    if (user != null && companyId > 0)
+    {
+        canEdit = user.IsSuperUser || (ownerId > 0 && user.UserID == ownerId);
+    }
+}
+
+<main class="max-w-7xl w-full">
+    <!-- ============================================ -->
+    <!-- BREADCRUMB                                     -->
+    <!-- ============================================ -->
+    <section class="w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+            <div class="flex items-center justify-between gap-4">
+                <nav class="flex items-center gap-1.5 text-sm text-foreground-400 min-w-0">
+                    <a href="/@communitySlug/home" class="hover:text-primary transition">@communityName</a>
+                    <i data-lucide="chevron-right" class="size-3.5"></i>
+                    <a href="/@communitySlug/companies" class="hover:text-primary transition">Bedrijven</a>
+                    <i data-lucide="chevron-right" class="size-3.5"></i>
+                    <span class="text-foreground-700 font-medium truncate max-w-48">@companyName</span>
+                </nav>
+                @if (canEdit)
+                {
+                    <a href="/@communitySlug/companies/@companySlug/edit"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-divider text-sm font-medium text-foreground-600 hover:text-primary hover:border-primary/30 transition shrink-0">
+                        <i data-lucide="pencil" class="size-3.5"></i>
+                        Bewerken
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 1) BANNER + COMPANY INFO                      -->
+    <!-- ============================================ -->
+    <section class="w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <div class="flex flex-col xl:flex-row gap-5 sm:gap-8">
+
+                <!-- Left: company banner -->
+                <div class="relative flex-1 min-h-48 sm:min-h-80 rounded-xl overflow-hidden">
+                    <img src="@bannerImage" alt="@companyName" class="absolute inset-0 w-full h-full object-cover" />
+                    <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent"></div>
+                    <div class="relative flex flex-col justify-end h-full p-6 gap-1">
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white leading-tight">@companyName</h1>
+                        @if (!string.IsNullOrEmpty(address))
+                        {
+                            <div class="flex items-center gap-1.5 text-sm text-white/80">
+                                <i data-lucide="map-pin" class="size-3.5 shrink-0"></i>
+                                <span>@address</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Right: quick info panel -->
+                <div class="w-fit flex flex-col gap-3 sm:gap-4">
+                    <h2 class="text-base font-semibold text-foreground-900">Bedrijfsinformatie</h2>
+
+                    <div class="flex flex-col gap-2 bg-content1 rounded-xl border border-divider p-4">
+                        @if (!string.IsNullOrEmpty(address))
+                        {
+                            <div class="flex items-start gap-3 py-2">
+                                <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                    <i data-lucide="map-pin" class="size-4 text-primary"></i>
+                                </div>
+                                <div class="flex flex-col gap-0.5 min-w-0">
+                                    <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">Adres</span>
+                                    <span class="text-sm text-foreground-900">@address</span>
+                                    @if (!string.IsNullOrEmpty(mapsUrl))
+                                    {
+                                        <a href="@mapsUrl" target="_blank" rel="noopener noreferrer"
+                                           class="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5">
+                                            Bekijk op Google Maps
+                                            <i data-lucide="external-link" class="size-3"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (hoursDisplay.Count > 0)
+                        {
+                            <div class="flex items-start gap-3 py-2 border-t border-divider">
+                                <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                    <i data-lucide="clock" class="size-4 text-primary"></i>
+                                </div>
+                                <div class="flex flex-col gap-1.5 min-w-0 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">Openingstijden</span>
+                                        @if (isOpen)
+                                        {
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-success-50 text-success-800">
+                                                <span class="size-1.5 rounded-full bg-success"></span> Open
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-danger-50 text-danger-800">
+                                                <span class="size-1.5 rounded-full bg-danger"></span> Gesloten
+                                            </span>
+                                        }
+                                    </div>
+                                    <div class="grid grid-cols-[auto_auto] gap-x-4 gap-y-0.5">
+                                        @foreach (var row in hoursDisplay)
+                                        {
+                                            <span class="text-sm font-medium text-foreground-900">@row.Days:</span>
+                                            <span class="text-sm text-foreground-900">@row.Hours</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(phone))
+                        {
+                            <div class="flex items-start gap-3 py-2 border-t border-divider">
+                                <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                    <i data-lucide="phone" class="size-4 text-primary"></i>
+                                </div>
+                                <div class="flex flex-col gap-0.5 min-w-0">
+                                    <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">Telefoon</span>
+                                    <a href="tel:@phone" class="text-sm text-foreground-900 hover:text-primary transition">@phone</a>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(email))
+                        {
+                            <div class="flex items-start gap-3 py-2 border-t border-divider">
+                                <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                    <i data-lucide="mail" class="size-4 text-primary"></i>
+                                </div>
+                                <div class="flex flex-col gap-0.5 min-w-0">
+                                    <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">E-mail</span>
+                                    <a href="mailto:@email" class="text-sm text-foreground-900 hover:text-primary transition truncate">@email</a>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(website))
+                        {
+                            <div class="flex items-start gap-3 py-2 border-t border-divider">
+                                <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                    <i data-lucide="globe" class="size-4 text-primary"></i>
+                                </div>
+                                <div class="flex flex-col gap-0.5 min-w-0">
+                                    <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">Website</span>
+                                    <a href="@website" target="_blank" rel="noopener noreferrer"
+                                       class="text-sm text-foreground-900 hover:text-primary transition truncate flex items-center gap-1">
+                                        @website.Replace("https://", "").Replace("http://", "").TrimEnd('/')
+                                        <i data-lucide="external-link" class="size-3 shrink-0"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- 2) ABOUT US                                    -->
+    <!-- ============================================ -->
+    @if (!string.IsNullOrEmpty(about))
+    {
+    <section class="w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <div class="flex flex-col gap-3 sm:gap-4">
+                <h2 class="text-base font-semibold text-foreground-900">Over ons</h2>
+                <div class="bg-content1 rounded-xl border border-divider p-5 sm:p-6">
+                    <p class="text-sm text-foreground-700 leading-relaxed whitespace-pre-line">@about</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    }
+
+    <!-- ============================================ -->
+    <!-- 3) GOOGLE MAPS EMBED                           -->
+    <!-- ============================================ -->
+    @if (!string.IsNullOrEmpty(address))
+    {
+    <section class="w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <div class="flex flex-col gap-3 sm:gap-4">
+                <h2 class="text-base font-semibold text-foreground-900">Locatie</h2>
+                <div class="rounded-xl overflow-hidden border border-divider h-64 sm:h-80">
+                    <iframe
+                        class="w-full h-full border-0"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        src="https://maps.google.com/maps?q=@HttpUtility.UrlEncode(address)&output=embed&z=15"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+    }
+
+    <!-- ============================================ -->
+    <!-- 4) MANAGERS / TEAM                             -->
+    <!-- ============================================ -->
+    <section class="w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <div class="flex flex-col gap-3 sm:gap-4">
+                <h2 class="text-base font-semibold text-foreground-900">Team</h2>
+
+                @if (managers.Count == 0)
+                {
+                    <div class="flex flex-col items-center gap-3 py-8 text-center">
+                        <p class="text-sm text-foreground-400">Er zijn nog geen teamleden gekoppeld aan dit bedrijf.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach (var member in managers)
+                        {
+                            <div class="flex items-center gap-4 p-4 rounded-xl border border-divider bg-background hover:border-primary/30 transition">
+                                <div class="size-14 rounded-full overflow-hidden border-2 border-divider shrink-0">
+                                    <img src="@member.Image" alt="@member.Name" class="w-full h-full object-cover rounded-full" />
+                                </div>
+                                <div class="flex flex-col gap-0.5 min-w-0">
+                                    <span class="text-sm font-semibold text-foreground-900 truncate">@member.Name</span>
+                                    @if (!string.IsNullOrEmpty((string)member.Email))
+                                    {
+                                        <a href="mailto:@member.Email" class="text-xs text-foreground-400 hover:text-primary transition truncate">
+                                            @member.Email
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- BACK LINK                                      -->
+    <!-- ============================================ -->
+    <section class="w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-8 pb-8">
+            <a href="/@communitySlug/companies"
+               class="inline-flex items-center gap-2 text-sm font-medium text-foreground-500 hover:text-primary transition">
+                <i data-lucide="arrow-left" class="size-4"></i>
+                Terug naar bedrijven
+            </a>
+        </div>
+    </section>
+</main>
+
