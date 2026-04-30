@@ -39,6 +39,9 @@
 
     var isManager  = false;
     var isSuperUser = user != null && user.IsSuperUser;
+    var adminRoleName = PortalSettings.Current != null ? PortalSettings.Current.AdministratorRoleName : "Administrators";
+    var isAdministrator = user != null && !string.IsNullOrEmpty(adminRoleName) && user.IsInRole(adminRoleName);
+    var isElevated = isSuperUser || isAdministrator;
     var saveSuccess = false;
     var saveError   = "";
     var memberMsg   = "";
@@ -51,7 +54,7 @@
         /* ── Check authorization: owner or SuperUser ── */
         if (user != null)
         {
-            isManager = isSuperUser || (ownerId > 0 && user.UserID == ownerId);
+            isManager = isElevated || (ownerId > 0 && user.UserID == ownerId);
         }
 
         /* ── Parse existing CompanyInfo JSON ── */
@@ -101,19 +104,41 @@
                 {
                     try
                     {
+                        /* ── Verify the target user is a member of THIS community.
+                              Reject silently-with-error if not, so outsiders can't be
+                              added by crafting a request. ── */
+                        var isCommunityMember = false;
+                        using (var conn = new SqlConnection(connStr))
+                        {
+                        using (var chk = new SqlCommand(
+                            "SELECT 1 FROM UserCommunity WHERE UserId = @uid AND CommunityId = @commId", conn))
+                        {
+                            chk.Parameters.AddWithValue("@uid", addUserId);
+                            chk.Parameters.AddWithValue("@commId", communityId);
+                            conn.Open();
+                            isCommunityMember = chk.ExecuteScalar() != null;
+                        }
+                        }
+
+                        if (!isCommunityMember)
+                        {
+                            memberError = "Deze gebruiker is geen lid van de community.";
+                        }
+                        else
+                        {
                         using (var conn = new SqlConnection(connStr))
                         {
                         using (var cmd = new SqlCommand(
-                            "IF NOT EXISTS (SELECT 1 FROM UserCommunity WHERE UserId = @uid AND CommunityId = @commId) INSERT INTO UserCommunity (UserId, CommunityId) VALUES (@uid, @commId); IF NOT EXISTS (SELECT 1 FROM UserCompany WHERE UserId = @uid AND CompanyId = @cid) INSERT INTO UserCompany (UserId, CompanyId) VALUES (@uid, @cid)", conn))
+                            "IF NOT EXISTS (SELECT 1 FROM UserCompany WHERE UserId = @uid AND CompanyId = @cid) INSERT INTO UserCompany (UserId, CompanyId) VALUES (@uid, @cid)", conn))
                         {
                             cmd.Parameters.AddWithValue("@uid", addUserId);
-                            cmd.Parameters.AddWithValue("@commId", communityId);
                             cmd.Parameters.AddWithValue("@cid", companyId);
                             conn.Open();
                             cmd.ExecuteNonQuery();
                         }
                         }
                         memberMsg = "Lid toegevoegd.";
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -349,13 +374,19 @@
             }
             }
 
-            /* ── Load all portal users for add-member dropdown ── */
+            /* ── Load community members for add-member dropdown.
+                  Restrict to users that belong to THIS community via UserCommunity. ── */
             using (var conn = new SqlConnection(connStr))
             {
             using (var cmd = new SqlCommand(
-                "SELECT u.UserID, u.DisplayName FROM Users u INNER JOIN UserPortals up ON up.UserId = u.UserID WHERE up.PortalId = @pid AND u.IsSuperUser = 0 ORDER BY u.DisplayName", conn))
+                "SELECT u.UserID, u.DisplayName FROM Users u " +
+                "INNER JOIN UserPortals up ON up.UserId = u.UserID " +
+                "INNER JOIN UserCommunity uc ON uc.UserId = u.UserID " +
+                "WHERE up.PortalId = @pid AND uc.CommunityId = @cid AND u.IsSuperUser = 0 " +
+                "ORDER BY u.DisplayName", conn))
             {
                 cmd.Parameters.AddWithValue("@pid", portalId);
+                cmd.Parameters.AddWithValue("@cid", communityId);
                 conn.Open();
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -469,10 +500,32 @@
                 </div>
 
                 <div class="flex flex-col gap-1.5">
-                    <label for="banner" class="text-sm font-medium text-foreground-700">Banner afbeelding URL</label>
-                    <input type="url" id="banner" name="banner" value="@bannerImage"
-                            placeholder="https://example.com/banner.jpg"
-                            class="w-full px-3 py-2 rounded-lg border border-divider bg-background text-sm text-foreground-900 placeholder:text-foreground-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+                    <label class="text-sm font-medium text-foreground-700">Banner afbeelding</label>
+                    @{
+                        var appBaseEdit = (Request.ApplicationPath ?? "").TrimEnd('/');
+                        var bannerUploadUrl = appBaseEdit + "/DesktopModules/Dnn.Modules.TableDZP/API/TableService/Table/UploadImage";
+                        var hasBanner = !string.IsNullOrEmpty(bannerImage);
+                    }
+                    <div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content1 cursor-pointer transition"
+                         tabindex="0" role="button"
+                         data-upload-url="@bannerUploadUrl">
+                        <input type="hidden" name="banner" id="banner" value="@bannerImage" class="dt-dz-value" />
+                        <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
+                        <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none @(hasBanner ? "hidden" : "")">
+                            <i data-lucide="image-up" class="size-8"></i>
+                            <span>Sleep een afbeelding hierheen of klik om te uploaden</span>
+                            <span class="text-xs text-foreground-400">PNG, JPG, GIF of WebP &middot; max 10 MB</span>
+                        </div>
+                        <div class="dt-dz-preview relative w-full @(hasBanner ? "" : "hidden")">
+                            <img class="dt-dz-preview-img w-full max-h-48 object-contain rounded-md" alt="" @(hasBanner ? Html.Raw("src=\"" + HttpUtility.HtmlAttributeEncode(bannerImage) + "\"") : null) />
+                            <button type="button" class="dt-dz-remove absolute top-2 right-2 inline-flex items-center justify-center size-8 rounded-full bg-content1 border border-divider shadow hover:bg-danger-50 hover:text-danger transition" aria-label="Afbeelding verwijderen">
+                                <i data-lucide="x" class="size-4"></i>
+                            </button>
+                        </div>
+                        <div class="dt-dz-progress hidden absolute inset-0 flex items-center justify-center bg-overlay/40 rounded-lg text-sm text-foreground-700">
+                            <i data-lucide="loader-2" class="size-5 animate-spin"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -620,10 +673,25 @@
 
 @if (isManager)
 {
+<link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/module.css" />
+<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/dropzone.js"></script>
 <script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/select.js"></script>
 <script>
 var CE_USERS = @(new HtmlString(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(allUsers.Select(u => new { value = u.UserId.ToString(), label = (string)u.DisplayName }))));
 var CE_MEMBER_IDS = [@foreach (var m in members) {<text>@m.UserId,</text>}];
+(function () {
+    function initBannerDz() {
+        if (window.DtDropzone && typeof window.DtDropzone.initAll === 'function') {
+            window.DtDropzone.initAll(document);
+        }
+        if (typeof lucide !== 'undefined' && lucide.createIcons) { lucide.createIcons(); }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initBannerDz);
+    } else {
+        initBannerDz();
+    }
+})();
 </script>
 <script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/company-edit.js"></script>
 }

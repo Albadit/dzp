@@ -7,6 +7,7 @@ CREATE TABLE [dbo].[Community] (
     [Id] INT IDENTITY(1,1) NOT NULL,
     [Slug] NVARCHAR(256) NOT NULL,
     [Name] NVARCHAR(256) NOT NULL,
+    [ImageUrl] NVARCHAR(512) NULL,
     [CreatedOn] DATETIME2 NOT NULL CONSTRAINT [DF_Community_CreatedOn] DEFAULT (GETUTCDATE()),
     CONSTRAINT [PK_Community] PRIMARY KEY ([Id]),
     CONSTRAINT [UQ_Community_Slug] UNIQUE ([Slug])

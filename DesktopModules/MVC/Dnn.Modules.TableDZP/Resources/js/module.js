@@ -62,6 +62,22 @@ function initDataTable(tid) {
   initLookupWidgets(modal, 'dt-modal-lookup');
   initLookupWidgets(createModal, 'dt-create-lookup');
 
+  // Wire image-upload dropzones (one-time init per element).
+  if (window.DtDropzone) {
+    DtDropzone.initAll(modal);
+    DtDropzone.initAll(createModal);
+  }
+
+  // Populate the dropzone preview from a (hidden) value. Used both when
+  // opening the edit modal and when resetting the create form.
+  function syncDropzones(container) {
+    if (!container || !window.DtDropzone) return;
+    container.querySelectorAll('.dt-dropzone').forEach(function (dz) {
+      var hidden = dz.querySelector('.dt-dz-value');
+      DtDropzone.setValue(dz, (hidden && hidden.value) || '');
+    });
+  }
+
   function getModalFields(container, inputClass, lookupClass, prefix) {
     var fields = {};
     container.querySelectorAll('.' + inputClass).forEach(function (inp) {
@@ -343,6 +359,7 @@ function initDataTable(tid) {
     if (!createModal) return;
     createModal.querySelectorAll('.dt-create-input').forEach(function (inp) { inp.value = ''; });
     resetLookups(createModal, 'dt-create-lookup');
+    syncDropzones(createModal);
     clearValidation(createModal, 'dt-create-input');
     clearLookupValidation(createModal, 'dt-create-lookup');
   }
@@ -381,6 +398,7 @@ function initDataTable(tid) {
     modal.querySelectorAll('.dt-modal-lookup').forEach(function (lk) {
       setLookup(modal, 'dt-modal-lookup', lk.dataset.col, getCellText(row, lk.dataset.col));
     });
+    syncDropzones(modal);
     showModal(modal);
     var first = modal.querySelector('.dt-modal-input');
     if (first) first.focus();

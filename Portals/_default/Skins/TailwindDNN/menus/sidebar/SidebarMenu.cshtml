@@ -106,8 +106,15 @@
     // --- Portal / user info for shell ---
     var ps       = DotNetNuke.Entities.Portals.PortalSettings.Current;
     var isSuperUser = ps != null && ps.UserInfo != null && ps.UserInfo.IsSuperUser;
+    var adminRoleName = ps != null ? ps.AdministratorRoleName : "Administrators";
+    var isAdministrator = ps != null && ps.UserInfo != null
+                          && !string.IsNullOrEmpty(adminRoleName)
+                          && ps.UserInfo.IsInRole(adminRoleName);
+    // Treat Administrators with the same elevated rights as SuperUsers
+    // throughout this skin (permission bypass + dashboard visibility).
+    var isElevated = isSuperUser || isAdministrator;
 
-    var hideDashboard = !isSuperUser && userComms != null && userComms.Count == 1;
+    var hideDashboard = !isElevated && userComms != null && userComms.Count == 1;
 
     // --- Build role set from CommunityAuth (no extra SQL needed) ---
     var freshRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -167,10 +174,10 @@
 }
 
 <!-- Overlay for mobile -->
-<div id="sidebar-overlay" class="hidden fixed inset-0 z-30 bg-overlay lg:hidden"></div>
+<div id="sidebar-overlay" class="hidden fixed inset-0 z-60 lg:z-30 bg-overlay lg:hidden"></div>
 
 <!-- Sidebar -->
-<aside id="sidebar" class="fixed top-0 lg:sticky lg:top-[70px] z-40 h-dvh lg:h-[calc(100dvh-70px)] w-[250px] -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out bg-background border-r border-divider flex flex-col">
+<aside id="sidebar" class="fixed top-0 lg:sticky lg:top-[70px] z-70 lg:z-40 h-dvh lg:h-[calc(100dvh-70px)] w-[250px] -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out bg-background border-r border-divider flex flex-col">
 
     <!-- Header (mobile only) -->
     <div class="h-17.5 flex items-center justify-between px-4 py-3 border-b border-divider lg:hidden shrink-0">
@@ -254,7 +261,7 @@
             if (!skipSection && parentFound)
             {
                 {
-                    var canView = isSuperUser;
+                    var canView = isElevated;
                     if (!canView && parentTab.TabPermissions != null)
                     {
                         bool hasAllow = false;
@@ -310,7 +317,7 @@
                         // Skip ignored pages
                         if (ignoreSet.Contains(childName)) { continue; }
 
-                        var childCanView = isSuperUser;
+                        var childCanView = isElevated;
                         if (!childCanView && child.TabPermissions != null)
                         {
                             bool chAllow = false;
@@ -424,7 +431,7 @@
                         DotNetNuke.Entities.Tabs.TabInfo tab;
                         if (tabsByPath.TryGetValue(pathToCheck, out tab))
                         {
-                            var tabCanView = isSuperUser;
+                            var tabCanView = isElevated;
                             if (!tabCanView && tab.TabPermissions != null)
                             {
                                 bool stAllow = false;

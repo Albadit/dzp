@@ -30,8 +30,30 @@
   var communityName = rc != null ? rc.CommunityName : "Community";
   var communitySlug = rc != null ? rc.CommunitySlug : "";
   var companyName   = rc != null && !string.IsNullOrEmpty(rc.CompanyName) ? rc.CompanyName : "";
-  var bannerImage   = "https://picsum.photos/seed/" + communitySlug + "/1200/400";
-  debugLog.Add("communityName=" + communityName + ", slug=" + communitySlug);
+
+  /* ── Lookup Community.ImageUrl from DB (canonical CommunityAuth doesn't expose it) ── */
+  string communityBannerUrl = "";
+  if (rc != null)
+  {
+    var bannerCs = ConfigurationManager.ConnectionStrings["SiteSqlServer"];
+    if (bannerCs != null && !string.IsNullOrEmpty(bannerCs.ConnectionString))
+    {
+      using (var bc = new SqlConnection(bannerCs.ConnectionString))
+      {
+        using (var bcmd = new SqlCommand("SELECT ImageUrl FROM Community WHERE Id = @cid", bc))
+        {
+          bcmd.Parameters.AddWithValue("@cid", rc.CommunityId);
+          bc.Open();
+          var br = bcmd.ExecuteScalar();
+          if (br != null && br != DBNull.Value) { communityBannerUrl = (string)br; }
+        }
+      }
+    }
+  }
+  var bannerImage = !string.IsNullOrEmpty(communityBannerUrl)
+                      ? communityBannerUrl
+                      : "https://picsum.photos/seed/" + communitySlug + "/1200/400";
+  debugLog.Add("communityName=" + communityName + ", slug=" + communitySlug + ", banner=" + bannerImage);
 
   /* ── Helper: resolve 2sxc "file:NNN" references to URLs ── */
   Func<string, string, string> resolveImage = (imgVal, connString) => {
@@ -106,6 +128,42 @@
     ? allCommunityGroups
     : userGroups.Where(g => g.CommunityId == communityId).ToList();
 
+  /* ── Lookup ImageUrl for displayed groups (not exposed by GroupInfo) ── */
+  var groupImages = new Dictionary<int, string>();
+  try {
+    if (displayGroups.Count > 0) {
+      var giCs = ConfigurationManager.ConnectionStrings["SiteSqlServer"];
+      var giConnStr = giCs != null ? giCs.ConnectionString : "";
+      if (!string.IsNullOrEmpty(giConnStr)) {
+        using (var giConn = new SqlConnection(giConnStr))
+        {
+          using (var giCmd = giConn.CreateCommand())
+          {
+            var giSb = new System.Text.StringBuilder("SELECT Id, ImageUrl FROM CommunityGroups WHERE Id IN (");
+            for (var i = 0; i < displayGroups.Count; i++) {
+              if (i > 0) { giSb.Append(","); }
+              giSb.Append("@gid").Append(i);
+              giCmd.Parameters.AddWithValue("@gid" + i, displayGroups[i].Id);
+            }
+            giSb.Append(")");
+            giCmd.CommandText = giSb.ToString();
+            giConn.Open();
+            using (var giR = giCmd.ExecuteReader())
+            {
+              while (giR.Read()) {
+                var gid = (int)giR["Id"];
+                var gurl = giR["ImageUrl"] as string;
+                if (!string.IsNullOrEmpty(gurl)) { groupImages[gid] = gurl; }
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (Exception ex) {
+    debugLog.Add("Group images query ERROR: " + ex.Message);
+  }
+
   /* ── Slug → community name lookup ── */
   var slugToName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
   if (!string.IsNullOrEmpty(communitySlug)) { slugToName[communitySlug] = communityName; }
@@ -113,7 +171,12 @@
     if (!string.IsNullOrEmpty(c.Slug)) { slugToName[c.Slug] = c.Name; }
   }
 
-  /* ── Laatste berichten (from community + user's groups via 2sxc DB) ── */
+  /* ── Laatste berichten (from Dnn_Modules_Blog_Posts) ── */
+  /*  Visibility:
+   *   - Post is in current community (CommunityId = rc.CommunityId)
+   *   - AND (post has no group mapping  OR  CM/SU  OR  user shares at least one group)
+   *  Returns latest 2 published, non-draft, non-deleted posts ordered by PublishOn DESC.
+   */
   var latestPosts = new List<dynamic>();
   try
   {
@@ -124,110 +187,101 @@
     debugLog.Add("connStr empty? " + string.IsNullOrEmpty(connStr));
     if (!string.IsNullOrEmpty(connStr))
     {
+      // Build user's group-id list for visibility filter
+      var userGroupIds = new List<int>();
+      foreach (var g in userGroups) {
+        if (g.CommunityId == rc.CommunityId) { userGroupIds.Add(g.Id); }
+      }
+      var seeAll = isCM || isSU;
+
       using (var conn = new SqlConnection(connStr))
       {
         using (var cmd = conn.CreateCommand())
         {
-          // Query all recent BlogPosts, fetch Group field for visibility filtering
-          cmd.CommandText = @"
-            SELECT TOP 20 e.EntityId,
-                   MAX(CASE WHEN a.StaticName = 'Title'              THEN v.Value END) AS Title,
-                   MAX(CASE WHEN a.StaticName = 'Teaser'             THEN v.Value END) AS Teaser,
-                   MAX(CASE WHEN a.StaticName = 'Content'            THEN v.Value END) AS Content,
-                   MAX(CASE WHEN a.StaticName = 'Image'              THEN v.Value END) AS [Image],
-                   MAX(CASE WHEN a.StaticName = 'PublicationMoment'  THEN v.Value END) AS PubDate,
-                   MAX(CASE WHEN a.StaticName = 'Group'              THEN v.Value END) AS [Group],
-                   MAX(CASE WHEN a.StaticName = 'Author'             THEN v.Value END) AS Author
-            FROM TsDynDataEntity e
-            INNER JOIN TsDynDataValue v ON v.EntityId = e.EntityId
-            INNER JOIN TsDynDataAttribute a ON a.AttributeId = v.AttributeId
-            WHERE e.ContentTypeId = (SELECT ContentTypeId FROM TsDynDataContentType WHERE StaticName = 'ed31a7c6-e76c-4874-958f-d67f33c02c34')
-              AND e.TransDeletedId IS NULL
-              AND e.IsPublished = 1
-              AND a.StaticName IN ('Title','Teaser','Content','Image','PublicationMoment','Group','Author')
-            GROUP BY e.EntityId
-            ORDER BY MAX(CASE WHEN a.StaticName = 'PublicationMoment' THEN v.Value END) DESC";
+          var sb = new System.Text.StringBuilder();
+          sb.Append(@"
+            SELECT TOP 2
+                p.PostId,
+                p.PostType,
+                p.Title,
+                p.Content,
+                p.ImageUrl,
+                p.AuthorUserId,
+                p.PublishOn,
+                p.CommentCount,
+                p.ViewCount
+            FROM Dnn_Modules_Blog_Posts p
+            WHERE p.CommunityId = @cid
+              AND p.IsDeleted   = 0
+              AND p.IsDraft     = 0
+              AND p.PublishOn  <= SYSUTCDATETIME()
+              AND (
+                    NOT EXISTS (SELECT 1 FROM Dnn_Modules_Blog_PostGroups pg WHERE pg.PostId = p.PostId)
+              ");
+          if (seeAll) {
+            sb.Append(@" OR 1 = 1 ");
+          } else if (userGroupIds.Count > 0) {
+            sb.Append(@" OR EXISTS (SELECT 1
+                                    FROM Dnn_Modules_Blog_PostGroups pg
+                                    WHERE pg.PostId = p.PostId
+                                      AND pg.CommunityGroupId IN (");
+            for (var i = 0; i < userGroupIds.Count; i++) {
+              if (i > 0) { sb.Append(","); }
+              sb.Append("@gid" + i);
+            }
+            sb.Append(")) ");
+          }
+          sb.Append(@"   )
+            ORDER BY p.PublishOn DESC");
+          cmd.CommandText = sb.ToString();
+          cmd.Parameters.AddWithValue("@cid", rc.CommunityId);
+          if (!seeAll) {
+            for (var i = 0; i < userGroupIds.Count; i++) {
+              cmd.Parameters.AddWithValue("@gid" + i, userGroupIds[i]);
+            }
+          }
+
           conn.Open();
           using (var reader = cmd.ExecuteReader())
           {
             while (reader.Read())
             {
-              var t = reader["Title"] as string;
-              var te = reader["Teaser"] as string;
-              var co = reader["Content"] as string;
-              var im = reader["Image"] as string;
-              var dt = reader["PubDate"] as string;
-              var grp = reader["Group"] as string ?? "";
-              var author = reader["Author"] as string ?? "";
-              var entityId = (int)reader["EntityId"];
+              var postId       = (int)reader["PostId"];
+              var title        = reader["Title"] as string ?? "";
+              var content      = reader["Content"] as string ?? "";
+              var imageUrl     = reader["ImageUrl"] as string ?? "";
+              var authorUserId = (int)reader["AuthorUserId"];
+              var publishOn    = reader["PublishOn"] is DateTime ? ((DateTime)reader["PublishOn"]).ToString("o") : "";
 
-              // Check visibility: match group id/name against visibleTags
-              var postTags = new List<string>();
-              if (!string.IsNullOrEmpty(grp)) {
-                foreach (var part in grp.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)) {
-                  postTags.Add(part.Trim());
-                }
-              }
-              // If post has no tags at all, it's visible to everyone in this community
-              var isVisible = postTags.Count == 0;
-              if (!isVisible) {
-                foreach (var tag in postTags) {
-                  if (visibleTags.Contains(tag)) { isVisible = true; break; }
-                }
-              }
-              if (!isVisible) { continue; }
-
-              // Determine which group label to show
-              var matchedSlug = communitySlug;
-              var matchedLabel = "";
-              foreach (var part in grp.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)) {
-                var trimmed = part.Trim();
-                if (groupIdToName.ContainsKey(trimmed)) {
-                  matchedLabel = groupIdToName[trimmed];
-                  break;
-                }
-                if (visibleTags.Contains(trimmed)) {
-                  matchedLabel = trimmed;
-                  break;
-                }
-              }
-
-              // Use Teaser if available, otherwise strip HTML from Content for excerpt
-              var excerpt = !string.IsNullOrEmpty(te) ? te : (co != null ? co : "");
-              excerpt = System.Text.RegularExpressions.Regex.Replace(excerpt, "<[^>]+>", "").Trim();
+              // Build excerpt from Content (strip HTML)
+              var excerpt = System.Text.RegularExpressions.Regex.Replace(content ?? "", "<[^>]+>", "").Trim();
               if (excerpt.Length > 300) { excerpt = excerpt.Substring(0, 300) + "..."; }
+
+              // Resolve author display name via DNN
+              var authorName = "";
+              var au = UserController.Instance.GetUserById(portalId, authorUserId);
+              if (au != null) { authorName = au.DisplayName; }
+
               latestPosts.Add(new {
-                Title          = t != null ? t : "",
+                Title          = title,
                 Teaser         = excerpt,
-                Image          = im != null ? im : "",
-                Date           = dt != null ? dt : "",
-                CommunitySlug  = matchedSlug,
-                CommunityLabel = matchedLabel,
-                Author         = author,
-                PostId         = entityId
+                Image          = imageUrl,
+                Date           = publishOn,
+                CommunitySlug  = communitySlug,
+                CommunityLabel = communityName,
+                Author         = authorName,
+                PostId         = postId
               });
-              if (latestPosts.Count >= 2) { break; }
             }
           }
         }
       }
-      // Resolve file:NNN images
+
       for (var i = 0; i < latestPosts.Count; i++)
       {
-        var p = latestPosts[i];
-        var resolved = resolveImage((string)p.Image, connStr);
-        debugLog.Add("Post[" + i + "] image raw='" + (string)p.Image + "' resolved='" + resolved + "'");
-        latestPosts[i] = new {
-          Title          = (string)p.Title,
-          Teaser         = (string)p.Teaser,
-          Image          = resolved,
-          Date           = (string)p.Date,
-          CommunitySlug  = (string)p.CommunitySlug,
-          CommunityLabel = (string)p.CommunityLabel,
-          Author         = (string)p.Author,
-          PostId         = (int)p.PostId
-        };
-        debugLog.Add("Post[" + i + "] title='" + (string)p.Title + "' teaser='" + ((string)p.Teaser).Substring(0, System.Math.Min(60, ((string)p.Teaser).Length)) + "...'");
+        debugLog.Add("Post[" + i + "] id=" + (int)latestPosts[i].PostId
+          + " title='" + (string)latestPosts[i].Title + "'"
+          + " image='" + (string)latestPosts[i].Image + "'");
       }
     }
   }
@@ -240,18 +294,18 @@
 
   /* ── Ondekt (quick-links grid) ── */
   var ondektLinks = new[] {
-    new { Label = "VISIT HW",                       Url = "/" + communitySlug + "/visit" },
-    new { Label = "Cadeaubon Hoeksche Waard",       Url = "/" + communitySlug + "/cadeaubon" },
-    new { Label = "Gemeente Hoeksche Waard",        Url = "/" + communitySlug + "/gemeente" },
-    new { Label = "Ondernemend Hoeksche Waard",     Url = "/" + communitySlug + "/ondernemend" },
-    new { Label = "Duurzaamheid",                   Url = "/" + communitySlug + "/duurzaamheid" },
-    new { Label = "Ondernemersplein",               Url = "/" + communitySlug + "/ondernemersplein" },
-    new { Label = "Mijn (notificatie)instellingen", Url =  "/settings" },
-    new { Label = "Q&A",                            Url = "/" + communitySlug + "/qa" },
-    new { Label = "Tijdlijn",                       Url = "/" + communitySlug + "/timeline" },
-    new { Label = "Evenementen",                    Url = "/" + communitySlug + "/evenementen" },
-    new { Label = "Leden",                          Url = "/" + communitySlug + "/leden" },
-    new { Label = "Bestanden",                      Url = "/" + communitySlug + "/bestanden" },
+    new { Label = "VISIT HW",                       Icon = "map-pin",     Url = "/" + communitySlug + "/visit" },
+    new { Label = "Cadeaubon Hoeksche Waard",       Icon = "gift",        Url = "/" + communitySlug + "/cadeaubon" },
+    new { Label = "Gemeente Hoeksche Waard",        Icon = "landmark",    Url = "/" + communitySlug + "/gemeente" },
+    new { Label = "Ondernemend Hoeksche Waard",     Icon = "briefcase",   Url = "/" + communitySlug + "/ondernemend" },
+    new { Label = "Duurzaamheid",                   Icon = "leaf",        Url = "/" + communitySlug + "/duurzaamheid" },
+    new { Label = "Ondernemersplein",               Icon = "store",       Url = "/" + communitySlug + "/ondernemersplein" },
+    new { Label = "Mijn (notificatie)instellingen", Icon = "bell",        Url =  "/settings" },
+    new { Label = "Q&A",                            Icon = "help-circle", Url = "/" + communitySlug + "/qa" },
+    new { Label = "Tijdlijn",                       Icon = "clock",       Url = "/" + communitySlug + "/timeline" },
+    new { Label = "Evenementen",                    Icon = "calendar",    Url = "/" + communitySlug + "/evenementen" },
+    new { Label = "Leden",                          Icon = "users",       Url = "/" + communitySlug + "/leden" },
+    new { Label = "Bestanden",                      Icon = "folder",      Url = "/" + communitySlug + "/bestanden" },
   };
 
   /* ── Ontmoet het team (members of this community) ── */
@@ -273,7 +327,7 @@
           INNER JOIN UserCommunityRole ucr ON ucr.UserCommunityId = uc.Id
           INNER JOIN Roles r ON r.RoleID = ucr.RoleId
           WHERE uc.CommunityId = @cid
-            AND r.RoleName = 'Community Manager'", conn))
+            AND r.RoleName = 'Community beheerder'", conn))
         {
           cmd.Parameters.AddWithValue("@cid", rc.CommunityId);
           conn.Open();
@@ -293,7 +347,7 @@
         {
           teamMembers.Add(new {
             Name  = u.DisplayName,
-            Role  = "Community Manager",
+            Role  = "Community beheerder",
             Email = u.Email ?? "",
             Image = "/DnnImageHandler.ashx?mode=profilepic&userId=" + u.UserID + "&w=80&h=80"
           });
@@ -323,7 +377,7 @@
   </ul>
 </div> *@
 
-<main class="max-w-7xl w-full">
+<main class="max-w-8xl w-full m-auto">
   <!-- ============================================ -->
   <!-- 1) BANNER + LATEST POSTS                     -->
   <!-- ============================================ -->
@@ -332,7 +386,7 @@
       <div class="flex flex-col xl:flex-row gap-5 sm:gap-8">
 
         <!-- Left: community banner -->
-        <div class="relative flex-1 min-h-48 sm:min-h-80 rounded-xl overflow-hidden">
+        <div class="relative flex-1 min-h-48 sm:min-h-80 rounded-lg overflow-hidden">
           <img src="@bannerImage" alt="@communityName" class="absolute inset-0 w-full h-full object-cover" />
           <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent"></div>
           <div class="relative flex flex-col justify-end h-full p-6 gap-1">
@@ -344,7 +398,7 @@
         </div>
 
         <!-- Right: latest posts from community & groups -->
-        <div class="flex flex-col gap-3 sm:gap-4 xl:w-[420px]">
+        <div class="flex flex-col gap-3 sm:gap-4 xl:w-[480px]">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-semibold text-foreground-900">Laatste berichten</h2>
             <a href="/@communitySlug/timeline" class="text-sm font-medium text-foreground-500 hover:text-primary transition flex items-center gap-1">
@@ -360,8 +414,8 @@
           @foreach (var post in latestPosts) {
             var postImg = !string.IsNullOrEmpty((string)post.Image) ? (string)post.Image : "https://picsum.photos/seed/post" + post.Title.GetHashCode() + "/400/300";
             var postSlug = !string.IsNullOrEmpty((string)post.CommunitySlug) ? (string)post.CommunitySlug : communitySlug;
-          <a href="/@postSlug/timeline?post=@post.PostId" class="flex cursor-pointer group bg-content1 overflow-hidden min-h-[130px]">
-            <img src="@postImg" alt="@post.Title" class="rounded-xl w-36 object-cover shrink-0" />
+          <a href="/@postSlug/timeline?post=@post.PostId" class="flex cursor-pointer group bg-content2 hover:bg-primary/5 overflow-hidden min-h-[130px] rounded-lg p-1 transition">
+            <img src="@postImg" alt="@post.Title" class="rounded-md w-36 object-cover shrink-0" />
             <div class="flex flex-col gap-2 pl-4 min-w-0 flex-1 py-2">
               <h3 class="text-sm sm:text-base font-bold text-foreground-900 leading-snug group-hover:text-primary transition line-clamp-2">@post.Title</h3>
               <p class="text-xs sm:text-sm text-foreground-500 leading-relaxed line-clamp-3 sm:line-clamp-5">@post.Teaser</p>
@@ -392,8 +446,10 @@
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
         @foreach (var link in ondektLinks) {
-        <a href="@link.Url" class="block px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-divider bg-background text-xs sm:text-sm font-medium text-foreground-900 hover:border-primary/40 hover:text-primary transition truncate">
-          @link.Label
+        <a href="@link.Url" class="group flex items-center gap-3 px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg bg-content2 text-xs sm:text-sm font-medium text-foreground-700 hover:text-primary hover:bg-primary/5 transition">
+          <i data-lucide="@link.Icon" class="size-4 text-foreground-500 group-hover:text-primary transition shrink-0"></i>
+          <span class="truncate flex-1">@link.Label</span>
+          <i data-lucide="chevron-right" class="size-3.5 text-foreground-300 group-hover:text-primary group-hover:translate-x-0.5 transition shrink-0"></i>
         </a>
         }
       </div>
@@ -413,15 +469,17 @@
       </div>
     </div>
     <div class="w-full px-4 sm:px-6 lg:px-8">
-      <div class="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+      <div class="js-groups-strip flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
         @if (displayGroups.Count == 0) {
         <div class="flex flex-col items-center gap-3 py-8 text-center w-full">
           <p class="text-sm text-foreground-400">Er zijn nog geen groepen in deze community.</p>
         </div>
         } else {
         foreach (var g in displayGroups) {
-          var groupImg = "https://picsum.photos/seed/group" + g.Id + "/300/400";
-          <div class="relative w-32 h-40 sm:w-36 sm:h-44 shrink-0 rounded-xl overflow-hidden group snap-start">
+          var groupImg = groupImages.ContainsKey(g.Id) && !string.IsNullOrEmpty(groupImages[g.Id])
+            ? groupImages[g.Id]
+            : "https://picsum.photos/seed/group" + g.Id + "/300/400";
+          <div class="relative w-32 h-40 sm:w-36 sm:h-44 shrink-0 rounded-lg overflow-hidden group snap-start">
             <img src="@groupImg" alt="@g.Name" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent"></div>
             <div class="relative flex items-end h-full p-3">
@@ -441,7 +499,7 @@
     <div class="w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-3 sm:gap-4 py-4 sm:py-6">
       <div class="flex items-center justify-between">
         <h2 class="text-base font-semibold text-foreground-900">Ontmoet het team</h2>
-        <a href="/@communitySlug/manage/teams" class="text-sm font-medium text-foreground-500 hover:text-primary transition flex items-center gap-1">
+        <a href="/@communitySlug/manage/managers" class="text-sm font-medium text-foreground-500 hover:text-primary transition flex items-center gap-1">
           Ga naar <i data-lucide="arrow-right" class="size-3.5"></i>
         </a>
       </div>
@@ -454,7 +512,7 @@
     </div>
     } else {
     <div class="w-full px-4 sm:px-6 lg:px-8">
-      <div class="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+      <div class="js-team-strip flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
         @foreach (var member in teamMembers) {
         <button type="button" onclick="openTeamModal(this)" data-name="@member.Name" data-role="@member.Role" data-email="@member.Email" data-image="@member.Image" class="flex flex-col items-center gap-1.5 sm:gap-2 shrink-0 snap-start cursor-pointer hover:opacity-80 transition">
           <div class="size-16 sm:size-20 rounded-full overflow-hidden border-2 border-divider">
@@ -549,3 +607,72 @@
     }
   </script>
 </main>
+
+<style>
+  .js-groups-strip,
+  .js-team-strip { cursor: grab; -webkit-user-select: none; user-select: none; }
+  .js-groups-strip.is-dragging,
+  .js-team-strip.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+  .js-groups-strip.is-dragging a,
+  .js-groups-strip.is-dragging button,
+  .js-groups-strip.is-dragging img,
+  .js-team-strip.is-dragging a,
+  .js-team-strip.is-dragging button,
+  .js-team-strip.is-dragging img { pointer-events: none; }
+</style>
+<script>
+  (function () {
+    var strips = document.querySelectorAll('.js-groups-strip, .js-team-strip');
+    if (!strips.length) return;
+    strips.forEach(function (strip) { initDragScroll(strip); });
+
+  function initDragScroll(strip) {
+    var isDown = false, didDrag = false, startX = 0, startScroll = 0;
+    var THRESHOLD = 5;
+
+    strip.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch') return;
+      if (e.button !== 0) return;
+      isDown = true;
+      didDrag = false;
+      startX = e.clientX;
+      startScroll = strip.scrollLeft;
+      // Don't capture yet — capturing immediately prevents click events
+      // from firing on child buttons/links when the user just clicks.
+    });
+
+    strip.addEventListener('pointermove', function (e) {
+      if (!isDown) return;
+      var dx = e.clientX - startX;
+      if (!didDrag && Math.abs(dx) > THRESHOLD) {
+        didDrag = true;
+        strip.classList.add('is-dragging');
+        try { strip.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+      if (didDrag) {
+        strip.scrollLeft = startScroll - dx;
+        e.preventDefault();
+      }
+    });
+
+    function endDrag(e) {
+      if (!isDown) return;
+      isDown = false;
+      if (didDrag) {
+        strip.classList.remove('is-dragging');
+        // Swallow the synthetic click that follows the drag.
+        var swallow = function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          window.removeEventListener('click', swallow, true);
+        };
+        window.addEventListener('click', swallow, true);
+      }
+      try { strip.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+    strip.addEventListener('pointerup', endDrag);
+    strip.addEventListener('pointercancel', endDrag);
+    strip.addEventListener('dragstart', function (e) { e.preventDefault(); });
+  }
+  })();
+</script>

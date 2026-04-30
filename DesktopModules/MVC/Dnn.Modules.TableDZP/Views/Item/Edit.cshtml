@@ -4,25 +4,32 @@
 @using Newtonsoft.Json
 @using System.Linq
 @using System.Collections.Generic
+@functions{
+    static string L(string key) {
+        var v = DotNetNuke.Services.Localization.Localization.GetString(
+            key, "/DesktopModules/MVC/Dnn.Modules.TableDZP/App_LocalResources/SharedResources.resx");
+        return string.IsNullOrEmpty(v) ? key : v;
+    }
+}
 
 <link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/edit.css" />
 @Html.Partial("_Select")
 
 <div id="EditConfig-@Dnn.ModuleContext.ModuleId">
     <div class="at-edit" id="editForm">
-        <div class="at-collapse-toggle"><a href="#">Expand All</a></div>
+        <div class="at-collapse-toggle"><a href="#">@L("ExpandAll.Text")</a></div>
 
         <h2 class="at-section-head">
-            <a href="#" class="at-expanded">Configure Data Table</a>
+            <a href="#" class="at-expanded">@L("ConfigureDataTable.Text")</a>
         </h2>
         <fieldset>
             <div class="at-field">
-                <div><label for="Title">Title</label></div>
+                <div><label for="Title">@L("Title.Label")</label></div>
                 @Html.TextBoxFor(m => m.Title, new { maxlength = "256", placeholder = "Table title" })
             </div>
 
             <div class="at-field">
-                <div><label>Data Source</label></div>
+                <div><label>@L("DataSource.Label")</label></div>
                 <div id="modeSelect" data-selected="@(Model.Mode == "api" ? "api" : "sql")"></div>
                 <input type="hidden" name="Mode" id="modeValue" value="@(Model.Mode == "api" ? "api" : "sql")" />
             </div>
@@ -175,7 +182,7 @@
         </h2>
         <fieldset>
             <div class="at-detect-bar">
-                <button type="button" id="detectColumns" class="at-add-btn">Detect Columns</button>
+                <button type="button" id="detectColumns" class="at-add-btn">@L("DetectColumns.Text")</button>
                 <span id="detectStatus" style="font-size:0.8125rem;color:var(--default-500);"></span>
             </div>
             <div id="columnsContainer">
@@ -235,10 +242,10 @@
         <input type="hidden" name="PermissionsJson" id="permissionsJson" />
 
         <div class="at-actions">
-            <button type="submit" class="at-btn-primary" id="btnSave">Save</button>
-            <a id="cancelEdit" href="@Dnn.ModuleContext.NavigateUrl(Dnn.ModuleContext.TabId, "", false)" class="at-btn-secondary">Cancel</a>
+            <button type="submit" class="at-btn-primary" id="btnSave">@L("Save.Text")</button>
+            <a id="cancelEdit" href="@Dnn.ModuleContext.NavigateUrl(Dnn.ModuleContext.TabId, "", false)" class="at-btn-secondary">@L("Cancel.Text")</a>
             <span style="flex:1"></span>
-            <button type="button" class="at-btn-secondary" id="btnExport">Export</button>
+            <button type="button" class="at-btn-secondary" id="btnExport">@L("Export.Text")</button>
             <label class="at-btn-secondary" style="cursor:pointer;margin:0;">
                 Import
                 <input type="file" id="btnImport" accept=".json" style="display:none;" />

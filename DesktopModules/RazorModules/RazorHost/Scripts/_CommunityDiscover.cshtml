@@ -84,9 +84,9 @@
     <!-- Category cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
       @foreach (var cat in categories) {
-      <div class="flex flex-col gap-4 p-5 rounded-xl border border-divider bg-background hover:border-primary/30 transition">
+      <div class="flex flex-col gap-4 p-5 rounded-lg border border-divider bg-background hover:border-primary/30 transition">
         <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10">
+          <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10">
             <i data-lucide="@cat.Icon" class="size-5 text-primary"></i>
           </div>
           <h2 class="text-sm font-bold text-foreground-900">@cat.Title</h2>

@@ -40,81 +40,81 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ModuleTitle.Text" xml:space="preserve">
-    <value>Data Table</value>
+    <value>Gegevenstabel</value>
   </data>
   <data name="AddItem.Text" xml:space="preserve">
-    <value>Add Item</value>
+    <value>Item toevoegen</value>
   </data>
   <data name="EditItem.Text" xml:space="preserve">
-    <value>Edit Item</value>
+    <value>Item bewerken</value>
   </data>
   <data name="Title.Label" xml:space="preserve">
-    <value>Title</value>
+    <value>Titel</value>
   </data>
   <data name="Description.Label" xml:space="preserve">
-    <value>Description</value>
+    <value>Omschrijving</value>
   </data>
   <data name="Save.Text" xml:space="preserve">
-    <value>Save</value>
+    <value>Opslaan</value>
   </data>
   <data name="Cancel.Text" xml:space="preserve">
-    <value>Cancel</value>
+    <value>Annuleren</value>
   </data>
   <data name="Delete.Text" xml:space="preserve">
-    <value>Delete</value>
+    <value>Verwijderen</value>
   </data>
   <data name="Delete.Confirm" xml:space="preserve">
-    <value>Are you sure you want to delete this item?</value>
+    <value>Weet je zeker dat je dit item wilt verwijderen?</value>
   </data>
   <data name="DeleteConfirm.Title" xml:space="preserve">
-    <value>Are you sure?</value>
+    <value>Weet je het zeker?</value>
   </data>
   <data name="DeleteConfirm.Message" xml:space="preserve">
-    <value>This item will be permanently deleted.</value>
+    <value>Dit item wordt definitief verwijderd.</value>
   </data>
   <data name="NoItems.Text" xml:space="preserve">
-    <value>No items found. Use the module action menu to add a new item.</value>
+    <value>Geen items gevonden. Gebruik het modulemenu om een nieuw item toe te voegen.</value>
   </data>
   <data name="NoData.Text" xml:space="preserve">
-    <value>No data found.</value>
+    <value>Geen gegevens gevonden.</value>
   </data>
   <data name="EditRow.Text" xml:space="preserve">
-    <value>Edit row</value>
+    <value>Rij bewerken</value>
   </data>
   <data name="AddNewItem.Text" xml:space="preserve">
-    <value>Add new item</value>
+    <value>Nieuw item toevoegen</value>
   </data>
   <data name="DropImage.Text" xml:space="preserve">
-    <value>Drop an image here or click to upload</value>
+    <value>Sleep een afbeelding hier of klik om te uploaden</value>
   </data>
   <data name="DropImage.Hint" xml:space="preserve">
     <value>PNG / JPG / GIF / WEBP, max 10 MB</value>
   </data>
   <data name="RemoveImage.Text" xml:space="preserve">
-    <value>Remove image</value>
+    <value>Afbeelding verwijderen</value>
   </data>
   <data name="NoOptions.Text" xml:space="preserve">
-    <value>No options</value>
+    <value>Geen opties</value>
   </data>
   <data name="ExpandAll.Text" xml:space="preserve">
-    <value>Expand All</value>
+    <value>Alles uitklappen</value>
   </data>
   <data name="ConfigureDataTable.Text" xml:space="preserve">
-    <value>Configure Data Table</value>
+    <value>Gegevenstabel configureren</value>
   </data>
   <data name="DataSource.Label" xml:space="preserve">
-    <value>Data Source</value>
+    <value>Gegevensbron</value>
   </data>
   <data name="Permissions.Label" xml:space="preserve">
-    <value>Permissions</value>
+    <value>Rechten</value>
   </data>
   <data name="Columns.Label" xml:space="preserve">
-    <value>Columns</value>
+    <value>Kolommen</value>
   </data>
   <data name="DetectColumns.Text" xml:space="preserve">
-    <value>Detect Columns</value>
+    <value>Kolommen detecteren</value>
   </data>
   <data name="Export.Text" xml:space="preserve">
-    <value>Export</value>
+    <value>Exporteren</value>
   </data>
 </root>

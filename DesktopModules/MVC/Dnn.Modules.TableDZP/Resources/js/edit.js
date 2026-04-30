@@ -44,6 +44,7 @@
             { value: 'text', label: 'Text' }, { value: 'readonly', label: 'Read Only' },
             { value: 'hidden', label: 'Hidden' }, { value: 'number', label: 'Number' },
             { value: 'email', label: 'Email' }, { value: 'url', label: 'URL' },
+            { value: 'image', label: 'Image' },
             { value: 'select', label: 'Select' }, { value: 'multiselect', label: 'Multi Select' }
         ];
     }

@@ -137,4 +137,21 @@
   --tw-shadow: none;
   box-shadow: none;
 }
+
+/* Hide DNN PersonaBar at tablet (md) and below.
+   The PersonaBar adds .personabar-visible to <body> and pushes layout
+   over by its width. Reset both at <lg breakpoints. */
+@media (max-width: 768px) {
+  #ctl01_PersonaBarPanel,
+  .personaBarContainer,
+  .personalBarContainer {
+    display: none !important;
+  }
+  body.personabar-visible,
+  body.personabar-visible .dnnFormPopup,
+  body.personabar-visible #Body {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+}
 </style>

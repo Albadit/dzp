@@ -1,0 +1,12 @@
+-- ═══════════════════════════════════════════════════════════════
+--  Schema: Community.ImageUrl
+--  Adds an optional thumbnail / banner image URL to communities.
+-- ═══════════════════════════════════════════════════════════════
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID(N'[dbo].[Community]') AND name = 'ImageUrl')
+BEGIN
+    ALTER TABLE [dbo].[Community] ADD [ImageUrl] NVARCHAR(512) NULL;
+END
+GO

@@ -156,7 +156,9 @@
     var canEdit = false;
     if (user != null && companyId > 0)
     {
-        canEdit = user.IsSuperUser || (ownerId > 0 && user.UserID == ownerId);
+        var adminRoleName = PortalSettings.Current != null ? PortalSettings.Current.AdministratorRoleName : "Administrators";
+        var isAdministrator = !string.IsNullOrEmpty(adminRoleName) && user.IsInRole(adminRoleName);
+        canEdit = user.IsSuperUser || isAdministrator || (ownerId > 0 && user.UserID == ownerId);
     }
 }
 

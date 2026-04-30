@@ -103,7 +103,7 @@
             <div class="overflow-y-auto max-h-72 py-1">
                 @if (optionsArr.Count == 0)
                 {
-                    <div class="py-3 px-4 text-center text-[0.8125rem] text-default-400">No options</div>
+                    <div class="py-3 px-4 text-center text-[0.8125rem] text-default-400">@(DotNetNuke.Services.Localization.Localization.GetString("NoOptions.Text", "/DesktopModules/MVC/Dnn.Modules.TableDZP/App_LocalResources/SharedResources.resx") ?? "No options")</div>
                 }
                 @foreach (var opt in optionsArr)
                 {

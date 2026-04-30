@@ -1,4 +1,13 @@
 @model Dnn.Modules.TableDZP.Models.DataTableViewModel
+@functions{
+    // Localization helper — pulls strings from SharedResources.resx so the
+    // module respects the user's portal language (English / Dutch).
+    static string L(string key) {
+        var v = DotNetNuke.Services.Localization.Localization.GetString(
+            key, "/DesktopModules/MVC/Dnn.Modules.TableDZP/App_LocalResources/SharedResources.resx");
+        return string.IsNullOrEmpty(v) ? key : v;
+    }
+}
 @{
     var config = Model.Config;
     var tid = Model.TableId;
@@ -20,74 +29,85 @@
     // Recalculate grid cols for table display
     var gridParts = new List<string>();
     if (config.AllowBulkDelete) { gridParts.Add("2.5rem"); }
-    foreach (var tc in tableColumns) { gridParts.Add(tc.Type == "readonly" ? "auto" : "1fr"); }
+    foreach (var tc in tableColumns) { gridParts.Add(tc.Type == "readonly" || tc.Type == "image" ? "auto" : "1fr"); }
     if (config.AllowEdit || config.AllowDelete) { gridParts.Add("6rem"); }
     var gridCols = string.Join(" ", gridParts);
 
-    // Execute lookup queries for "select" type columns
-    var lookups = new Dictionary<string, List<KeyValuePair<string, string>>>();
+    // ── Lookup execution (perf): collect every distinct select/multiselect
+    //    column once, then run all of their queries against a SINGLE pooled
+    //    SqlConnection. Previously the view opened a new connection per column,
+    //    which multiplied connect/auth overhead and held the request open
+    //    longer. We also build a key→label dictionary per column so that
+    //    rendering each cell becomes O(1) instead of O(options) — the old
+    //    code did a linear scan inside every multiselect cell render.
+    var lookups   = new Dictionary<string, List<KeyValuePair<string, string>>>();
+    var lookupMap = new Dictionary<string, Dictionary<string, string>>();
     var selectCols = new List<Dnn.Modules.TableDZP.Models.DataTableColumn>();
-    if (Model.EditableColumns != null)
+    var seenCols   = new HashSet<string>();
+    var candidateCols = new List<Dnn.Modules.TableDZP.Models.DataTableColumn>();
+    if (Model.EditableColumns != null) { candidateCols.AddRange(Model.EditableColumns); }
+    if (Model.VisibleColumns  != null) { candidateCols.AddRange(Model.VisibleColumns); }
+    foreach (var c in candidateCols)
     {
-        foreach (var c in Model.EditableColumns)
-        {
-            if ((c.Type == "select" || c.Type == "multiselect") && !string.IsNullOrEmpty(c.Pattern) && !lookups.ContainsKey(c.Key))
-            {
-                selectCols.Add(c);
-            }
-        }
+        if (c == null || string.IsNullOrEmpty(c.Pattern)) { continue; }
+        if (c.Type != "select" && c.Type != "multiselect") { continue; }
+        if (!seenCols.Add(c.Key)) { continue; }
+        selectCols.Add(c);
     }
-    if (Model.VisibleColumns != null)
+
+    if (selectCols.Count > 0)
     {
-        foreach (var c in Model.VisibleColumns)
-        {
-            bool already = false;
-            foreach (var s in selectCols) { if (s.Key == c.Key) { already = true; break; } }
-            if (!already && (c.Type == "select" || c.Type == "multiselect") && !string.IsNullOrEmpty(c.Pattern) && !lookups.ContainsKey(c.Key))
-            {
-                selectCols.Add(c);
-            }
-        }
-    }
-    foreach (var col in selectCols)
-    {
-        var opts = new List<KeyValuePair<string, string>>();
         try
         {
             var connStr = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString;
-            var conn = new System.Data.SqlClient.SqlConnection(connStr);
-            try
+            using (var conn = new System.Data.SqlClient.SqlConnection(connStr))
             {
                 conn.Open();
-                var cmd = new System.Data.SqlClient.SqlCommand(col.Pattern, conn);
-                try
+                var rc = DZP.CommunityAuth.CommunityAuth.Current;
+                foreach (var col in selectCols)
                 {
-                    var rc = DZP.CommunityAuth.CommunityAuth.Current;
-                    if (rc != null)
+                    var opts = new List<KeyValuePair<string, string>>();
+                    var optMap = new Dictionary<string, string>(StringComparer.Ordinal);
+                    try
                     {
-                        if (col.Pattern.Contains("@rc_CommunityId")) { cmd.Parameters.AddWithValue("@rc_CommunityId", rc.CommunityId); }
-                        if (col.Pattern.Contains("@rc_CommunitySlug")) { cmd.Parameters.AddWithValue("@rc_CommunitySlug", (object)rc.CommunitySlug ?? System.DBNull.Value); }
-                        if (col.Pattern.Contains("@rc_CommunityName")) { cmd.Parameters.AddWithValue("@rc_CommunityName", (object)rc.CommunityName ?? System.DBNull.Value); }
-                        if (col.Pattern.Contains("@rc_CompanySlug")) { cmd.Parameters.AddWithValue("@rc_CompanySlug", (object)rc.CompanySlug ?? System.DBNull.Value); }
-                        if (col.Pattern.Contains("@rc_CompanyName")) { cmd.Parameters.AddWithValue("@rc_CompanyName", (object)rc.CompanyName ?? System.DBNull.Value); }
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.CommandText    = col.Pattern;
+                            cmd.CommandTimeout = 15;
+                            if (rc != null)
+                            {
+                                if (col.Pattern.Contains("@rc_CommunityId"))   { cmd.Parameters.AddWithValue("@rc_CommunityId", rc.CommunityId); }
+                                if (col.Pattern.Contains("@rc_CommunitySlug")) { cmd.Parameters.AddWithValue("@rc_CommunitySlug", (object)rc.CommunitySlug ?? System.DBNull.Value); }
+                                if (col.Pattern.Contains("@rc_CommunityName")) { cmd.Parameters.AddWithValue("@rc_CommunityName", (object)rc.CommunityName ?? System.DBNull.Value); }
+                                if (col.Pattern.Contains("@rc_CompanySlug"))   { cmd.Parameters.AddWithValue("@rc_CompanySlug", (object)rc.CompanySlug ?? System.DBNull.Value); }
+                                if (col.Pattern.Contains("@rc_CompanyName"))   { cmd.Parameters.AddWithValue("@rc_CompanyName", (object)rc.CompanyName ?? System.DBNull.Value); }
+                            }
+                            using (var rdr = cmd.ExecuteReader())
+                            {
+                                while (rdr.Read())
+                                {
+                                    var val = rdr[0] != null ? rdr[0].ToString() : "";
+                                    var lbl = rdr.FieldCount > 1 && rdr[1] != null ? rdr[1].ToString() : val;
+                                    opts.Add(new KeyValuePair<string, string>(val, lbl));
+                                    if (!optMap.ContainsKey(val)) { optMap[val] = lbl; }
+                                }
+                            }
+                        }
                     }
+                    catch { /* one bad lookup query shouldn't kill the page */ }
+                    lookups[col.Key]   = opts;
+                    lookupMap[col.Key] = optMap;
                 }
-                catch (System.Exception) { /* ignore */ }
-                var rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                {
-                    var val = rdr[0] != null ? rdr[0].ToString() : "";
-                    var lbl = rdr.FieldCount > 1 && rdr[1] != null ? rdr[1].ToString() : val;
-                    opts.Add(new KeyValuePair<string, string>(val, lbl));
-                }
-                rdr.Close();
-                cmd.Dispose();
             }
-            finally { conn.Dispose(); }
         }
         catch { }
-        lookups[col.Key] = opts;
     }
+
+    // Upload endpoint for image-typed columns. Matches TableServiceRouteMapper
+    // which registers route name "TableService" under module folder
+    // "Dnn.Modules.TableDZP".
+    var appBase   = (Request.ApplicationPath ?? "").TrimEnd('/');
+    var uploadUrl = appBase + "/DesktopModules/Dnn.Modules.TableDZP/API/TableService/Table/UploadImage";
 }
 
 @* <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script> *@
@@ -147,7 +167,7 @@
     </div>
 
     <!-- Table -->
-    <div class="overflow-x-auto rounded-xl border border-divider bg-background shadow-card">
+    <div class="overflow-x-auto rounded-lg border border-divider bg-background shadow-card">
         <div class="dt-table min-w-full text-sm" data-id="@tid" style="display:grid; grid-template-columns: @gridCols;">
 
             @* Header *@
@@ -191,7 +211,7 @@
                     <div class="dt-row-empty" style="grid-column: 1 / -1;">
                         <div class="px-4 py-12 text-center text-foreground-400">
                             <i data-lucide="inbox" class="size-8 mx-auto mb-2 opacity-40"></i>
-                            <p>No data found.</p>
+                            <p>@L("NoData.Text")</p>
                         </div>
                     </div>
                 }
@@ -208,29 +228,33 @@
                         @foreach (var col in tableColumns)
                         {
                             var cellVal = row.ContainsKey(col.Key) ? (row[col.Key] != null ? row[col.Key].ToString() : "") : "";
-                            <div class="px-4 py-3 border-t border-default-100 flex items-center group-hover:bg-default-50/50 transition-colors whitespace-nowrap" data-col="@col.Key"
-                                 @if (col.Type == "select" || col.Type == "multiselect") { @Html.Raw("data-raw=\"" + Html.Encode(cellVal) + "\"") }>
-                                @if (col.Type == "select" && lookups.ContainsKey(col.Key))
+                            var needsRaw = (col.Type == "select" || col.Type == "multiselect" || col.Type == "image");
+                            var dataRawAttr = needsRaw ? Html.Raw(" data-raw=\"" + Html.Encode(cellVal) + "\"") : null;
+                            <div class="px-4 py-3 border-t border-default-100 flex items-center group-hover:bg-default-50/50 transition-colors whitespace-nowrap" data-col="@col.Key"@dataRawAttr>
+                                @if (col.Type == "select" && lookupMap.ContainsKey(col.Key))
                                 {
-                                    var matchLabel = cellVal;
-                                    foreach (var opt in lookups[col.Key]) { if (opt.Key == cellVal) { matchLabel = opt.Value; break; } }
+                                    string matchLabel;
+                                    if (!lookupMap[col.Key].TryGetValue(cellVal, out matchLabel)) { matchLabel = cellVal; }
                                     <span class="dt-cell-text">@matchLabel</span>
                                 }
-                                else if (col.Type == "multiselect" && lookups.ContainsKey(col.Key))
+                                else if (col.Type == "multiselect" && lookupMap.ContainsKey(col.Key))
                                 {
+                                    var lblMap = lookupMap[col.Key];
                                     var ids = cellVal.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
-                                    var labels = new List<string>();
+                                    var labels = new List<string>(ids.Length);
                                     foreach (var id in ids)
                                     {
                                         var trimId = id.Trim();
-                                        var found = false;
-                                        foreach (var opt in lookups[col.Key])
-                                        {
-                                            if (opt.Key == trimId) { labels.Add(opt.Value); found = true; break; }
-                                        }
-                                        if (!found) { labels.Add(trimId); }
+                                        string lbl;
+                                        labels.Add(lblMap.TryGetValue(trimId, out lbl) ? lbl : trimId);
                                     }
                                     <span class="dt-cell-text">@string.Join(", ", labels)</span>
+                                }
+                                else if (col.Type == "image" && !string.IsNullOrEmpty(cellVal))
+                                {
+                                    <a href="@cellVal" target="_blank" rel="noopener noreferrer" class="inline-block">
+                                        <img src="@cellVal" alt="" class="size-10 rounded object-cover border border-divider" loading="lazy" />
+                                    </a>
                                 }
                                 else if (col.Type == "url" && !string.IsNullOrEmpty(cellVal))
                                 {
@@ -289,7 +313,7 @@
 <div id="@(tid)-modal" class="dt-modal hidden fixed inset-0 z-1100 flex items-center justify-center bg-overlay backdrop-blur-sm">
     <div class="bg-background rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b border-divider">
-            <h3 class="font-semibold text-foreground-900">Edit row</h3>
+            <h3 class="font-semibold text-foreground-900">@L("EditRow.Text")</h3>
             <button type="button" class="dt-modal-close p-1 rounded-md hover:bg-default-100 transition text-foreground-400 hover:text-foreground-600" data-target="@tid">
                 <i data-lucide="x" class="size-5"></i>
             </button>
@@ -312,6 +336,33 @@
                         {
                             <div class="dt-modal-lookup" data-col="@col.Key" data-multi="true" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
                         }
+                        else if (col.Type == "image")
+                        {
+                            @* Image dropzone — value travels in the hidden .dt-dz-value input.
+                               module.js picks it up via getModalFields() because it carries the
+                               data-col attribute too (rendered as dt-modal-input below). *@
+                            <div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content1 cursor-pointer transition"
+                                 tabindex="0" role="button"
+                                 data-upload-url="@uploadUrl"
+                                 data-col="@col.Key">
+                                <input type="hidden" class="dt-dz-value dt-modal-input" data-col="@col.Key" value="" @(col.Required ? Html.Raw("required") : null) />
+                                <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
+                                <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none">
+                                    <i data-lucide="image-up" class="size-8"></i>
+                                    <span>@L("DropImage.Text")</span>
+                                    <span class="text-xs text-foreground-400">@L("DropImage.Hint")</span>
+                                </div>
+                                <div class="dt-dz-preview hidden relative w-full">
+                                    <img class="dt-dz-preview-img w-full max-h-48 object-contain rounded-md" alt="" />
+                                    <button type="button" class="dt-dz-remove absolute top-2 right-2 inline-flex items-center justify-center size-8 rounded-full bg-content1 border border-divider shadow hover:bg-danger-50 hover:text-danger transition" aria-label="@L("RemoveImage.Text")">
+                                        <i data-lucide="x" class="size-4"></i>
+                                    </button>
+                                </div>
+                                <div class="dt-dz-progress hidden absolute inset-0 flex items-center justify-center bg-overlay/40 rounded-lg text-sm text-foreground-700">
+                                    <i data-lucide="loader-2" class="size-5 animate-spin"></i>
+                                </div>
+                            </div>
+                        }
                         else
                         {
                             <input type="@(col.Type == "slug" ? "text" : col.Type)"
@@ -325,8 +376,8 @@
                 }
             </div>
             <div class="flex justify-end gap-2 px-5 py-4 border-t border-divider bg-content2">
-                <button type="button" class="dt-modal-close px-4 py-2 text-sm font-medium text-foreground-700 bg-background border border-divider rounded-lg hover:bg-content2 transition" data-target="@tid">Cancel</button>
-                <button type="submit" class="dt-modal-save px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition" data-target="@tid">Save</button>
+                <button type="button" class="dt-modal-close px-4 py-2 text-sm font-medium text-foreground-700 bg-background border border-divider rounded-lg hover:bg-content2 transition" data-target="@tid">@L("Cancel.Text")</button>
+                <button type="submit" class="dt-modal-save px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition" data-target="@tid">@L("Save.Text")</button>
             </div>
         </form>
     </div>
@@ -338,7 +389,7 @@
 <div id="@(tid)-create-modal" class="dt-create-modal hidden fixed inset-0 z-1100 flex items-center justify-center bg-overlay backdrop-blur-sm">
         <div class="bg-background rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
             <div class="flex items-center justify-between px-5 py-4 border-b border-divider">
-                <h3 class="font-semibold text-foreground-900">Add new item</h3>
+                <h3 class="font-semibold text-foreground-900">@L("AddNewItem.Text")</h3>
                 <button type="button" class="dt-create-modal-close p-1 rounded-md hover:bg-default-100 transition text-foreground-400 hover:text-foreground-600" data-target="@tid">
                     <i data-lucide="x" class="size-5"></i>
                 </button>
@@ -362,6 +413,30 @@
                             {
                                 <div class="dt-create-lookup" data-col="@col.Key" data-multi="true" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
                             }
+                            else if (col.Type == "image")
+                            {
+                                <div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content1 cursor-pointer transition"
+                                     tabindex="0" role="button"
+                                     data-upload-url="@uploadUrl"
+                                     data-col="@col.Key">
+                                    <input type="hidden" class="dt-dz-value dt-create-input" data-col="@col.Key" value="" @(col.Required ? Html.Raw("required") : null) />
+                                    <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
+                                    <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none">
+                                        <i data-lucide="image-up" class="size-8"></i>
+                                        <span>@L("DropImage.Text")</span>
+                                        <span class="text-xs text-foreground-400">@L("DropImage.Hint")</span>
+                                    </div>
+                                    <div class="dt-dz-preview hidden relative w-full">
+                                        <img class="dt-dz-preview-img w-full max-h-48 object-contain rounded-md" alt="" />
+                                        <button type="button" class="dt-dz-remove absolute top-2 right-2 inline-flex items-center justify-center size-8 rounded-full bg-content1 border border-divider shadow hover:bg-danger-50 hover:text-danger transition" aria-label="@L("RemoveImage.Text")">
+                                            <i data-lucide="x" class="size-4"></i>
+                                        </button>
+                                    </div>
+                                    <div class="dt-dz-progress hidden absolute inset-0 flex items-center justify-center bg-overlay/40 rounded-lg text-sm text-foreground-700">
+                                        <i data-lucide="loader-2" class="size-5 animate-spin"></i>
+                                    </div>
+                                </div>
+                            }
                             else
                             {
                                 <input type="@(col.Type == "slug" ? "text" : col.Type)"
@@ -376,8 +451,8 @@
                     }
                 </div>
                 <div class="flex justify-end gap-2 px-5 py-4 border-t border-divider bg-content2">
-                    <button type="button" class="dt-create-modal-close px-4 py-2 text-sm font-medium text-foreground-700 bg-background border border-divider rounded-lg hover:bg-content2 transition" data-target="@tid">Cancel</button>
-                    <button type="submit" class="dt-create-save px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition">Save</button>
+                    <button type="button" class="dt-create-modal-close px-4 py-2 text-sm font-medium text-foreground-700 bg-background border border-divider rounded-lg hover:bg-content2 transition" data-target="@tid">@L("Cancel.Text")</button>
+                    <button type="submit" class="dt-create-save px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition">@L("Save.Text")</button>
                 </div>
             </form>
         </div>
@@ -392,12 +467,12 @@
             <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-danger-100 mb-4">
                 <i data-lucide="triangle-alert" class="size-6 text-danger"></i>
             </div>
-            <h3 class="font-semibold text-foreground-900 mb-1">Are you sure?</h3>
-            <p class="text-sm text-foreground-500 dt-del-msg">This item will be permanently deleted.</p>
+            <h3 class="font-semibold text-foreground-900 mb-1">@L("DeleteConfirm.Title")</h3>
+            <p class="text-sm text-foreground-500 dt-del-msg">@L("DeleteConfirm.Message")</p>
         </div>
         <div class="flex gap-2 px-5 py-4 border-t border-divider bg-content2 justify-end">
-            <button type="button" class="dt-del-cancel px-4 py-2 text-sm font-medium text-foreground-700 bg-background border border-divider rounded-lg hover:bg-content2 transition" data-target="@tid">Cancel</button>
-            <button type="submit" class="dt-del-confirm px-4 py-2 text-sm font-medium text-white bg-danger rounded-lg hover:bg-danger-700 transition" data-target="@tid">Delete</button>
+            <button type="button" class="dt-del-cancel px-4 py-2 text-sm font-medium text-foreground-700 bg-background border border-divider rounded-lg hover:bg-content2 transition" data-target="@tid">@L("Cancel.Text")</button>
+            <button type="submit" class="dt-del-confirm px-4 py-2 text-sm font-medium text-white bg-danger rounded-lg hover:bg-danger-700 transition" data-target="@tid">@L("Delete.Text")</button>
         </div>
         </form>
     </div>
@@ -416,5 +491,6 @@
         @:window['__dtLookups_@(tid)']['@kv.Key'] = [@Html.Raw(string.Join(",", jsItems))]; 
     }
 </script>
+<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/dropzone.js"></script>
 <script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/module.js"></script>
 <script>initDataTable('@tid')</script>

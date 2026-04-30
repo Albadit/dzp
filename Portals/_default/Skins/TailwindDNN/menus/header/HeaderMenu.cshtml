@@ -53,6 +53,40 @@
     var hasCommunity = rc != null && !string.IsNullOrEmpty(rc.CommunitySlug);
     var communityName = hasCommunity ? rc.CommunityName : "";
     var slug          = hasCommunity ? rc.CommunitySlug : "";
+
+    // Lookup Community.ImageUrl (cached per request to avoid repeat queries)
+    string communityImg = "";
+    if (hasCommunity)
+    {
+        var imgItemKey = "dzp:communityImg:" + slug;
+        var cached = HttpContext.Current.Items[imgItemKey] as string;
+        if (cached != null)
+        {
+            communityImg = cached;
+        }
+        else
+        {
+            var imgConn = System.Configuration.ConfigurationManager.ConnectionStrings["SiteSqlServer"];
+            if (imgConn != null && !string.IsNullOrEmpty(imgConn.ConnectionString))
+            {
+                using (var c = new System.Data.SqlClient.SqlConnection(imgConn.ConnectionString))
+                {
+                    using (var cm = new System.Data.SqlClient.SqlCommand("SELECT ImageUrl FROM Community WHERE Id = @cid", c))
+                    {
+                        cm.Parameters.AddWithValue("@cid", rc.CommunityId);
+                        c.Open();
+                        var r = cm.ExecuteScalar();
+                        if (r != null && r != DBNull.Value) { communityImg = (string)r; }
+                    }
+                }
+            }
+            HttpContext.Current.Items[imgItemKey] = communityImg ?? "";
+        }
+        if (string.IsNullOrEmpty(communityImg))
+        {
+            communityImg = "https://picsum.photos/seed/" + slug + "/64/64";
+        }
+    }
     if (hasCommunity) { ctx = "community"; }
 
     // --- Portal / user info ---
@@ -90,7 +124,7 @@
     </div>
     <div class="w-full flex justify-between">
         <div class="flex gap-2.5 @(string.IsNullOrEmpty(communityName) ? "invisible" : "")">
-            <img src="https://picsum.photos/seed/@slug/64/64" alt="@communityName" class="sm:flex hidden h-full aspect-square object-cover rounded-sm bg-default-200" />
+            <img src="@communityImg" alt="@communityName" class="sm:flex hidden h-full aspect-square object-cover rounded-sm bg-default-200" />
             <div class="lg:w-80 w-45 flex flex-col lg:justify-between justify-center">
                 <span class="lg:text-base text-sm font-bold w-full text-ellipsis overflow-hidden whitespace-nowrap">@communityName</span>
                 <div class="flex gap-2 items-center">
