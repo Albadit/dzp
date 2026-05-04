@@ -1,0 +1,31 @@
+@*
+    Shared search box with clear button + optional live count.
+    Reuses across pages. Params (via PageData):
+      id          (string, required)  - input id; clear button gets id + "Clear"
+      placeholder (string, optional)  - placeholder text
+      countId     (string, optional)  - id for the count <span> (omit to skip)
+      countText   (string, optional)  - initial text inside the count span
+      extraClass  (string, optional)  - extra Tailwind classes on the wrapper
+*@
+@{
+    var sbId          = PageData["id"] as string ?? "searchBox";
+    var sbPlaceholder = PageData["placeholder"] as string ?? "Zoeken...";
+    var sbCountId     = PageData["countId"] as string;
+    var sbCountText   = PageData["countText"] as string ?? "";
+    var sbExtra       = PageData["extraClass"] as string ?? "";
+    var sbClearId     = sbId + "Clear";
+}
+<div class="flex items-center gap-3 @sbExtra">
+    <div class="relative flex-1">
+        <i data-lucide="search" class="size-4 text-foreground-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        <input id="@sbId" type="text" placeholder="@sbPlaceholder" autocomplete="off"
+               class="w-full pl-9 pr-9 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+        <button id="@sbClearId" type="button"
+                class="hidden absolute right-2 top-1/2 -translate-y-1/2 size-7 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-default-200 flex items-center justify-center transition">
+            <i data-lucide="x" class="size-4"></i>
+        </button>
+    </div>
+    @if (!string.IsNullOrEmpty(sbCountId)) {
+        <span id="@sbCountId" class="text-sm text-foreground-400 shrink-0">@sbCountText</span>
+    }
+</div>

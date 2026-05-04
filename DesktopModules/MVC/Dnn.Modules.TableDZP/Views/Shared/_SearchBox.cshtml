@@ -1,0 +1,69 @@
+@*
+    Reusable search input with leading icon + clear (reset) button.
+
+    ViewData:
+      "search-class"       – extra CSS class on the <input>     (optional)
+      "search-placeholder" – placeholder text                    (optional)
+      "search-id"          – DOM id on the <input>               (optional)
+      "search-name"        – form input name                     (optional)
+      "search-value"       – initial value                       (optional)
+      "search-data"        – dictionary of data-* attrs e.g. data-target
+
+    The clear button stays hidden when the input is empty. When clicked it
+    resets the value, focuses the input, and dispatches a bubbling `input`
+    event so listeners (debounced filter, etc.) react.
+*@
+@{
+    var sClass       = ViewData["search-class"]       as string ?? "";
+    var sPlaceholder = ViewData["search-placeholder"] as string ?? "Search…";
+    var sId          = ViewData["search-id"]          as string ?? "";
+    var sName        = ViewData["search-name"]        as string ?? "";
+    var sValue       = ViewData["search-value"]       as string ?? "";
+    var sData        = ViewData["search-data"]        as System.Collections.Generic.IDictionary<string, string>;
+    var dataAttrs = "";
+    if (sData != null)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var kv in sData) { sb.Append(' ').Append(kv.Key).Append("=\"").Append(System.Web.HttpUtility.HtmlEncode(kv.Value)).Append('"'); }
+        dataAttrs = sb.ToString();
+    }
+}
+<div class="dzp-searchbox relative flex-1 min-w-0">
+    <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-foreground-400 pointer-events-none"></i>
+    <input type="text"
+           @(string.IsNullOrEmpty(sId)   ? "" : "id=\""    + sId    + "\"")
+           @(string.IsNullOrEmpty(sName) ? "" : "name=\""  + sName  + "\"")
+           value="@sValue"
+           class="@sClass dzp-searchbox-input w-full pl-10 pr-10 py-2.5 text-sm rounded-lg bg-content2 focus:outline-none focus:ring-2 focus:ring-primary/30 transition placeholder:text-foreground-400"
+           placeholder="@sPlaceholder"@Html.Raw(dataAttrs) />
+    <button type="button"
+            class="dzp-searchbox-clear absolute right-2 top-1/2 -translate-y-1/2 size-7 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-default-200 flex items-center justify-center transition @(string.IsNullOrEmpty(sValue) ? "hidden" : "")"
+            aria-label="Clear">
+        <i data-lucide="x" class="size-4"></i>
+    </button>
+</div>
+
+@if (HttpContext.Current.Items["_dzp_searchbox_bridge"] == null)
+{
+    HttpContext.Current.Items["_dzp_searchbox_bridge"] = true;
+    <script>
+        (function () {
+            document.addEventListener('input', function (e) {
+                var inp = e.target.closest && e.target.closest('.dzp-searchbox-input');
+                if (!inp) return;
+                var btn = inp.parentNode.querySelector('.dzp-searchbox-clear');
+                if (btn) btn.classList.toggle('hidden', !inp.value);
+            }, true);
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest && e.target.closest('.dzp-searchbox-clear');
+                if (!btn) return;
+                var inp = btn.parentNode.querySelector('.dzp-searchbox-input');
+                if (!inp) return;
+                inp.value = '';
+                btn.classList.add('hidden');
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                inp.focus();
+            });
+        })();
+    </script>
+}

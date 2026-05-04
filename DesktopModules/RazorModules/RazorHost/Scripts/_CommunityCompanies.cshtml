@@ -1,77 +1,71 @@
 @using DZP.CommunityAuth
-@using DotNetNuke.Entities.Users
 @using DotNetNuke.Entities.Portals
-@using System.Web
 @using System.Data.SqlClient
 @using System.Configuration
 @using System.Linq
 @using System.Web.Script.Serialization
+@*
+    Community → Bedrijven page.
+    Fetches the company list from SQL, builds the JSON payload that the
+    client-side script consumes, then orchestrates the section partials in
+    Shared/CommunityCompanies/. Markup-heavy work lives in the partials so
+    this file stays a high-level overview.
+*@
 @{
-    var rc = CommunityAuth.Current;
-    var user = Dnn.User;
-    var portalId = PortalSettings.Current != null ? PortalSettings.Current.PortalId : 0;
-
+    var rc            = CommunityAuth.Current;
     var communityName = rc != null ? rc.CommunityName : "Community";
     var communitySlug = rc != null ? rc.CommunitySlug : "";
-    var communityId   = rc != null ? rc.CommunityId : 0;
-    var bannerImage   = "https://picsum.photos/seed/" + communitySlug + "/1200/400";
+    var communityId   = rc != null ? rc.CommunityId   : 0;
 
     /* ── Fetch companies for this community ── */
-    var companies = new List<dynamic>();
-    if (communityId > 0)
-    {
+    var companies = new List<Dictionary<string, object>>();
+    if (communityId > 0) {
         var cs = ConfigurationManager.ConnectionStrings["SiteSqlServer"];
         var connStr = cs != null ? cs.ConnectionString : "";
-        if (!string.IsNullOrEmpty(connStr))
-        {
-            using (var conn = new SqlConnection(connStr))
-            {
+        if (!string.IsNullOrEmpty(connStr)) {
+            using (var conn = new SqlConnection(connStr)) {
             using (var cmd = new SqlCommand(@"
-                SELECT c.Id, c.Slug, c.Name, c.CompanyInfo,
+                SELECT c.Id, c.Slug, c.Name, c.CompanyInfo, c.ImageUrl,
                        (SELECT COUNT(*) FROM UserCompany uc WHERE uc.CompanyId = c.Id) AS MemberCount
                 FROM Company c
                 WHERE c.CommunityId = @cid
-                ORDER BY c.Name", conn))
-            {
+                ORDER BY c.Name", conn)) {
                 cmd.Parameters.AddWithValue("@cid", communityId);
                 conn.Open();
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
+                using (var reader = cmd.ExecuteReader()) {
+                    while (reader.Read()) {
                         var infoJson = reader.IsDBNull(3) ? "" : reader.GetString(3);
-                        // Try to extract a short description from CompanyInfo JSON
+                        var imageUrl = reader.IsDBNull(4) ? "" : reader.GetString(4);
+
+                        /* Try to extract a short description + address from the
+                           CompanyInfo JSON; fall back to the raw value if it's
+                           plain text. */
                         var shortDesc = "";
-                        var address = "";
-                        if (!string.IsNullOrEmpty(infoJson))
-                        {
-                            try
-                            {
+                        var address   = "";
+                        if (!string.IsNullOrEmpty(infoJson)) {
+                            try {
                                 var json = System.Web.Helpers.Json.Decode(infoJson);
-                                if (json != null)
-                                {
+                                if (json != null) {
                                     shortDesc = json.about ?? json.description ?? "";
-                                    address = json.address ?? "";
+                                    address   = json.address ?? "";
                                 }
-                            }
-                            catch { /* not valid JSON, treat as plain text */ }
+                            } catch { /* not valid JSON, treat as plain text */ }
                         }
-                        if (string.IsNullOrEmpty(shortDesc) && !string.IsNullOrEmpty(infoJson) && !infoJson.TrimStart().StartsWith("{"))
-                        {
+                        if (string.IsNullOrEmpty(shortDesc) && !string.IsNullOrEmpty(infoJson) && !infoJson.TrimStart().StartsWith("{")) {
                             shortDesc = infoJson;
                         }
-                        if (!string.IsNullOrEmpty(shortDesc) && shortDesc.Length > 150)
-                        {
+                        if (!string.IsNullOrEmpty(shortDesc) && shortDesc.Length > 150) {
                             shortDesc = shortDesc.Substring(0, 150) + "...";
                         }
 
-                        companies.Add(new {
-                            Id          = reader.GetInt32(0),
-                            Slug        = reader.GetString(1),
-                            Name        = reader.GetString(2),
-                            Description = shortDesc,
-                            Address     = address,
-                            MemberCount = reader.GetInt32(4)
+                        companies.Add(new Dictionary<string, object> {
+                            { "id",   reader.GetInt32(0) },
+                            { "slug", reader.GetString(1) },
+                            { "name", reader.GetString(2) },
+                            { "desc", shortDesc },
+                            { "addr", address },
+                            { "img",  imageUrl },
+                            { "mc",   reader.GetInt32(5) }
                         });
                     }
                 }
@@ -79,293 +73,22 @@
             }
         }
     }
+
+    var serializer = new JavaScriptSerializer();
+    serializer.MaxJsonLength = int.MaxValue;
+
+    /* Publish state via PageData (proven pattern in this codebase). */
+    PageData["communityName"] = communityName;
+    PageData["communitySlug"] = communitySlug;
+    PageData["bannerImage"]   = "https://picsum.photos/seed/" + communitySlug + "/1200/400";
+    PageData["companyCount"]  = companies.Count;
+    PageData["companiesJson"] = serializer.Serialize(companies);
 }
 
 <main class="max-w-7xl w-full">
-    <!-- ============================================ -->
-    <!-- 1) BANNER                                     -->
-    <!-- ============================================ -->
-    <section class="w-full">
-        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-            <div class="relative min-h-48 sm:min-h-64 rounded-xl overflow-hidden">
-                <img src="@bannerImage" alt="@communityName" class="absolute inset-0 w-full h-full object-cover" />
-                <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent"></div>
-                <div class="relative flex flex-col justify-end h-full p-6 gap-1">
-                    <h1 class="text-2xl sm:text-3xl font-bold text-white leading-tight">Bedrijven</h1>
-                    <p class="text-sm text-white/80">Alle bedrijven in @communityName</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============================================ -->
-    <!-- 2) SEARCH / FILTER BAR                        -->
-    <!-- ============================================ -->
-    <section class="w-full">
-        <div class="w-full px-4 sm:px-6 lg:px-8 pb-2">
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <div class="relative flex-1">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-foreground-400 pointer-events-none"></i>
-                    <input type="text" id="companySearch" placeholder="Zoek een bedrijf..."
-                           class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-divider bg-background text-sm text-foreground-900 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-sm text-foreground-400 shrink-0">@companies.Count bedrijven</span>
-                    <div class="flex items-center rounded-lg border border-divider bg-background p-0.5">
-                        <button type="button" id="btnGrid" onclick="setView('grid')" title="Rasterweergave"
-                                class="flex items-center justify-center size-8 rounded-md transition bg-primary text-white">
-                            <i data-lucide="layout-grid" class="size-4"></i>
-                        </button>
-                        <button type="button" id="btnList" onclick="setView('list')" title="Lijstweergave"
-                                class="flex items-center justify-center size-8 rounded-md transition text-foreground-400 hover:text-foreground-700">
-                            <i data-lucide="list" class="size-4"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============================================ -->
-    <!-- 3) COMPANIES GRID                             -->
-    <!-- ============================================ -->
-    <section class="w-full">
-        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            @if (companies.Count == 0)
-            {
-                <div class="flex flex-col items-center gap-3 py-16 text-center">
-                    <div class="flex items-center justify-center size-16 rounded-full bg-content2">
-                        <i data-lucide="building-2" class="size-8 text-foreground-300"></i>
-                    </div>
-                    <p class="text-sm text-foreground-400">Er zijn nog geen bedrijven in deze community.</p>
-                </div>
-            }
-            else
-            {
-                @* JSON data island — payload for client-side async/virtual rendering. *@
-                var serializer = new JavaScriptSerializer();
-                serializer.MaxJsonLength = int.MaxValue;
-                var payload = companies.Select(c => new {
-                    id   = (int)c.Id,
-                    slug = (string)c.Slug,
-                    name = (string)c.Name,
-                    desc = (string)c.Description,
-                    addr = (string)c.Address,
-                    mc   = (int)c.MemberCount
-                }).ToList();
-                var companiesJson = serializer.Serialize(payload);
-
-                <script type="application/json" id="companiesData">@Html.Raw(companiesJson)</script>
-
-                @* Initial skeleton — replaced by JS once data is parsed. *@
-                <div id="companiesSkeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @for (var i = 0; i < Math.Min(6, companies.Count); i++)
-                    {
-                        <div class="flex flex-col gap-3 p-5 rounded-xl border border-divider bg-background animate-pulse">
-                            <div class="flex items-start gap-4">
-                                <div class="size-12 rounded-xl bg-content2 shrink-0"></div>
-                                <div class="flex flex-col gap-2 flex-1">
-                                    <div class="h-4 rounded bg-content2 w-2/3"></div>
-                                    <div class="h-3 rounded bg-content2 w-1/3"></div>
-                                </div>
-                            </div>
-                            <div class="h-3 rounded bg-content2 w-full"></div>
-                            <div class="h-3 rounded bg-content2 w-5/6"></div>
-                        </div>
-                    }
-                </div>
-
-                <!-- GRID VIEW (virtualized — JS appends visible cards in batches) -->
-                <div id="companiesGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-
-                <!-- LIST VIEW (virtualized — fixed row height, windowed) -->
-                <div id="companiesList" class="hidden relative">
-                    <div id="companiesListSpacer" style="position:relative;width:100%;"></div>
-                    <div id="companiesListWindow" class="absolute inset-x-0 top-0 flex flex-col gap-2" style="will-change:transform;"></div>
-                </div>
-
-                @* Sentinel for async batch rendering of grid view. *@
-                <div id="companiesSentinel" class="h-1 w-full"></div>
-
-                <div id="noResults" class="hidden flex-col items-center gap-3 py-16 text-center">
-                    <p class="text-sm text-foreground-400">Geen bedrijven gevonden.</p>
-                </div>
-            }
-        </div>
-    </section>
+    @RenderPage("Shared/CommunityCompanies/_Banner.cshtml")
+    @RenderPage("Shared/CommunityCompanies/_FilterBar.cshtml")
+    @RenderPage("Shared/CommunityCompanies/_Grid.cshtml")
 </main>
 
-<script>
-(function() {
-    var dataEl  = document.getElementById('companiesData');
-    var skel    = document.getElementById('companiesSkeleton');
-    var gridEl  = document.getElementById('companiesGrid');
-    var listEl  = document.getElementById('companiesList');
-    var listSp  = document.getElementById('companiesListSpacer');
-    var listWin = document.getElementById('companiesListWindow');
-    var sentinel= document.getElementById('companiesSentinel');
-    var input   = document.getElementById('companySearch');
-    var btnGrid = document.getElementById('btnGrid');
-    var btnList = document.getElementById('btnList');
-    var noRes   = document.getElementById('noResults');
-    var slug    = @Html.Raw(new JavaScriptSerializer().Serialize(communitySlug));
-
-    if (!dataEl) return;
-
-    var ALL = [];
-    try { ALL = JSON.parse(dataEl.textContent || dataEl.innerText || '[]'); } catch(e) { ALL = []; }
-
-    var FILTERED = ALL.slice();
-    var MODE = 'grid';
-    var GRID_BATCH = 24;
-    var gridRendered = 0;
-    var ROW_H = 64;        // px per list row (incl. gap-2 ≈ 8)
-    var BUFFER = 5;        // overscan rows above/below viewport
-
-    var activeClass   = 'bg-primary text-white';
-    var inactiveClass = 'text-foreground-400 hover:text-foreground-700';
-
-    function escHtml(s) {
-        if (s == null) return '';
-        return String(s).replace(/[&<>"']/g, function(c){
-            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
-        });
-    }
-    function truncate(s, n) {
-        s = s || '';
-        return s.length > n ? s.substring(0, n) + '...' : s;
-    }
-
-    function gridCardHtml(c) {
-        var addrBlock = c.addr ? ('<div class="flex items-center gap-1.5 text-xs text-foreground-400"><i data-lucide="map-pin" class="size-3 shrink-0"></i><span class="truncate">' + escHtml(c.addr) + '</span></div>') : '';
-        var descBlock = c.desc ? ('<p class="text-sm text-foreground-500 leading-relaxed line-clamp-2">' + escHtml(c.desc) + '</p>') : '';
-        var mcLabel   = (c.mc === 1 ? 'medewerker' : 'medewerkers');
-        return '<a href="/' + escHtml(slug) + '/companies/' + escHtml(c.slug) + '"' +
-            ' class="company-card group flex flex-col gap-3 p-5 rounded-xl border border-divider bg-background hover:border-primary/40 hover:shadow-card-hover transition">' +
-            '<div class="flex items-start gap-4">' +
-              '<div class="flex items-center justify-center size-12 rounded-xl bg-primary/10 shrink-0"><i data-lucide="building-2" class="size-5 text-primary"></i></div>' +
-              '<div class="flex flex-col gap-1 min-w-0 flex-1">' +
-                '<h3 class="text-base font-semibold text-foreground-900 group-hover:text-primary transition truncate">' + escHtml(c.name) + '</h3>' +
-                addrBlock +
-              '</div>' +
-              '<i data-lucide="chevron-right" class="size-5 text-foreground-300 group-hover:text-primary shrink-0 mt-1 transition"></i>' +
-            '</div>' +
-            descBlock +
-            '<div class="flex items-center gap-3 pt-1 border-t border-divider">' +
-              '<div class="flex items-center gap-1.5 text-xs text-foreground-400"><i data-lucide="users" class="size-3.5"></i><span>' + c.mc + ' ' + mcLabel + '</span></div>' +
-            '</div>' +
-        '</a>';
-    }
-
-    function listRowHtml(c) {
-        var addrBlock = c.addr ? ('<span class="text-xs text-foreground-400 truncate">' + escHtml(c.addr) + '</span>') : '';
-        return '<a href="/' + escHtml(slug) + '/companies/' + escHtml(c.slug) + '"' +
-            ' class="company-card group flex items-center gap-4 px-4 py-3 rounded-xl border border-divider bg-background hover:border-primary/40 hover:shadow-card-hover transition" style="height:' + (ROW_H - 8) + 'px;">' +
-            '<div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 shrink-0"><i data-lucide="building-2" class="size-4 text-primary"></i></div>' +
-            '<div class="flex flex-col gap-0.5 min-w-0 flex-1"><h3 class="text-sm font-semibold text-foreground-900 group-hover:text-primary transition truncate">' + escHtml(c.name) + '</h3>' + addrBlock + '</div>' +
-            '<div class="hidden sm:flex items-center gap-1.5 text-xs text-foreground-400 shrink-0"><i data-lucide="users" class="size-3.5"></i><span>' + c.mc + '</span></div>' +
-            '<i data-lucide="chevron-right" class="size-4 text-foreground-300 group-hover:text-primary shrink-0 transition"></i>' +
-        '</a>';
-    }
-
-    /* ---------- GRID virtualization (chunked append on scroll) ---------- */
-    var gridIo = null;
-    function renderGridBatch() {
-        if (gridRendered >= FILTERED.length) return;
-        var end = Math.min(gridRendered + GRID_BATCH, FILTERED.length);
-        var html = '';
-        for (var i = gridRendered; i < end; i++) html += gridCardHtml(FILTERED[i]);
-        gridEl.insertAdjacentHTML('beforeend', html);
-        gridRendered = end;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-    function resetGrid() {
-        gridEl.innerHTML = '';
-        gridRendered = 0;
-        if (MODE === 'grid') renderGridBatch();
-    }
-    function ensureGridObserver() {
-        if (gridIo || typeof IntersectionObserver === 'undefined') return;
-        gridIo = new IntersectionObserver(function (entries) {
-            for (var i = 0; i < entries.length; i++) {
-                if (entries[i].isIntersecting && MODE === 'grid') renderGridBatch();
-            }
-        }, { rootMargin: '400px 0px' });
-        gridIo.observe(sentinel);
-    }
-
-    /* ---------- LIST virtualization (windowed) ---------- */
-    var listScrollHandler = null;
-    function renderListWindow() {
-        var total = FILTERED.length;
-        listSp.style.height = (total * ROW_H) + 'px';
-        var rect = listEl.getBoundingClientRect();
-        var scrollTop = Math.max(0, -rect.top);
-        var viewport  = window.innerHeight || document.documentElement.clientHeight;
-        var first = Math.max(0, Math.floor(scrollTop / ROW_H) - BUFFER);
-        var last  = Math.min(total, Math.ceil((scrollTop + viewport) / ROW_H) + BUFFER);
-        var html = '';
-        for (var i = first; i < last; i++) html += listRowHtml(FILTERED[i]);
-        listWin.style.transform = 'translateY(' + (first * ROW_H) + 'px)';
-        listWin.innerHTML = html;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-    function attachListScroll() {
-        if (listScrollHandler) return;
-        listScrollHandler = function () { if (MODE === 'list') renderListWindow(); };
-        window.addEventListener('scroll', listScrollHandler, { passive: true });
-        window.addEventListener('resize', listScrollHandler);
-    }
-
-    /* ---------- View switching ---------- */
-    function setView(mode) {
-        MODE = (mode === 'list') ? 'list' : 'grid';
-        var isGrid = MODE === 'grid';
-        gridEl.classList.toggle('hidden', !isGrid);
-        listEl.classList.toggle('hidden', isGrid);
-        btnGrid.className = 'flex items-center justify-center size-8 rounded-md transition ' + (isGrid ? activeClass : inactiveClass);
-        btnList.className = 'flex items-center justify-center size-8 rounded-md transition ' + (isGrid ? inactiveClass : activeClass);
-        try { localStorage.setItem('companiesView', MODE); } catch(e) {}
-        if (isGrid) { resetGrid(); ensureGridObserver(); }
-        else        { renderListWindow(); attachListScroll(); }
-    }
-    window.setView = setView;
-
-    /* ---------- Search ---------- */
-    var searchTimer = null;
-    function applyFilter() {
-        var q = (input && input.value || '').toLowerCase().trim();
-        FILTERED = !q ? ALL.slice() : ALL.filter(function (c) {
-            return (c.name || '').toLowerCase().indexOf(q) !== -1 ||
-                   (c.addr || '').toLowerCase().indexOf(q) !== -1;
-        });
-        if (noRes) {
-            noRes.classList.toggle('hidden', FILTERED.length > 0);
-            noRes.classList.toggle('flex',   FILTERED.length === 0);
-        }
-        if (MODE === 'grid') resetGrid();
-        else                 renderListWindow();
-    }
-    if (input) {
-        input.addEventListener('input', function () {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(applyFilter, 120);
-        });
-    }
-
-    /* ---------- Boot (async) ---------- */
-    function boot() {
-        if (skel) skel.parentNode && skel.parentNode.removeChild(skel);
-        var saved = 'grid';
-        try { saved = localStorage.getItem('companiesView') || 'grid'; } catch(e) {}
-        setView(saved);
-    }
-    if ('requestIdleCallback' in window) {
-        requestIdleCallback(boot, { timeout: 200 });
-    } else {
-        setTimeout(boot, 0);
-    }
-})();
-</script>
-
-
+@RenderPage("Shared/CommunityCompanies/_Script.cshtml")

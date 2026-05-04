@@ -1,0 +1,63 @@
+@*
+    "Contactgegevens" section: address, phone, email, website.
+    Reads from PageData: address, phone, email, website.
+*@
+@{
+    var address = (string)PageData["address"];
+    var phone   = (string)PageData["phone"];
+    var email   = (string)PageData["email"];
+    var website = (string)PageData["website"];
+}
+
+<div class="flex flex-col gap-4 bg-content1 rounded-xl border border-divider p-5 sm:p-6">
+    <h2 class="text-base font-semibold text-foreground-900">Contactgegevens</h2>
+
+    <div class="flex flex-col gap-1.5">
+        <label for="address" class="text-sm font-medium text-foreground-700">Adres</label>
+        @{
+            PageData["id"]          = "address";
+            PageData["name"]        = "address";
+            PageData["type"]        = "text";
+            PageData["value"]       = address;
+            PageData["placeholder"] = "Straat 1, 1234 AB Plaats";
+        }
+        @RenderPage("../Components/_Input.cshtml")
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="flex flex-col gap-1.5">
+            <label for="phone" class="text-sm font-medium text-foreground-700">Telefoon</label>
+            @{
+                PageData["id"]          = "phone";
+                PageData["name"]        = "phone";
+                PageData["type"]        = "tel";
+                PageData["value"]       = phone;
+                PageData["placeholder"] = "+31 6 12345678";
+            }
+            @RenderPage("../Components/_Input.cshtml")
+        </div>
+        <div class="flex flex-col gap-1.5">
+            <label for="email" class="text-sm font-medium text-foreground-700">E-mail</label>
+            @{
+                PageData["id"]          = "email";
+                PageData["name"]        = "email";
+                PageData["type"]        = "email";
+                PageData["value"]       = email;
+                PageData["placeholder"] = "info@bedrijf.nl";
+            }
+            @RenderPage("../Components/_Input.cshtml")
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+        <label for="website" class="text-sm font-medium text-foreground-700">Website</label>
+        @{
+            PageData["id"]          = "website";
+            PageData["name"]        = "website";
+            PageData["type"]        = "url";
+            PageData["value"]       = website;
+            PageData["placeholder"] = "https://bedrijf.nl";
+        }
+        @RenderPage("../Components/_Input.cshtml")
+    </div>
+</div>

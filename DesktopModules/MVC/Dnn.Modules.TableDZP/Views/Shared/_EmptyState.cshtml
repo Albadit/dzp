@@ -1,0 +1,21 @@
+@*
+    Generic empty-state card.
+
+    ViewData:
+      "empty-class"   – extra CSS (e.g. "dt-row-empty")
+      "empty-icon"    – lucide icon name (default: "inbox")
+      "empty-message" – text to show
+      "empty-style"   – inline style (e.g. "grid-column: 1 / -1;")
+*@
+@{
+    var eClass = ViewData["empty-class"]   as string ?? "";
+    var eIcon  = ViewData["empty-icon"]    as string ?? "inbox";
+    var eMsg   = ViewData["empty-message"] as string ?? "";
+    var eStyle = ViewData["empty-style"]   as string ?? "";
+}
+<div class="@eClass" @(string.IsNullOrEmpty(eStyle) ? "" : "style=\"" + eStyle + "\"")>
+    <div class="px-4 py-12 text-center text-foreground-400">
+        <i data-lucide="@eIcon" class="size-8 mx-auto mb-2 opacity-40"></i>
+        <p>@eMsg</p>
+    </div>
+</div>

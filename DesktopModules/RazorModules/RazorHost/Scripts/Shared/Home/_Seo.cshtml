@@ -1,0 +1,108 @@
+@*
+    SEO + JSON-LD for the marketing landing page.
+    Data via PageData: title, description, url, origin (string).
+*@
+@{
+    var seoTitle       = (string)PageData["seoTitle"];
+    var seoDescription = (string)PageData["seoDescription"];
+    var seoUrl         = (Uri)PageData["seoUrl"];
+    var seoOrigin      = (string)PageData["seoOrigin"];
+
+    var page = HttpContext.Current.Handler as System.Web.UI.Page;
+    if (page != null && page.Header != null) {
+        /* Block deprecated 'unload' event listener from ASP.NET AJAX (Sys.Application). */
+        page.Header.Controls.AddAt(0, new LiteralControl(
+            "<script>(function(){var o=EventTarget.prototype.addEventListener;" +
+            "EventTarget.prototype.addEventListener=function(t,f,p){" +
+            "if(this===window&&t===\"unload\")return;" +
+            "return o.call(this,t,f,p)};})();</script>"));
+
+        page.Title = seoTitle;
+        page.Header.Controls.Add(new System.Web.UI.HtmlControls.HtmlMeta { Name = "description", Content = seoDescription });
+        page.Header.Controls.Add(new System.Web.UI.HtmlControls.HtmlMeta { Name = "robots",      Content = "index, follow" });
+
+        var ogTags = new Dictionary<string, string> {
+            { "og:title",       seoTitle },
+            { "og:description", seoDescription },
+            { "og:type",        "website" },
+            { "og:url",         seoUrl.AbsoluteUri },
+            { "og:locale",      "nl_NL" },
+            { "og:site_name",   "DZP Connect" }
+        };
+        foreach (var og in ogTags) {
+            var m = new System.Web.UI.HtmlControls.HtmlMeta();
+            m.Attributes["property"] = og.Key;
+            m.Content = og.Value;
+            page.Header.Controls.Add(m);
+        }
+
+        foreach (var tw in new Dictionary<string, string> {
+            { "twitter:card",        "summary_large_image" },
+            { "twitter:title",       seoTitle },
+            { "twitter:description", seoDescription }
+        }) {
+            page.Header.Controls.Add(new System.Web.UI.HtmlControls.HtmlMeta { Name = tw.Key, Content = tw.Value });
+        }
+
+        var canonical = new System.Web.UI.HtmlControls.HtmlLink();
+        canonical.Attributes["rel"] = "canonical";
+        canonical.Href = seoUrl.AbsoluteUri;
+        page.Header.Controls.Add(canonical);
+    }
+}
+
+@* JSON-LD Structured Data — kept inline so search engines see it in the HTML body. *@
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "Organization",
+    "name": "DZP Connect",
+    "url": "@seoOrigin",
+    "description": "Dé zakelijke community-app voor winkelgebieden. Structuur, samenwerking en overzicht op één plek.",
+    "email": "info@@dzpconnect.nl",
+    "telephone": "+31201234567",
+    "contactPoint": {
+        "@@type": "ContactPoint",
+        "telephone": "+31201234567",
+        "contactType": "sales",
+        "availableLanguage": "Dutch"
+    }
+}
+</script>
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "SoftwareApplication",
+    "name": "DZP Connect",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "description": "@seoDescription",
+    "offers": {
+        "@@type": "AggregateOffer",
+        "priceCurrency": "EUR",
+        "availability": "https://schema.org/InStock"
+    },
+    "featureList": [
+        "Realtime nieuws & eventfeed",
+        "Veilige documentenbibliotheek",
+        "Slim zoeken met tags & filters",
+        "Rollen & rechten per gebied",
+        "Dashboard",
+        "Tijdlijn",
+        "Bedrijfsprofielen",
+        "Beheerpaneel"
+    ]
+}
+</script>
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "BreadcrumbList",
+    "itemListElement": [{
+        "@@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "@seoOrigin"
+    }]
+}
+</script>

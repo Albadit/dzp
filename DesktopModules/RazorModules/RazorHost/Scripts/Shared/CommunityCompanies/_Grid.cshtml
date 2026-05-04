@@ -1,0 +1,60 @@
+@*
+    Companies grid + list view containers.
+    Reads from PageData: companyCount (int), companiesJson (string — serialized payload).
+    Empty state when count is 0; otherwise emits the JSON data island,
+    skeleton placeholders, the (hidden) grid + virtualised list, and the
+    intersection-observer sentinel that drives chunked rendering.
+*@
+@{
+    var companyCount  = (int)PageData["companyCount"];
+    var companiesJson = (string)PageData["companiesJson"];
+}
+
+<section class="w-full">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        @if (companyCount == 0) {
+            <div class="flex flex-col items-center gap-3 py-16 text-center">
+                <div class="flex items-center justify-center size-16 rounded-full bg-content2">
+                    <i data-lucide="building-2" class="size-8 text-foreground-300"></i>
+                </div>
+                <p class="text-sm text-foreground-400">Er zijn nog geen bedrijven in deze community.</p>
+            </div>
+        } else {
+            @* JSON data island — payload for client-side async/virtual rendering. *@
+            <script type="application/json" id="companiesData">@(new System.Web.HtmlString(companiesJson))</script>
+
+            @* Initial skeleton — replaced by JS once data is parsed. *@
+            <div id="companiesSkeleton" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                @for (var i = 0; i < Math.Min(6, companyCount); i++) {
+                    <div class="flex flex-col gap-3 p-5 rounded-xl border border-divider bg-background animate-pulse">
+                        <div class="flex items-start gap-4">
+                            <div class="size-12 rounded-xl bg-content2 shrink-0"></div>
+                            <div class="flex flex-col gap-2 flex-1">
+                                <div class="h-4 rounded bg-content2 w-2/3"></div>
+                                <div class="h-3 rounded bg-content2 w-1/3"></div>
+                            </div>
+                        </div>
+                        <div class="h-3 rounded bg-content2 w-full"></div>
+                        <div class="h-3 rounded bg-content2 w-5/6"></div>
+                    </div>
+                }
+            </div>
+
+            <!-- GRID VIEW (virtualized — JS appends visible cards in batches) -->
+            <div id="companiesGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+            <!-- LIST VIEW (virtualized — fixed row height, windowed) -->
+            <div id="companiesList" class="hidden relative">
+                <div id="companiesListSpacer" style="position:relative;width:100%;"></div>
+                <div id="companiesListWindow" class="absolute inset-x-0 top-0 flex flex-col gap-2" style="will-change:transform;"></div>
+            </div>
+
+            @* Sentinel for async batch rendering of grid view. *@
+            <div id="companiesSentinel" class="h-1 w-full"></div>
+
+            <div id="noResults" class="hidden flex-col items-center gap-3 py-16 text-center">
+                <p class="text-sm text-foreground-400">Geen bedrijven gevonden.</p>
+            </div>
+        }
+    </div>
+</section>

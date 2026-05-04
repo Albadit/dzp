@@ -1,0 +1,32 @@
+@*
+    "Hoe werkt het?" — three numbered steps.
+*@
+@{
+    var steps = new[] {
+        new { Title = "Maak je gebied aan",   Desc = "Stel rollen in en nodig je team uit - klaar in minuten." },
+        new { Title = "Deel nieuws & events", Desc = "Publiceer updates, upload documenten en plan events - allemaal vanuit één scherm." },
+        new { Title = "Alles doorzoekbaar",   Desc = "Filter op type, tag of datum. Zoek berichten en documenten terug in seconden." }
+    };
+}
+
+<section aria-label="Hoe het werkt" class="w-full bg-content2 py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-4 text-center">
+        <h2 class="text-3xl font-bold text-foreground-900">
+            Hoe werkt het?
+        </h2>
+        <p class="text-foreground-600 max-w-2xl">In drie simpele stappen live.</p>
+        <div class="grid md:grid-cols-3 gap-8 w-full pt-8">
+            @{ var stepNum = 0; }
+            @foreach (var step in steps) {
+                stepNum++;
+                <div class="bg-background rounded-xl p-8 shadow-card hover:shadow-card-hover transition flex flex-col items-center gap-6">
+                    <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-bold">@stepNum</div>
+                    <div class="flex flex-col gap-2">
+                        <h3 class="text-lg font-semibold text-foreground-900">@step.Title</h3>
+                        <p class="text-foreground-500 text-sm">@step.Desc</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>

@@ -1,0 +1,36 @@
+@*
+    Three-role governance cards.
+*@
+@{
+    var roles = new[] {
+        new { Icon = "shield-check", BadgeBg = "bg-indigo-600", Border = "border-indigo-100", CardBg = "bg-indigo-50/50", Title = "Admin",             Desc = "Beheert de gebieden, gebruikers, tags en alle instellingen." },
+        new { Icon = "square-pen",   BadgeBg = "bg-amber-500",  Border = "border-amber-100",  CardBg = "bg-amber-50/50",  Title = "Community Manager", Desc = "Plaatst nieuws, modereert content en beheert de documentenbibliotheek." },
+        new { Icon = "eye",          BadgeBg = "bg-green-600",  Border = "border-green-100",  CardBg = "bg-green-50/50",  Title = "Ondernemer",        Desc = "Leest updates, filtert op relevantie, vult enquêtes in en beheert zijn profiel." }
+    };
+}
+
+<section aria-label="Rollen en governance" class="w-full bg-background py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
+        <div class="max-w-3xl flex flex-col items-center text-center gap-4">
+            <h2 class="text-3xl font-bold text-foreground-900">
+                Slimme rollen - iedereen ziet precies wat nodig is
+            </h2>
+            <p class="text-foreground-500">
+                Drie rollen, duidelijk gescheiden. De admin beheert, de community manager publiceert, de ondernemer leest en filtert.
+            </p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 max-w-4xl w-full">
+            @foreach (var r in roles) {
+            <div class="rounded-xl border-2 @r.Border @r.CardBg p-6 flex flex-col gap-4">
+                <div class="w-10 h-10 rounded-lg @r.BadgeBg flex items-center justify-center">
+                    <i data-lucide="@r.Icon" class="size-5 text-white"></i>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <h3 class="font-semibold text-foreground-900">@r.Title</h3>
+                    <p class="text-sm text-foreground-600">@r.Desc</p>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</section>

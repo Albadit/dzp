@@ -1,0 +1,10 @@
+﻿@*
+    Client-side controller for the Bedrijven page. See community-companies.js.
+    Reads from PageData: communitySlug (string).
+*@
+@{
+    var communitySlug = (string)PageData["communitySlug"];
+    var slugJson      = new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(communitySlug);
+}
+<script>window.COMPANIES_SLUG = @(new System.Web.HtmlString(slugJson));</script>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/community-companies.js"></script>

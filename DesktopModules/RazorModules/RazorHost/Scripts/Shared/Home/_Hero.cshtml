@@ -1,0 +1,87 @@
+@*
+    Hero section — headline, CTAs, hero check-list and a stylised dashboard mockup.
+*@
+@{
+    var checks = new[] {
+        "Realtime nieuws & eventfeed",
+        "Veilige documentenbibliotheek",
+        "Slim zoeken met tags & filters",
+        "Rollen & rechten per gebied"
+    };
+}
+
+<section aria-label="Hero" class="w-full relative overflow-hidden bg-linear-to-br from-indigo-50 via-background to-indigo-50 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+            <!-- Text -->
+            <div class="flex flex-col gap-8">
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-foreground-900 leading-tight">
+                    Alles in één app. Eén plek voor je hele gebied.
+                </h1>
+                <p class="text-lg text-foreground-600 max-w-xl">
+                    Nieuws, events, documenten en bedrijfsprofielen - overzichtelijk, veilig en altijd bij de hand.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="#demo"
+                       class="px-8 py-3 rounded-lg bg-indigo-600 text-white font-semibold text-center hover:bg-indigo-700 transition">
+                        Probeer de demo
+                    </a>
+                    <a href="#functionaliteiten"
+                       class="px-8 py-3 rounded-lg border-2 border-indigo-600 text-indigo-600 font-semibold text-center hover:bg-indigo-50 transition">
+                        Ontdek de features
+                    </a>
+                </div>
+                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-foreground-600">
+                    @foreach (var check in checks) {
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check" class="size-5 text-green-500 shrink-0"></i>
+                        @check
+                    </li>
+                    }
+                </ul>
+            </div>
+            <!-- Visual mockup -->
+            <div class="hidden lg:flex items-center justify-center">
+                <div class="relative w-full max-w-md">
+                    <div class="bg-background rounded-xl shadow-2xl p-6 border border-default-100 flex flex-col gap-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                            <span class="text-xs text-foreground-600">Dashboard - Centrum Rotterdam</span>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <div class="h-4 bg-indigo-100 rounded w-3/4"></div>
+                            <div class="h-3 bg-default-100 rounded w-full"></div>
+                            <div class="h-3 bg-default-100 rounded w-5/6"></div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="h-16 bg-indigo-50 rounded-lg flex items-center justify-center text-xs text-indigo-700 font-medium">Nieuws</div>
+                                <div class="h-16 bg-amber-50 rounded-lg flex items-center justify-center text-xs text-amber-700 font-medium">Events</div>
+                                <div class="h-16 bg-green-50 rounded-lg flex items-center justify-center text-xs text-green-700 font-medium">Docs</div>
+                            </div>
+                            <div class="h-3 bg-default-100 rounded w-2/3"></div>
+                            <div class="h-3 bg-default-50 rounded w-full"></div>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-6 -left-6 bg-background rounded-xl shadow-lg p-4 border border-default-100 w-48 flex flex-col gap-2">
+                        <div class="text-xs font-semibold text-foreground-700">Tijdlijn</div>
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                                <div class="h-2 bg-default-100 rounded flex-1"></div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                                <div class="h-2 bg-default-100 rounded flex-1"></div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                                <div class="h-2 bg-default-100 rounded flex-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

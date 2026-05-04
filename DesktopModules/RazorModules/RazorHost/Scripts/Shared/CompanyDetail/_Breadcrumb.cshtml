@@ -1,0 +1,33 @@
+@*
+    Breadcrumb trail for the company detail page, with an inline "Bewerken"
+    link rendered only for users who have permission to edit.
+    Reads from PageData: communityName, communitySlug, companyName, companySlug, canEdit.
+*@
+@{
+    var communityName = (string)PageData["communityName"];
+    var communitySlug = (string)PageData["communitySlug"];
+    var companyName   = (string)PageData["companyName"];
+    var companySlug   = (string)PageData["companySlug"];
+    var canEdit       = (bool)PageData["canEdit"];
+}
+
+<section class="w-full">
+    <div class="w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        <div class="flex items-center justify-between gap-4">
+            <nav class="flex items-center gap-1.5 text-sm text-foreground-400 min-w-0">
+                <a href="/@communitySlug/home" class="hover:text-primary transition">@communityName</a>
+                <i data-lucide="chevron-right" class="size-3.5"></i>
+                <a href="/@communitySlug/companies" class="hover:text-primary transition">Bedrijven</a>
+                <i data-lucide="chevron-right" class="size-3.5"></i>
+                <span class="text-foreground-700 font-medium truncate max-w-48">@companyName</span>
+            </nav>
+            @if (canEdit) {
+                <a href="/@communitySlug/companies/@companySlug/edit"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-divider text-sm font-medium text-foreground-600 hover:text-primary hover:border-primary/30 transition shrink-0">
+                    <i data-lucide="pencil" class="size-3.5"></i>
+                    Bewerken
+                </a>
+            }
+        </div>
+    </div>
+</section>

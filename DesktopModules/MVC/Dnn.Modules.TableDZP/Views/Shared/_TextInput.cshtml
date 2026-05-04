@@ -1,0 +1,34 @@
+@*
+    Reusable form-field input.
+
+    ViewData:
+      "fld-class"       – extra CSS (e.g. "dt-modal-input")
+      "fld-type"        – input type ("text", "number", "date", ...)
+      "fld-col"         – data-col value
+      "fld-required"    – "true"
+      "fld-maxlength"   – number?
+      "fld-pattern"     – regex pattern (optional)
+      "fld-pattern-msg" – pattern title (optional)
+      "fld-placeholder" – placeholder (optional)
+      "fld-value"       – initial value (optional)
+*@
+@{
+    var fldClass      = ViewData["fld-class"]       as string ?? "dt-modal-input";
+    var fldType       = ViewData["fld-type"]        as string ?? "text";
+    var fldCol        = ViewData["fld-col"]         as string ?? "";
+    var fldRequired   = (ViewData["fld-required"]   as string) == "true";
+    var fldMaxLen     = ViewData["fld-maxlength"]   as int?;
+    var fldPattern    = ViewData["fld-pattern"]     as string;
+    var fldPatternMsg = ViewData["fld-pattern-msg"] as string;
+    var fldPlaceholder= ViewData["fld-placeholder"] as string;
+    var fldValue      = ViewData["fld-value"]       as string;
+    if (fldType == "slug") { fldType = "text"; }
+}
+<input type="@fldType"
+       class="@fldClass w-full px-3 py-2 text-sm rounded-lg bg-content2 focus:outline-none focus:ring-2 focus:ring-primary/30 transition placeholder:text-foreground-400"
+       data-col="@fldCol"
+       @(fldRequired ? Html.Raw("required") : null)
+       @(fldMaxLen.HasValue ? Html.Raw("maxlength=\"" + fldMaxLen + "\"") : null)
+       @(string.IsNullOrEmpty(fldPlaceholder) ? null : Html.Raw("placeholder=\"" + System.Web.HttpUtility.HtmlEncode(fldPlaceholder) + "\""))
+       @(string.IsNullOrEmpty(fldValue)       ? null : Html.Raw("value=\""       + System.Web.HttpUtility.HtmlEncode(fldValue)       + "\""))
+       @(string.IsNullOrEmpty(fldPattern)     ? null : Html.Raw("pattern=\""     + System.Web.HttpUtility.HtmlEncode(fldPattern)     + "\" title=\"" + System.Web.HttpUtility.HtmlEncode(fldPatternMsg ?? "") + "\"")) />

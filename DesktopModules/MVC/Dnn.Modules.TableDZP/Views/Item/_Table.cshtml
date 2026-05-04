@@ -1,0 +1,138 @@
+@model Dnn.Modules.TableDZP.Models.DataTableViewModel
+@functions{
+    static string L(string key) {
+        var v = DotNetNuke.Services.Localization.Localization.GetString(
+            key, "/DesktopModules/MVC/Dnn.Modules.TableDZP/App_LocalResources/SharedResources.resx");
+        return string.IsNullOrEmpty(v) ? key : v;
+    }
+}
+@{
+    var tid          = ViewData["tid"]          as string ?? Model.TableId;
+    var tableColumns = ViewData["tableColumns"] as Dnn.Modules.TableDZP.Models.DataTableColumn[] ?? new Dnn.Modules.TableDZP.Models.DataTableColumn[0];
+    var lookupMap    = ViewData["lookupMap"]    as System.Collections.Generic.IDictionary<string, System.Collections.Generic.Dictionary<string, string>>;
+    var gridCols     = ViewData["gridCols"]     as string ?? "";
+    var config       = Model.Config;
+}
+<div class="overflow-x-auto rounded-lg bg-content1 border border-divider">
+    <div class="dt-table min-w-full text-sm" data-id="@tid" style="display:grid; grid-template-columns: @gridCols;">
+
+        @* Header *@
+        @if (config.AllowBulkDelete)
+        {
+            <div class="bg-content2 px-3 py-3 flex items-center">
+                <input type="checkbox" class="dt-check-all size-4 rounded text-primary focus:ring-primary cursor-pointer" data-target="@tid" />
+            </div>
+        }
+        @foreach (var col in tableColumns)
+        {
+            if (col.Sortable)
+            {
+                <div class="bg-content2 px-4 py-3 text-left font-semibold text-foreground-700 select-none flex items-center cursor-pointer dt-sort"
+                     data-col="@col.Key" data-dir="" data-target="@tid">
+                    <span class="inline-flex items-center gap-1">
+                        @col.Label
+                        <span class="inline-flex items-center gap-0.5">
+                            <span class="dt-sort-icon-wrap" style="visibility:hidden;"><i data-lucide="chevron-down" class="size-4 shrink-0"></i></span>
+                            <span class="dt-sort-num text-xs font-bold text-primary hidden"></span>
+                        </span>
+                    </span>
+                </div>
+            }
+            else
+            {
+                <div class="bg-content2 px-4 py-3 text-left font-semibold text-foreground-700 select-none flex items-center">
+                    <span class="inline-flex items-center gap-1">@col.Label</span>
+                </div>
+            }
+        }
+        @if (config.AllowEdit || config.AllowDelete)
+        {
+            <div class="bg-content2 px-4 py-3 text-right font-semibold text-foreground-700 flex items-center justify-end">Actions</div>
+        }
+
+        @* Body *@
+        <div class="dt-tbody contents">
+            @if (Model.Rows.Count == 0 && string.IsNullOrEmpty(Model.ErrorMsg))
+            {
+                @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_EmptyState.cshtml", null, new ViewDataDictionary {
+                    { "empty-class",   "dt-row-empty" },
+                    { "empty-icon",    "inbox" },
+                    { "empty-message", L("NoData.Text") },
+                    { "empty-style",   "grid-column: 1 / -1;" }
+                })
+            }
+            @foreach (var row in Model.Rows)
+            {
+                var pkVal = row.ContainsKey(config.PrimaryKey ?? "") ? (row[config.PrimaryKey] != null ? row[config.PrimaryKey].ToString() : "") : "";
+                <div class="dt-row contents group" data-pk="@pkVal">
+                    @if (config.AllowBulkDelete)
+                    {
+                        <div class="px-3 py-3 border-t border-content2 flex items-center group-hover:bg-default-50/50 transition-colors">
+                            <input type="checkbox" class="dt-check-row size-4 rounded text-primary focus:ring-primary cursor-pointer" value="@pkVal" data-target="@tid" />
+                        </div>
+                    }
+                    @foreach (var col in tableColumns)
+                    {
+                        var cellVal = row.ContainsKey(col.Key) ? (row[col.Key] != null ? row[col.Key].ToString() : "") : "";
+                        var needsRaw = (col.Type == "select" || col.Type == "multiselect" || col.Type == "image");
+                        var dataRawAttr = needsRaw ? Html.Raw(" data-raw=\"" + Html.Encode(cellVal) + "\"") : null;
+                        <div class="px-4 py-3 border-t border-content2 flex items-center group-hover:bg-default-50/50 transition-colors whitespace-nowrap" data-col="@col.Key"@dataRawAttr>
+                            @if (col.Type == "select" && lookupMap != null && lookupMap.ContainsKey(col.Key))
+                            {
+                                string matchLabel;
+                                if (!lookupMap[col.Key].TryGetValue(cellVal, out matchLabel)) { matchLabel = cellVal; }
+                                <span class="dt-cell-text">@matchLabel</span>
+                            }
+                            else if (col.Type == "multiselect" && lookupMap != null && lookupMap.ContainsKey(col.Key))
+                            {
+                                var lblMap = lookupMap[col.Key];
+                                var ids = cellVal.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
+                                var labels = new System.Collections.Generic.List<string>(ids.Length);
+                                foreach (var id in ids)
+                                {
+                                    var trimId = id.Trim();
+                                    string lbl;
+                                    labels.Add(lblMap.TryGetValue(trimId, out lbl) ? lbl : trimId);
+                                }
+                                <span class="dt-cell-text">@string.Join(", ", labels)</span>
+                            }
+                            else if (col.Type == "image" && !string.IsNullOrEmpty(cellVal))
+                            {
+                                <a href="@cellVal" target="_blank" rel="noopener noreferrer" class="inline-block">
+                                    <img src="@cellVal" alt="" class="size-10 rounded object-cover" loading="lazy" />
+                                </a>
+                            }
+                            else if (col.Type == "url" && !string.IsNullOrEmpty(cellVal))
+                            {
+                                <a href="@cellVal" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline truncate block max-w-[200px]">@cellVal</a>
+                            }
+                            else
+                            {
+                                <span class="dt-cell-text">@cellVal</span>
+                            }
+                        </div>
+                    }
+                    @if (config.AllowEdit || config.AllowDelete)
+                    {
+                        <div class="px-4 py-3 border-t border-content2 flex items-center justify-end group-hover:bg-default-50/50 transition-colors">
+                            <div class="inline-flex items-center gap-1">
+                                @if (config.AllowEdit)
+                                {
+                                    <button type="button" class="dt-btn-edit p-1.5 rounded-md text-foreground-400 hover:text-primary hover:bg-primary-50 transition" data-pk="@pkVal" data-target="@tid" title="Edit">
+                                        <i data-lucide="square-pen" class="size-4"></i>
+                                    </button>
+                                }
+                                @if (config.AllowDelete)
+                                {
+                                    <button type="button" class="dt-btn-del p-1.5 rounded-md text-foreground-400 hover:text-danger hover:bg-danger-50 transition" data-pk="@pkVal" data-target="@tid" title="Delete">
+                                        <i data-lucide="trash-2" class="size-4"></i>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

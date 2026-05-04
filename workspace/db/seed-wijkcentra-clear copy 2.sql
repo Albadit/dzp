@@ -1,8 +1,19 @@
 -- ═══════════════════════════════════════════════════════════════
 --  Clear: Removes everything created by seed-wijkcentra.sql
 --
---  Targets the 50 fixed Rotterdam locations seeded by @Cities
---  and ANY user whose Username starts with 'dzpdummy.'.
+--  Deletes (in FK-safe order) for any Community whose Slug
+--  starts with 'wijkcentrum-':
+--    * Blog QuestionOptions, Questions, Comments, PostGroups, Posts
+--    * UserCompany rows for those communities' companies
+--    * Companies
+--    * UserCommunityGroups for those communities' groups
+--    * CommunityGroups
+--    * UserCommunity links
+--    * Community rows themselves
+--
+--  Also removes the 20 dummy users created by the seed
+--  (matched by Username), including their UserPortals,
+--  UserRoles, profile and aspnet membership rows.
 --
 --  Idempotent — safe to run multiple times.
 -- ═══════════════════════════════════════════════════════════════
@@ -15,37 +26,9 @@ BEGIN TRY
     BEGIN TRANSACTION;
 
     -- ── Resolve target communities ─────────────────────────────
-    DECLARE @CitySlugs TABLE (Slug NVARCHAR(128));
-    INSERT INTO @CitySlugs (Slug) VALUES
-        (N'lijnbaan'),                               (N'koopgoot-beurstraverse'),
-        (N'winkelcentrum-zuidplein'),                (N'alexandrium-shopping-center'),
-        (N'alexandrium-megastores'),                 (N'alexandrium-woonmall'),
-        (N'markthal-rotterdam'),                     (N'hoogstraat'),
-        (N'meent'),                                  (N'oude-binnenweg'),
-        (N'nieuwe-binnenweg'),                       (N'van-oldenbarneveltstraat'),
-        (N'de-bijenkorf-binnenwegplein-gebied'),     (N'coolsingel-winkelgebied'),
-        (N'beursplein'),                             (N'binnenwegplein'),
-        (N'korte-hoogstraat'),                       (N'witte-de-withstraat'),
-        (N'west-kruiskade'),                         (N'kruiskade'),
-        (N'pannekoekstraat'),                        (N'goudsesingel'),
-        (N'zwaanshalskwartier'),                     (N'noordplein-oude-noorden'),
-        (N'lusthofstraat'),                          (N'vlietlaan-kralingen'),
-        (N'winkelcentrum-hesseplaats'),              (N'boulevard-nesselande'),
-        (N'winkelcentrum-schiebroek'),               (N'kleiwegkwartier'),
-        (N'bergse-dorpsstraat-hillegersberg'),       (N'binnenban-hoogvliet'),
-        (N'winkelcentrum-hoogvliet-centrum'),        (N'winkelcentrum-zalmplaat'),
-        (N'plein-1953'),                             (N'slinge-de-slinge'),
-        (N'spinozaweg'),                             (N'beverwaard-winkelgebied'),
-        (N'groene-hilledijk'),                       (N'boulevard-zuid'),
-        (N'afrikaanderplein'),                       (N'vuurplaat'),
-        (N'cor-kieboomplein-stadionweg'),            (N'de-veranda-pathe-de-kuip-gebied'),
-        (N'bigshops-parkboulevard'),                 (N'vierambachtsstraat'),
-        (N'mathenesserplein'),                       (N'crooswijkseweg-winkelgebied'),
-        (N'crooswijkse-winkelhoek'),                 (N'de-esch-winkelgebied');
-
     DECLARE @CommIds TABLE (Id INT PRIMARY KEY);
     INSERT INTO @CommIds (Id)
-    SELECT Id FROM Community WHERE Slug IN (SELECT Slug FROM @CitySlugs);
+    SELECT Id FROM Community WHERE Slug LIKE N'wijkcentrum-%';
 
     DECLARE @CompIds TABLE (Id INT PRIMARY KEY);
     INSERT INTO @CompIds (Id)
@@ -106,12 +89,6 @@ BEGIN TRY
     PRINT N'Cleared: community groups and user-group links.';
 
     -- ── 4) Community membership + community ────────────────────
-    IF OBJECT_ID('UserCommunityRole','U') IS NOT NULL
-        DELETE FROM UserCommunityRole
-        WHERE UserCommunityId IN (
-            SELECT Id FROM UserCommunity WHERE CommunityId IN (SELECT Id FROM @CommIds)
-        );
-
     IF OBJECT_ID('UserCommunity','U') IS NOT NULL
         DELETE FROM UserCommunity
         WHERE CommunityId IN (SELECT Id FROM @CommIds);
@@ -122,11 +99,22 @@ BEGIN TRY
     PRINT N'Cleared: communities and user-community links.';
 
     -- ── 5) Dummy users (delete via DNN proc when available) ────
+    DECLARE @DummyUsernames TABLE (Username NVARCHAR(100) PRIMARY KEY);
+    INSERT INTO @DummyUsernames (Username) VALUES
+        (N'sanne.devries'), (N'jeroen.bakker'), (N'lotte.visser'),
+        (N'bram.janssen'),  (N'eva.smit'),      (N'tim.mulder'),
+        (N'anouk.deboer'),  (N'daan.vandijk'),  (N'fleur.peters'),
+        (N'sven.hendriks'), (N'iris.dekker'),   (N'joris.vanderberg'),
+        (N'maud.brouwer'),  (N'niels.vermeulen'),(N'sophie.hoekstra'),
+        (N'kasper.vanleeuwen'),(N'lisa.kramer'),(N'mark.schouten'),
+        (N'esmee.maas'),    (N'pieter.willems');
+
     DECLARE @DummyUids TABLE (UserId INT PRIMARY KEY);
     INSERT INTO @DummyUids (UserId)
     SELECT u.UserID
     FROM Users u
-    WHERE u.IsSuperUser = 0 AND u.Username LIKE N'dzpdummy.%';
+    JOIN @DummyUsernames d ON d.Username = u.Username
+    WHERE u.IsSuperUser = 0;
 
     -- Strip them from any remaining link tables we manage
     IF OBJECT_ID('UserCompany','U') IS NOT NULL
@@ -136,6 +124,7 @@ BEGIN TRY
     IF OBJECT_ID('UserCommunity','U') IS NOT NULL
         DELETE FROM UserCommunity WHERE UserId IN (SELECT UserId FROM @DummyUids);
 
+    -- Hard-delete via DNN's DeleteUser proc when present, else fall back to flagging IsDeleted
     DECLARE @duid INT;
     DECLARE delUserCur CURSOR LOCAL FAST_FORWARD FOR
         SELECT UserId FROM @DummyUids;
@@ -153,11 +142,10 @@ BEGIN TRY
     CLOSE delUserCur;
     DEALLOCATE delUserCur;
 
-    DECLARE @duCnt INT = (SELECT COUNT(*) FROM @DummyUids);
-    PRINT N'Cleared: dummy users (DeleteUser proc or IsDeleted flag): ' + CAST(@duCnt AS NVARCHAR(16));
+    PRINT N'Cleared: dummy users (DeleteUser proc or IsDeleted flag).';
 
     COMMIT TRANSACTION;
-    PRINT N'Done. All Rotterdam shopping-area seed data removed.';
+    PRINT N'Done. All wijkcentrum seed data removed.';
 END TRY
 BEGIN CATCH
     IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;

@@ -1,0 +1,105 @@
+@*
+    Shared button. Params (via PageData):
+      text       (string, required)  - button label
+      color      (string, optional)  - primary | secondary | success | warning | danger | default
+                                       (default: primary)
+      variant    (string, optional)  - solid | faded | bordered | light | flat | ghost | shadow
+                                       (default: solid)
+      type       (string, optional)  - submit | button | reset (default: button)
+      id         (string, optional)
+      name       (string, optional)
+      value      (string, optional)
+      icon       (string, optional)  - lucide icon name (rendered before text)
+      href       (string, optional)  - if set, renders as <a> instead of <button>
+      disabled   (bool,   optional)
+      onclick    (string, optional)
+      extraClass (string, optional)
+      attrs      (string, optional)  - extra raw attributes (use sparingly)
+
+    Backwards-compat: passing a color name (primary/secondary/success/warning/
+    error/danger/default) as `variant` is still accepted and mapped to `color`
+    with variant="solid". `error` is an alias for `danger`.
+*@
+@{
+    var btnText    = PageData["text"]    as string ?? "";
+    var btnColor   = PageData["color"]   as string ?? "primary";
+    var btnVariant = PageData["variant"] as string ?? "solid";
+    var btnType    = PageData["type"]    as string ?? "button";
+    var btnId      = PageData["id"]      as string;
+    var btnName    = PageData["name"]    as string;
+    var btnValue   = PageData["value"]   as string;
+    var btnIcon    = PageData["icon"]    as string;
+    var btnHref    = PageData["href"]    as string;
+    var btnOnclick = PageData["onclick"] as string;
+    var btnExtra   = PageData["extraClass"] as string ?? "";
+    var btnAttrs   = PageData["attrs"]   as string ?? "";
+    var btnDisabled = PageData["disabled"] != null && (bool)PageData["disabled"];
+
+    // Backwards-compat: if variant is actually a color name, remap.
+    var colorAliases = new[] { "primary", "secondary", "success", "warning", "danger", "error", "default" };
+    if (System.Array.IndexOf(colorAliases, btnVariant) >= 0) {
+        btnColor   = btnVariant == "error" ? "danger" : btnVariant;
+        btnVariant = "solid";
+    }
+    if (btnColor == "error") { btnColor = "danger"; }
+
+    // Resolve color tokens.
+    string baseColor;   // tailwind color slug used in bg-/text-/border-/ring-
+    string solidText;   // foreground color when on a fully-saturated bg
+    switch (btnColor) {
+        case "secondary": baseColor = "secondary"; solidText = "white";              break;
+        case "success":   baseColor = "success";   solidText = "white";              break;
+        case "warning":   baseColor = "warning";   solidText = "white";              break;
+        case "danger":    baseColor = "danger";    solidText = "white";              break;
+        case "default":   baseColor = "default";   solidText = "foreground-700";     break;
+        default:          baseColor = "primary";   solidText = "white";              break;
+    }
+
+    // Resolve variant -> tailwind classes.
+    string variantClass;
+    switch (btnVariant) {
+        case "faded":
+            variantClass = "bg-default-100 text-" + baseColor + " border border-default-200 hover:bg-default-200 focus:ring-" + baseColor + "/30";
+            break;
+        case "bordered":
+            variantClass = "bg-transparent text-" + baseColor + " border-2 border-" + baseColor + " hover:bg-" + baseColor + "/10 focus:ring-" + baseColor + "/30";
+            break;
+        case "light":
+            variantClass = "bg-transparent text-" + baseColor + " hover:bg-" + baseColor + "/10 focus:ring-" + baseColor + "/30";
+            break;
+        case "flat":
+            variantClass = "bg-" + baseColor + "/15 text-" + baseColor + " hover:bg-" + baseColor + "/25 focus:ring-" + baseColor + "/30";
+            break;
+        case "ghost":
+            variantClass = "bg-transparent text-" + baseColor + " border-2 border-" + baseColor + " hover:bg-" + baseColor + " hover:text-" + solidText + " focus:ring-" + baseColor + "/30";
+            break;
+        case "shadow":
+            variantClass = "bg-" + baseColor + " text-" + solidText + " shadow-lg shadow-" + baseColor + "/40 hover:bg-" + baseColor + "/90 focus:ring-" + baseColor + "/30";
+            break;
+        default: /* solid */
+            variantClass = "bg-" + baseColor + " text-" + solidText + " hover:bg-" + baseColor + "/90 focus:ring-" + baseColor + "/30";
+            break;
+    }
+
+    var baseClass = "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 transition disabled:opacity-50 disabled:cursor-not-allowed";
+    var fullClass = baseClass + " " + variantClass + " " + btnExtra;
+}
+@if (!string.IsNullOrEmpty(btnHref)) {
+    <a href="@btnHref" class="@fullClass" @(new System.Web.HtmlString(btnId != null ? "id=\"" + btnId + "\"" : ""))
+       @(new System.Web.HtmlString(btnOnclick != null ? "onclick=\"" + btnOnclick + "\"" : ""))
+       @(new System.Web.HtmlString(btnAttrs))>
+        @if (!string.IsNullOrEmpty(btnIcon)) { <i data-lucide="@btnIcon" class="size-4"></i> }
+        @btnText
+    </a>
+} else {
+    <button type="@btnType" class="@fullClass"
+            @(new System.Web.HtmlString(btnId    != null ? "id=\""    + btnId    + "\"" : ""))
+            @(new System.Web.HtmlString(btnName  != null ? "name=\""  + btnName  + "\"" : ""))
+            @(new System.Web.HtmlString(btnValue != null ? "value=\"" + btnValue + "\"" : ""))
+            @(new System.Web.HtmlString(btnOnclick != null ? "onclick=\"" + btnOnclick + "\"" : ""))
+            @(btnDisabled ? new System.Web.HtmlString("disabled=\"disabled\"") : new System.Web.HtmlString(""))
+            @(new System.Web.HtmlString(btnAttrs))>
+        @if (!string.IsNullOrEmpty(btnIcon)) { <i data-lucide="@btnIcon" class="size-4"></i> }
+        @btnText
+    </button>
+}

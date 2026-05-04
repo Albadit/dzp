@@ -1,0 +1,40 @@
+@model Dnn.Modules.TableDZP.Models.DataTableViewModel
+@functions{
+    static string L(string key) {
+        var v = DotNetNuke.Services.Localization.Localization.GetString(
+            key, "/DesktopModules/MVC/Dnn.Modules.TableDZP/App_LocalResources/SharedResources.resx");
+        return string.IsNullOrEmpty(v) ? key : v;
+    }
+}
+@{
+    var tid    = ViewData["tid"] as string ?? Model.TableId;
+    var config = Model.Config;
+}
+<div class="flex flex-wrap justify-between items-center gap-3">
+    <div class="flex-1 min-w-[200px] max-w-sm flex">
+        @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_SearchBox.cshtml", null, new ViewDataDictionary {
+            { "search-class",       "dt-search" },
+            { "search-placeholder", "Search…" },
+            { "search-data",        new System.Collections.Generic.Dictionary<string, string> { { "data-target", tid } } }
+        })
+    </div>
+    <div class="flex gap-2">
+        @if (config.AllowBulkDelete)
+        {
+            <button type="button" class="dt-btn-bulk-del flex hidden shrink-0 items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-danger text-white hover:bg-danger-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-danger/40" data-target="@tid">
+                <i data-lucide="trash-2" class="size-4"></i>
+                Delete <span class="dt-bulk-count"></span>
+            </button>
+        }
+        @if (config.AllowCreate)
+        {
+            @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Button.cshtml", null, new ViewDataDictionary {
+                { "btn-class",   "dt-btn-add" },
+                { "btn-icon",    "plus" },
+                { "btn-label",   "New" },
+                { "btn-mobile",  "true" },
+                { "btn-data",    new System.Collections.Generic.Dictionary<string, string> { { "data-target", tid } } }
+            })
+        }
+    </div>
+</div>

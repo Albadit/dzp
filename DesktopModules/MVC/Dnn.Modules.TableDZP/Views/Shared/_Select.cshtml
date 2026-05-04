@@ -1,5 +1,5 @@
-@*
-    Shared select dropdown — Razor + Tailwind.
+﻿@*
+    Shared select dropdown â€” Razor + Tailwind.
     Uses <details>/<summary> for native toggle and peer-checked: for visual state.
     Requires: Tailwind CSS v4 browser build + Lucide icons (loaded by TailwindDNN skin).
 
@@ -10,12 +10,12 @@
          can dynamically create matching widgets at runtime.
 
     ViewData parameters (all optional):
-      "ms-id"           – unique id for the component
-      "ms-name"         – form input name (defaults to ms-id)
-      "ms-placeholder"  – placeholder text
-      "ms-options"      – JSON string of [{value,label}]
-      "ms-selected"     – JSON string of ["val1","val2"]
-      "ms-single"       – "true" for single-select (radio), omit for multi-select (checkbox)
+      "ms-id"           â€“ unique id for the component
+      "ms-name"         â€“ form input name (defaults to ms-id)
+      "ms-placeholder"  â€“ placeholder text
+      "ms-options"      â€“ JSON string of [{value,label}]
+      "ms-selected"     â€“ JSON string of ["val1","val2"]
+      "ms-single"       â€“ "true" for single-select (radio), omit for multi-select (checkbox)
 *@
 @{
     var msId        = ViewData["ms-id"] != null ? ViewData["ms-id"].ToString() : "";
@@ -63,13 +63,13 @@
 }
 @if (!string.IsNullOrEmpty(msId))
 {
-    <details id="@msId" class="group relative inline-block w-full text-sm font-[inherit]">
+    <details id="@msId" class="js-ms-select group relative inline-block w-full text-sm font-[inherit]">
         <summary class="flex items-center gap-[0.3rem] min-h-10 px-2.5 py-[0.35rem]
-                        bg-white border border-default-300 rounded-lg
+                        bg-content2 rounded-lg
                         cursor-pointer select-none outline-none
-                        transition-[border-color,box-shadow] duration-150
-                        hover:border-default-400
-                        group-open:border-primary-500 group-open:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]
+                        transition-shadow duration-150
+                        hover:bg-primary/5
+                        group-open:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]
                         list-none [&::-webkit-details-marker]:hidden">
             @if (isPlaceholder)
             {
@@ -98,9 +98,9 @@
         </summary>
 
         <div class="absolute z-99999 left-0 right-0 mt-1
-                    bg-white border border-default-200 rounded-xl
+                    bg-content1 rounded-lg
                     shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col">
-            <div class="overflow-y-auto max-h-72 py-1">
+            <div class="overflow-y-auto max-h-72 py-1 px-1">
                 @if (optionsArr.Count == 0)
                 {
                     <div class="py-3 px-4 text-center text-[0.8125rem] text-default-400">@(DotNetNuke.Services.Localization.Localization.GetString("NoOptions.Text", "/DesktopModules/MVC/Dnn.Modules.TableDZP/App_LocalResources/SharedResources.resx") ?? "No options")</div>
@@ -110,8 +110,8 @@
                     var val   = opt["value"].ToString();
                     var label = opt["label"].ToString();
                     var isSel = selectedSet.Contains(val);
-                    <label class="flex items-center justify-between gap-4 px-4 py-2.5
-                                  cursor-pointer select-none transition-colors
+                    <label class="flex items-center justify-between gap-4 px-3 py-2.5
+                                  cursor-pointer select-none transition-colors rounded-md
                                   has-checked:bg-primary-50
                                   hover:bg-primary-50 has-checked:hover:bg-primary-100">
                         @if (isSel)

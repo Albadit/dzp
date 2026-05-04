@@ -1,0 +1,49 @@
+@*
+    Three-tier pricing/packages.
+*@
+@{
+    var packages = new[] {
+        new { Badge = "Bronze", BadgeClass = "bg-amber-100 text-amber-700",        Title = "Basis",         IsFeatured = false, Items = new[] { "Nieuws", "Tijdlijn", "Bedrijven" } },
+        new { Badge = "Silver", BadgeClass = "bg-default-200 text-foreground-700", Title = "Professioneel", IsFeatured = true,  Items = new[] { "Alles uit Bronze", "Documentenbibliotheek", "Enquêtes" } },
+        new { Badge = "Gold",   BadgeClass = "bg-yellow-100 text-yellow-700",      Title = "Enterprise",    IsFeatured = false, Items = new[] { "Alles uit Silver", "Extra beheeropties", "Toekomstige uitbreidingen" } }
+    };
+}
+
+<section id="pakketten" aria-label="Pakketten en prijzen" class="w-full bg-background py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
+        <div class="flex flex-col items-center text-center">
+            <h2 class="text-3xl font-bold text-foreground-900">
+                Kies het pakket dat bij je past
+            </h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-8 max-w-5xl w-full">
+            @foreach (var pkg in packages) {
+            <div class="rounded-xl @(pkg.IsFeatured ? "border-2 border-indigo-500 shadow-lg relative" : "border border-divider hover:shadow-lg transition") p-8 flex flex-col">
+                @if (pkg.IsFeatured) {
+                <div class="absolute -top-3 inset-x-0 flex justify-center">
+                    <span class="bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Populair</span>
+                </div>
+                }
+                <div class="flex flex-col items-center gap-3 text-center">
+                    <div class="inline-flex items-center px-3 py-1 rounded-full @pkg.BadgeClass text-xs font-semibold">@pkg.Badge</div>
+                    <h3 class="text-xl font-bold text-foreground-900">@pkg.Title</h3>
+                </div>
+                <ul class="flex flex-col gap-3 text-sm text-foreground-600 flex-1 pt-6">
+                    @foreach (var item in pkg.Items) {
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="check" class="size-4 text-green-500"></i>
+                        @item
+                    </li>
+                    }
+                </ul>
+            </div>
+            }
+        </div>
+        <div class="flex justify-center">
+            <a href="#demo"
+               class="inline-flex items-center px-8 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                Neem contact op
+            </a>
+        </div>
+    </div>
+</section>

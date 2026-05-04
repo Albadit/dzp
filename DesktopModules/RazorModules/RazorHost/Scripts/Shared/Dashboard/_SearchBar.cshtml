@@ -1,0 +1,11 @@
+@*
+    Search input + clear button + result counter for the dashboard.
+*@
+@{
+    PageData["id"]          = "dashCommunitySearch";
+    PageData["placeholder"] = "Zoek community of slug...";
+    PageData["extraClass"]  = "mb-6 max-w-md";
+}
+@RenderPage("../Components/_SearchBox.cshtml")
+
+<p id="dashCommunityCount" class="text-xs text-foreground-400 mb-3"></p>

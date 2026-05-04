@@ -1,0 +1,37 @@
+@*
+    "Voor wie" audience grid.
+*@
+@{
+    var audiences = new[] {
+        new { Icon = "shopping-bag", Bg = "bg-indigo-100", Color = "text-indigo-600", Title = "Ondernemers",     Desc = "Zie alleen wat voor jou relevant is. Geen ruis, direct to the point." },
+        new { Icon = "landmark",     Bg = "bg-blue-100",   Color = "text-blue-600",   Title = "Gemeente",         Desc = "Bereik de juiste mensen met officiële berichten en documenten." },
+        new { Icon = "home",         Bg = "bg-green-100",  Color = "text-green-600",  Title = "Pandeigenaren",    Desc = "Blijf op de hoogte en vind alle documenten terug op één plek." },
+        new { Icon = "users",        Bg = "bg-purple-100", Color = "text-purple-600", Title = "Gebiedsbeheerder", Desc = "Beheer content, rollen en structuur vanuit je eigen dashboard." }
+    };
+}
+
+<section id="voor-wie" aria-label="Voor wie is DZP Connect" class="w-full bg-content2 py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
+        <div class="flex flex-col items-center text-center">
+            <h2 class="text-3xl font-bold text-foreground-900">
+                Gebouwd voor iedereen in het winkelgebied
+            </h2>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            @foreach (var a in audiences) {
+            <div class="bg-background rounded-xl p-6 text-center shadow-card hover:shadow-card-hover transition flex flex-col items-center gap-4">
+                <div class="w-16 h-16 rounded-full @a.Bg flex items-center justify-center">
+                    <i data-lucide="@a.Icon" class="size-8 @a.Color"></i>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <h3 class="font-semibold text-foreground-900">@a.Title</h3>
+                    <p class="text-sm text-foreground-500">@a.Desc</p>
+                </div>
+            </div>
+            }
+        </div>
+        <p class="text-center text-xs text-foreground-600">
+            Exclusief voor zakelijke stakeholders - geen open social media.
+        </p>
+    </div>
+</section>

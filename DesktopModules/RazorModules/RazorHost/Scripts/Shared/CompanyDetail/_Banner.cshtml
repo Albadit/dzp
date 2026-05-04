@@ -1,0 +1,134 @@
+@*
+    Banner + side info panel for the company detail page.
+    Reads from PageData: bannerImage, companyName, address, mapsUrl, phone,
+                         email, website, hoursDisplay (List<Dictionary<string,object>>),
+                         isOpen.
+*@
+@{
+    var bannerImage  = (string)PageData["bannerImage"];
+    var companyName  = (string)PageData["companyName"];
+    var address      = (string)PageData["address"];
+    var mapsUrl      = (string)PageData["mapsUrl"];
+    var phone        = (string)PageData["phone"];
+    var email        = (string)PageData["email"];
+    var website      = (string)PageData["website"];
+    var hoursDisplay = (List<Dictionary<string, object>>)PageData["hoursDisplay"];
+    var isOpen       = (bool)PageData["isOpen"];
+}
+
+<section class="w-full">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div class="flex flex-col xl:flex-row gap-5 sm:gap-8">
+
+            <!-- Left: company banner -->
+            <div class="relative flex-1 min-h-48 sm:min-h-80 rounded-xl overflow-hidden">
+                <img src="@bannerImage" alt="@companyName" class="absolute inset-0 w-full h-full object-cover" />
+                <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent"></div>
+                <div class="relative flex flex-col justify-end h-full p-6 gap-1">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-white leading-tight">@companyName</h1>
+                    @if (!string.IsNullOrEmpty(address)) {
+                        <div class="flex items-center gap-1.5 text-sm text-white/80">
+                            <i data-lucide="map-pin" class="size-3.5 shrink-0"></i>
+                            <span>@address</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right: quick info panel -->
+            <div class="w-fit flex flex-col gap-3 sm:gap-4">
+                <h2 class="text-base font-semibold text-foreground-900">Bedrijfsinformatie</h2>
+
+                <div class="flex flex-col gap-2 bg-content1 rounded-xl border border-divider p-4">
+                    @if (!string.IsNullOrEmpty(address)) {
+                        <div class="flex items-start gap-3 py-2">
+                            <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                <i data-lucide="map-pin" class="size-4 text-primary"></i>
+                            </div>
+                            <div class="flex flex-col gap-0.5 min-w-0">
+                                <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">Adres</span>
+                                <span class="text-sm text-foreground-900">@address</span>
+                                @if (!string.IsNullOrEmpty(mapsUrl)) {
+                                    <a href="@mapsUrl" target="_blank" rel="noopener noreferrer"
+                                       class="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5">
+                                        Bekijk op Google Maps
+                                        <i data-lucide="external-link" class="size-3"></i>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (hoursDisplay.Count > 0) {
+                        <div class="flex items-start gap-3 py-2 border-t border-divider">
+                            <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                <i data-lucide="clock" class="size-4 text-primary"></i>
+                            </div>
+                            <div class="flex flex-col gap-1.5 min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">Openingstijden</span>
+                                    @if (isOpen) {
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-success-50 text-success-800">
+                                            <span class="size-1.5 rounded-full bg-success"></span> Open
+                                        </span>
+                                    } else {
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-danger-50 text-danger-800">
+                                            <span class="size-1.5 rounded-full bg-danger"></span> Gesloten
+                                        </span>
+                                    }
+                                </div>
+                                <div class="grid grid-cols-[auto_auto] gap-x-4 gap-y-0.5">
+                                    @foreach (var row in hoursDisplay) {
+                                        <span class="text-sm font-medium text-foreground-900">@row["Days"]:</span>
+                                        <span class="text-sm text-foreground-900">@row["Hours"]</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(phone)) {
+                        <div class="flex items-start gap-3 py-2 border-t border-divider">
+                            <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                <i data-lucide="phone" class="size-4 text-primary"></i>
+                            </div>
+                            <div class="flex flex-col gap-0.5 min-w-0">
+                                <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">Telefoon</span>
+                                <a href="tel:@phone" class="text-sm text-foreground-900 hover:text-primary transition">@phone</a>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(email)) {
+                        <div class="flex items-start gap-3 py-2 border-t border-divider">
+                            <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                <i data-lucide="mail" class="size-4 text-primary"></i>
+                            </div>
+                            <div class="flex flex-col gap-0.5 min-w-0">
+                                <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">E-mail</span>
+                                <a href="mailto:@email" class="text-sm text-foreground-900 hover:text-primary transition truncate">@email</a>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(website)) {
+                        <div class="flex items-start gap-3 py-2 border-t border-divider">
+                            <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 shrink-0">
+                                <i data-lucide="globe" class="size-4 text-primary"></i>
+                            </div>
+                            <div class="flex flex-col gap-0.5 min-w-0">
+                                <span class="text-xs font-medium text-foreground-400 uppercase tracking-wide">Website</span>
+                                <a href="@website" target="_blank" rel="noopener noreferrer"
+                                   class="text-sm text-foreground-900 hover:text-primary transition truncate flex items-center gap-1">
+                                    @website.Replace("https://", "").Replace("http://", "").TrimEnd('/')
+                                    <i data-lucide="external-link" class="size-3 shrink-0"></i>
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>

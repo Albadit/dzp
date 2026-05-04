@@ -1,0 +1,18 @@
+@*
+    Drag-to-scroll behaviour for `.js-groups-strip` and `.js-team-strip`.
+    Mouse only — touch keeps the native scroll. Suppresses the synthetic
+    click that follows a drag so child links don't fire spuriously.
+*@
+<style>
+    .js-groups-strip,
+    .js-team-strip { cursor: grab; -webkit-user-select: none; user-select: none; }
+    .js-groups-strip.is-dragging,
+    .js-team-strip.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+    .js-groups-strip.is-dragging a,
+    .js-groups-strip.is-dragging button,
+    .js-groups-strip.is-dragging img,
+    .js-team-strip.is-dragging a,
+    .js-team-strip.is-dragging button,
+    .js-team-strip.is-dragging img { pointer-events: none; }
+</style>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/drag-scroll.js"></script>

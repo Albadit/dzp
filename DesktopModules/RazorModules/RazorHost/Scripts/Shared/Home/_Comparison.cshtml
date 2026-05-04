@@ -1,0 +1,55 @@
+@*
+    Two-column "without vs. with DZP Connect" comparison.
+*@
+@{
+    var problems = new[] {
+        "Groepschats vol ruis en gemiste berichten",
+        "Privé en zakelijk door elkaar op je telefoon",
+        "Documenten kwijt in e-mailbijlagen",
+        "Geen overzicht wie wat wanneer heeft gedeeld"
+    };
+    var solutions = new[] {
+        "Eén app voor al je gebiedscommunicatie",
+        "Nieuws, events en documenten op één plek",
+        "Direct zien wie wat publiceert en beheert",
+        "Alles terugvindbaar via zoeken, tags en filters"
+    };
+}
+
+<section id="product" aria-label="Waarom DZP Connect" class="w-full bg-background py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
+        <h2 class="text-3xl font-bold text-foreground-900 text-center">
+            Waarom DZP Connect?
+        </h2>
+        <div class="grid md:grid-cols-2 gap-8 lg:gap-16">
+            <div class="bg-red-50 rounded-xl p-8 flex flex-col gap-4">
+                <h3 class="text-lg font-semibold text-red-700 flex items-center gap-2">
+                    <i data-lucide="circle-x" class="size-6"></i>
+                    Zonder DZP Connect
+                </h3>
+                <ul class="flex flex-col gap-3 text-foreground-700">
+                    @foreach (var p in problems) {
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="x" class="text-red-400 shrink-0"></i>
+                        @p
+                    </li>
+                    }
+                </ul>
+            </div>
+            <div class="bg-green-50 rounded-xl p-8 flex flex-col gap-4">
+                <h3 class="text-lg font-semibold text-green-700 flex items-center gap-2">
+                    <i data-lucide="circle-check" class="size-6"></i>
+                    Met DZP Connect
+                </h3>
+                <ul class="flex flex-col gap-3 text-foreground-700">
+                    @foreach (var s in solutions) {
+                    <li class="flex items-start gap-3">
+                        <i data-lucide="check" class="text-green-500 shrink-0"></i>
+                        @s
+                    </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>

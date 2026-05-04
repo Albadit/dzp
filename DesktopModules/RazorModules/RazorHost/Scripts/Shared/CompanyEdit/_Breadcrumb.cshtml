@@ -1,0 +1,24 @@
+@*
+    Breadcrumb trail for the company-edit page.
+    Reads from PageData: communityName, communitySlug, companyName, companySlug.
+*@
+@{
+    var communityName = (string)PageData["communityName"];
+    var communitySlug = (string)PageData["communitySlug"];
+    var companyName   = (string)PageData["companyName"];
+    var companySlug   = (string)PageData["companySlug"];
+}
+
+<section class="w-full">
+    <div class="w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        <nav class="flex items-center gap-1.5 text-sm text-foreground-400">
+            <a href="/@communitySlug/home" class="hover:text-primary transition">@communityName</a>
+            <i data-lucide="chevron-right" class="size-3.5"></i>
+            <a href="/@communitySlug/companies" class="hover:text-primary transition">Bedrijven</a>
+            <i data-lucide="chevron-right" class="size-3.5"></i>
+            <a href="/@communitySlug/companies/@companySlug" class="hover:text-primary transition truncate max-w-32">@companyName</a>
+            <i data-lucide="chevron-right" class="size-3.5"></i>
+            <span class="text-foreground-700 font-medium">Bewerken</span>
+        </nav>
+    </div>
+</section>

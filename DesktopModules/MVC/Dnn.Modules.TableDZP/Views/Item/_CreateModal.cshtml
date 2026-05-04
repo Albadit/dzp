@@ -1,0 +1,58 @@
+@model Dnn.Modules.TableDZP.Models.DataTableViewModel
+@functions{
+    static string L(string key) {
+        var v = DotNetNuke.Services.Localization.Localization.GetString(
+            key, "/DesktopModules/MVC/Dnn.Modules.TableDZP/App_LocalResources/SharedResources.resx");
+        return string.IsNullOrEmpty(v) ? key : v;
+    }
+}
+@{
+    var tid       = ViewData["tid"]       as string ?? Model.TableId;
+    var lookups   = ViewData["lookups"]   as System.Collections.Generic.IDictionary<string, System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, string>>>;
+    var uploadUrl = ViewData["uploadUrl"] as string ?? "";
+    var insertQ   = Model.Config.QueryInsert ?? "";
+}
+<!-- Create modal -->
+<div id="@(tid)-create-modal" class="dt-create-modal hidden fixed inset-0 z-1100 flex items-center justify-center bg-overlay backdrop-blur-sm">
+    <div class="bg-background rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-divider">
+            <h3 class="font-semibold text-foreground-900">@L("AddNewItem.Text")</h3>
+            <button type="button" class="dt-create-modal-close p-1 rounded-md hover:bg-default-100 transition text-foreground-400 hover:text-foreground-600" data-target="@tid">
+                <i data-lucide="x" class="size-5"></i>
+            </button>
+        </div>
+        <form class="dt-create-form" onsubmit="event.preventDefault();this.querySelector('.dt-create-save').click();">
+            <div class="px-5 py-4 space-y-4">
+                @foreach (var col in Model.EditableColumns)
+                {
+                    if (!insertQ.Contains("@" + col.Key)) { continue; }
+                    @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Item/_FormField.cshtml", null, new ViewDataDictionary {
+                        { "fld-col",          col },
+                        { "fld-input-class",  "dt-create-input" },
+                        { "fld-lookup-class", "dt-create-lookup" },
+                        { "fld-lookups",      lookups },
+                        { "fld-upload-url",   uploadUrl },
+                        { "fld-empty-text",   L("DropImage.Text") },
+                        { "fld-empty-hint",   L("DropImage.Hint") },
+                        { "fld-remove-label", L("RemoveImage.Text") }
+                    })
+                }
+            </div>
+            <div class="flex justify-end gap-2 px-5 py-4 border-t border-divider">
+                @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Button.cshtml", null, new ViewDataDictionary {
+                    { "btn-class",   "dt-create-modal-close" },
+                    { "btn-label",   L("Cancel.Text") },
+                    { "btn-mobile",  "true" },
+                    { "btn-variant", "secondary" },
+                    { "btn-data",    new System.Collections.Generic.Dictionary<string, string> { { "data-target", tid } } }
+                })
+                @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Button.cshtml", null, new ViewDataDictionary {
+                    { "btn-class",  "dt-create-save" },
+                    { "btn-label",  L("Save.Text") },
+                    { "btn-mobile", "true" },
+                    { "btn-type",   "submit" }
+                })
+            </div>
+        </form>
+    </div>
+</div>

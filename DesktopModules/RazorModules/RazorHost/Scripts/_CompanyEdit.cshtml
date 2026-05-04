@@ -5,21 +5,31 @@
 @using System.Data.SqlClient
 @using System.Configuration
 @using System.Linq
+@*
+    Company edit page.
+    The orchestrator owns:
+      - authorization (owner / admin / superuser)
+      - parsing the existing CompanyInfo JSON
+      - all POST handlers (save-info, add-member, remove-member, toggle-team)
+      - the AJAX JSON response branch (early-out)
+      - reloading members + community-user list for the picker
+    Section partials in Shared/CompanyEdit/ stay markup-only.
+*@
 @{
-    var rc = CommunityAuth.Current;
-    var user = Dnn.User;
+    var rc       = CommunityAuth.Current;
+    var user     = Dnn.User;
     var portalId = PortalSettings.Current != null ? PortalSettings.Current.PortalId : 0;
 
     var communityName = rc != null ? rc.CommunityName : "Community";
     var communitySlug = rc != null ? rc.CommunitySlug : "";
-    var communityId   = rc != null ? rc.CommunityId : 0;
-    var companySlug   = rc != null ? rc.CompanySlug : "";
-    var companyName   = rc != null ? rc.CompanyName : "";
-    var companyId     = rc != null ? rc.CompanyId : 0;
+    var communityId   = rc != null ? rc.CommunityId   : 0;
+    var companySlug   = rc != null ? rc.CompanySlug   : "";
+    var companyName   = rc != null ? rc.CompanyName   : "";
+    var companyId     = rc != null ? rc.CompanyId     : 0;
     var ownerId       = rc != null ? rc.CompanyOwnerId : 0;
     var companyInfo   = rc != null ? rc.CompanyInfoJson ?? "" : "";
 
-    var cs = ConfigurationManager.ConnectionStrings["SiteSqlServer"];
+    var cs      = ConfigurationManager.ConnectionStrings["SiteSqlServer"];
     var connStr = cs != null ? cs.ConnectionString : "";
 
     var about       = "";
@@ -29,43 +39,34 @@
     var website     = "";
     var bannerImage = "";
 
-    var dayOrder = new[] { "mon", "tue", "wed", "thu", "fri", "sat", "sun" };
-    var dayToNl = new Dictionary<string, string> {
-        { "mon", "Ma" }, { "tue", "Di" }, { "wed", "Wo" },
-        { "thu", "Do" }, { "fri", "Vr" }, { "sat", "Za" }, { "sun", "Zo" }
-    };
+    var dayOrder   = new[] { "mon", "tue", "wed", "thu", "fri", "sat", "sun" };
     var hoursOpen  = new Dictionary<string, string>();
     var hoursClose = new Dictionary<string, string>();
 
-    var isManager  = false;
-    var isSuperUser = user != null && user.IsSuperUser;
-    var adminRoleName = PortalSettings.Current != null ? PortalSettings.Current.AdministratorRoleName : "Administrators";
+    var isManager       = false;
+    var isSuperUser     = user != null && user.IsSuperUser;
+    var adminRoleName   = PortalSettings.Current != null ? PortalSettings.Current.AdministratorRoleName : "Administrators";
     var isAdministrator = user != null && !string.IsNullOrEmpty(adminRoleName) && user.IsInRole(adminRoleName);
-    var isElevated = isSuperUser || isAdministrator;
-    var saveSuccess = false;
-    var saveError   = "";
-    var memberMsg   = "";
-    var memberError = "";
-    var members     = new List<dynamic>();
-    var allUsers    = new List<dynamic>();
+    var isElevated      = isSuperUser || isAdministrator;
+    var saveSuccess     = false;
+    var saveError       = "";
+    var memberMsg       = "";
+    var memberError     = "";
 
-    if (companyId > 0)
-    {
-        /* ── Check authorization: owner or SuperUser ── */
-        if (user != null)
-        {
+    var members  = new List<Dictionary<string, object>>();
+    var allUsers = new List<Dictionary<string, object>>();
+
+    if (companyId > 0) {
+        if (user != null) {
             isManager = isElevated || (ownerId > 0 && user.UserID == ownerId);
         }
 
         /* ── Parse existing CompanyInfo JSON ── */
-        if (!string.IsNullOrEmpty(companyInfo))
-        {
-            try
-            {
+        if (!string.IsNullOrEmpty(companyInfo)) {
+            try {
                 var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
                 var root = serializer.Deserialize<Dictionary<string, object>>(companyInfo);
-                if (root != null)
-                {
+                if (root != null) {
                     Func<string, string> str = key => root.ContainsKey(key) && root[key] != null ? root[key].ToString() : "";
                     about       = str("about");
                     address     = str("address");
@@ -74,45 +75,35 @@
                     website     = str("website");
                     bannerImage = str("banner");
 
-                    if (root.ContainsKey("openingHours") && root["openingHours"] is Dictionary<string, object> hoursObj)
-                    {
-                        foreach (var day in dayOrder)
-                        {
-                            if (hoursObj.ContainsKey(day) && hoursObj[day] is System.Collections.ArrayList arr && arr.Count == 2)
-                            {
+                    if (root.ContainsKey("openingHours") && root["openingHours"] is Dictionary<string, object> hoursObj) {
+                        foreach (var day in dayOrder) {
+                            if (hoursObj.ContainsKey(day) && hoursObj[day] is System.Collections.ArrayList arr && arr.Count == 2) {
                                 hoursOpen[day]  = arr[0].ToString();
                                 hoursClose[day] = arr[1].ToString();
                             }
                         }
                     }
                 }
-            }
-            catch { }
+            } catch { }
         }
 
-        /* ── Handle POST: save updated data ── */
+        /* ── POST handling ── */
         var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
-        if (IsPost && isManager)
-        {
+        if (IsPost && isManager) {
             var action = (Request["formAction"] ?? "").Trim();
 
-            if (action == "add-member")
-            {
+            if (action == "add-member") {
                 var addUserId = 0;
                 int.TryParse(Request["addUserId"], out addUserId);
-                if (addUserId > 0)
-                {
-                    try
-                    {
-                        /* ── Verify the target user is a member of THIS community.
-                              Reject silently-with-error if not, so outsiders can't be
-                              added by crafting a request. ── */
+                if (addUserId > 0) {
+                    try {
+                        /* Verify the target user is a member of THIS community.
+                           Reject silently-with-error if not, so outsiders can't
+                           be added by crafting a request. */
                         var isCommunityMember = false;
-                        using (var conn = new SqlConnection(connStr))
-                        {
+                        using (var conn = new SqlConnection(connStr)) {
                         using (var chk = new SqlCommand(
-                            "SELECT 1 FROM UserCommunity WHERE UserId = @uid AND CommunityId = @commId", conn))
-                        {
+                            "SELECT 1 FROM UserCommunity WHERE UserId = @uid AND CommunityId = @commId", conn)) {
                             chk.Parameters.AddWithValue("@uid", addUserId);
                             chk.Parameters.AddWithValue("@commId", communityId);
                             conn.Open();
@@ -120,45 +111,33 @@
                         }
                         }
 
-                        if (!isCommunityMember)
-                        {
+                        if (!isCommunityMember) {
                             memberError = "Deze gebruiker is geen lid van de community.";
+                        } else {
+                            using (var conn = new SqlConnection(connStr)) {
+                            using (var cmd = new SqlCommand(
+                                "IF NOT EXISTS (SELECT 1 FROM UserCompany WHERE UserId = @uid AND CompanyId = @cid) INSERT INTO UserCompany (UserId, CompanyId) VALUES (@uid, @cid)", conn)) {
+                                cmd.Parameters.AddWithValue("@uid", addUserId);
+                                cmd.Parameters.AddWithValue("@cid", companyId);
+                                conn.Open();
+                                cmd.ExecuteNonQuery();
+                            }
+                            }
+                            memberMsg = "Lid toegevoegd.";
                         }
-                        else
-                        {
-                        using (var conn = new SqlConnection(connStr))
-                        {
-                        using (var cmd = new SqlCommand(
-                            "IF NOT EXISTS (SELECT 1 FROM UserCompany WHERE UserId = @uid AND CompanyId = @cid) INSERT INTO UserCompany (UserId, CompanyId) VALUES (@uid, @cid)", conn))
-                        {
-                            cmd.Parameters.AddWithValue("@uid", addUserId);
-                            cmd.Parameters.AddWithValue("@cid", companyId);
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                        }
-                        memberMsg = "Lid toegevoegd.";
-                        }
-                    }
-                    catch (Exception ex)
-                    {
+                    } catch (Exception ex) {
                         memberError = "Fout: " + ex.Message;
                     }
                 }
-            }
-            else if (action == "remove-member")
-            {
+            } else if (action == "remove-member") {
                 var removeId = 0;
                 int.TryParse(Request["removeMemberId"], out removeId);
-                if (removeId > 0)
-                {
-                    /* ── Block removal of the owner ── */
+                if (removeId > 0) {
+                    /* Block removal of the owner */
                     var isOwnerRow = false;
-                    using (var conn = new SqlConnection(connStr))
-                    {
+                    using (var conn = new SqlConnection(connStr)) {
                     using (var cmd = new SqlCommand(
-                        "SELECT UserId FROM UserCompany WHERE Id = @id AND CompanyId = @cid", conn))
-                    {
+                        "SELECT UserId FROM UserCompany WHERE Id = @id AND CompanyId = @cid", conn)) {
                         cmd.Parameters.AddWithValue("@id", removeId);
                         cmd.Parameters.AddWithValue("@cid", companyId);
                         conn.Open();
@@ -166,170 +145,135 @@
                         if (result != null && (int)result == ownerId) { isOwnerRow = true; }
                     }
                     }
-                    if (isOwnerRow)
-                    {
+                    if (isOwnerRow) {
                         memberError = "De eigenaar kan niet worden verwijderd.";
+                    } else {
+                        try {
+                            using (var conn = new SqlConnection(connStr)) {
+                            using (var cmd = new SqlCommand(
+                                "DELETE FROM UserCompany WHERE Id = @id AND CompanyId = @cid", conn)) {
+                                cmd.Parameters.AddWithValue("@id", removeId);
+                                cmd.Parameters.AddWithValue("@cid", companyId);
+                                conn.Open();
+                                cmd.ExecuteNonQuery();
+                            }
+                            }
+                            memberMsg = "Lid verwijderd.";
+                        } catch (Exception ex) {
+                            memberError = "Fout: " + ex.Message;
+                        }
                     }
-                    else
-                    {
-                    try
-                    {
-                        using (var conn = new SqlConnection(connStr))
-                        {
+                }
+            } else if (action == "toggle-team") {
+                /* Owner can toggle ShowInTeam for any member in their company */
+                var toggleUserId = 0;
+                int.TryParse(Request["toggleUserId"], out toggleUserId);
+                if (toggleUserId > 0) {
+                    try {
+                        using (var conn = new SqlConnection(connStr)) {
                         using (var cmd = new SqlCommand(
-                            "DELETE FROM UserCompany WHERE Id = @id AND CompanyId = @cid", conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", removeId);
+                            "UPDATE UserCompany SET ShowInTeam = CASE WHEN ShowInTeam = 1 THEN 0 ELSE 1 END WHERE UserId = @uid AND CompanyId = @cid", conn)) {
+                            cmd.Parameters.AddWithValue("@uid", toggleUserId);
                             cmd.Parameters.AddWithValue("@cid", companyId);
                             conn.Open();
                             cmd.ExecuteNonQuery();
                         }
                         }
-                        memberMsg = "Lid verwijderd.";
-                    }
-                    catch (Exception ex)
-                    {
+                        memberMsg = "Teamzichtbaarheid bijgewerkt.";
+                    } catch (Exception ex) {
                         memberError = "Fout: " + ex.Message;
                     }
-                    } /* end else not-owner */
                 }
-            }
-            else if (action == "toggle-team")
-            {
-                /* Owner can toggle ShowInTeam for any member in their company */
-                var toggleUserId = 0;
-                int.TryParse(Request["toggleUserId"], out toggleUserId);
-                if (toggleUserId > 0)
-                {
-                try
-                {
-                    using (var conn = new SqlConnection(connStr))
-                    {
-                    using (var cmd = new SqlCommand(
-                        "UPDATE UserCompany SET ShowInTeam = CASE WHEN ShowInTeam = 1 THEN 0 ELSE 1 END WHERE UserId = @uid AND CompanyId = @cid", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@uid", toggleUserId);
-                        cmd.Parameters.AddWithValue("@cid", companyId);
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
+            } else {
+                /* ── Save company info ── */
+                companyName = (Request["companyName"] ?? "").Trim();
+                about       = (Request["about"]       ?? "").Trim();
+                address     = (Request["address"]     ?? "").Trim();
+                phone       = (Request["phone"]       ?? "").Trim();
+                email       = (Request["email"]       ?? "").Trim();
+                website     = (Request["website"]     ?? "").Trim();
+                bannerImage = (Request["banner"]      ?? "").Trim();
+
+                hoursOpen.Clear();
+                hoursClose.Clear();
+                foreach (var day in dayOrder) {
+                    var open  = (Request["hours_open_"  + day] ?? "").Trim();
+                    var close = (Request["hours_close_" + day] ?? "").Trim();
+                    if (!string.IsNullOrEmpty(open) && !string.IsNullOrEmpty(close)) {
+                        hoursOpen[day]  = open;
+                        hoursClose[day] = close;
                     }
+                }
+
+                var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+                var data = new Dictionary<string, object> {
+                    { "about",   about },
+                    { "address", address },
+                    { "phone",   phone },
+                    { "email",   email },
+                    { "website", website }
+                };
+                if (!string.IsNullOrEmpty(bannerImage)) { data["banner"] = bannerImage; }
+
+                var hours = new Dictionary<string, object>();
+                foreach (var day in dayOrder) {
+                    hours[day] = (hoursOpen.ContainsKey(day) && hoursClose.ContainsKey(day))
+                                    ? (object)new[] { hoursOpen[day], hoursClose[day] }
+                                    : null;
+                }
+                data["openingHours"] = hours;
+
+                var json = serializer.Serialize(data);
+
+                if (string.IsNullOrEmpty(companyName)) {
+                    saveError = "Bedrijfsnaam is verplicht.";
+                } else {
+                    try {
+                        using (var conn = new SqlConnection(connStr)) {
+                        using (var cmd = new SqlCommand(
+                            "UPDATE Company SET Name = @name, CompanyInfo = @info WHERE Id = @id", conn)) {
+                            cmd.Parameters.AddWithValue("@name", companyName);
+                            cmd.Parameters.AddWithValue("@info", json);
+                            cmd.Parameters.AddWithValue("@id",   companyId);
+                            conn.Open();
+                            cmd.ExecuteNonQuery();
+                        }
+                        }
+                        saveSuccess = true;
+                    } catch (Exception ex) {
+                        saveError = "Fout bij opslaan: " + ex.Message;
                     }
-                    memberMsg = "Teamzichtbaarheid bijgewerkt.";
-                }
-                catch (Exception ex)
-                {
-                    memberError = "Fout: " + ex.Message;
-                }
                 }
             }
-            else
-            {
-            /* ── Save company info ── */
-            companyName = (Request["companyName"] ?? "").Trim();
-            about       = (Request["about"] ?? "").Trim();
-            address     = (Request["address"] ?? "").Trim();
-            phone       = (Request["phone"] ?? "").Trim();
-            email       = (Request["email"] ?? "").Trim();
-            website     = (Request["website"] ?? "").Trim();
-            bannerImage = (Request["banner"] ?? "").Trim();
-
-            /* Build openingHours dict */
-            hoursOpen.Clear();
-            hoursClose.Clear();
-            foreach (var day in dayOrder)
-            {
-                var open  = (Request["hours_open_" + day] ?? "").Trim();
-                var close = (Request["hours_close_" + day] ?? "").Trim();
-                if (!string.IsNullOrEmpty(open) && !string.IsNullOrEmpty(close))
-                {
-                    hoursOpen[day]  = open;
-                    hoursClose[day] = close;
-                }
-            }
-
-            /* Build JSON */
-            var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
-            var data = new Dictionary<string, object>();
-            data["about"]   = about;
-            data["address"] = address;
-            data["phone"]   = phone;
-            data["email"]   = email;
-            data["website"] = website;
-            if (!string.IsNullOrEmpty(bannerImage)) { data["banner"] = bannerImage; }
-
-            var hours = new Dictionary<string, object>();
-            foreach (var day in dayOrder)
-            {
-                if (hoursOpen.ContainsKey(day) && hoursClose.ContainsKey(day))
-                {
-                    hours[day] = new[] { hoursOpen[day], hoursClose[day] };
-                }
-                else
-                {
-                    hours[day] = null;
-                }
-            }
-            data["openingHours"] = hours;
-
-            var json = serializer.Serialize(data);
-
-            /* Validate */
-            if (string.IsNullOrEmpty(companyName))
-            {
-                saveError = "Bedrijfsnaam is verplicht.";
-            }
-            else
-            {
-                /* Save to DB */
-                try
-                {
-                    using (var conn = new SqlConnection(connStr))
-                    {
-                    using (var cmd = new SqlCommand(
-                        "UPDATE Company SET Name = @name, CompanyInfo = @info WHERE Id = @id", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@name", companyName);
-                        cmd.Parameters.AddWithValue("@info", json);
-                        cmd.Parameters.AddWithValue("@id", companyId);
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
-                    }
-                    saveSuccess = true;
-                }
-                catch (Exception ex)
-                {
-                    saveError = "Fout bij opslaan: " + ex.Message;
-                }
-            }
-            } /* end else save-info */
         }
 
         /* ── AJAX: return JSON and stop rendering ── */
-        if (IsPost && isAjax && isManager)
-        {
-            var ok = string.IsNullOrEmpty(saveError) && string.IsNullOrEmpty(memberError);
-            var msg = !string.IsNullOrEmpty(memberMsg) ? memberMsg : (!string.IsNullOrEmpty(saveError) ? saveError : (!string.IsNullOrEmpty(memberError) ? memberError : (saveSuccess ? "Opgeslagen!" : "")));
+        if (IsPost && isAjax && isManager) {
+            var ok  = string.IsNullOrEmpty(saveError) && string.IsNullOrEmpty(memberError);
+            var msg = !string.IsNullOrEmpty(memberMsg)
+                          ? memberMsg
+                          : (!string.IsNullOrEmpty(saveError)
+                                 ? saveError
+                                 : (!string.IsNullOrEmpty(memberError)
+                                        ? memberError
+                                        : (saveSuccess ? "Opgeslagen!" : "")));
+
             /* Reload members for the response */
             var ajaxMembers = new List<Dictionary<string, object>>();
-            using (var conn = new SqlConnection(connStr))
-            {
+            using (var conn = new SqlConnection(connStr)) {
             using (var cmd = new SqlCommand(
-                "SELECT uc.Id, uc.UserId, u.DisplayName, u.Email, uc.ShowInTeam FROM UserCompany uc INNER JOIN Users u ON u.UserID = uc.UserId WHERE uc.CompanyId = @cid ORDER BY u.DisplayName", conn))
-            {
+                "SELECT uc.Id, uc.UserId, u.DisplayName, u.Email, uc.ShowInTeam FROM UserCompany uc INNER JOIN Users u ON u.UserID = uc.UserId WHERE uc.CompanyId = @cid ORDER BY u.DisplayName", conn)) {
                 cmd.Parameters.AddWithValue("@cid", companyId);
                 conn.Open();
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var d = new Dictionary<string, object>();
-                        d["id"] = reader.GetInt32(0);
-                        d["userId"] = reader.GetInt32(1);
-                        d["displayName"] = reader.GetString(2);
-                        d["email"] = reader.IsDBNull(3) ? "" : reader.GetString(3);
-                        d["showInTeam"] = reader.GetBoolean(4);
-                        ajaxMembers.Add(d);
+                using (var reader = cmd.ExecuteReader()) {
+                    while (reader.Read()) {
+                        ajaxMembers.Add(new Dictionary<string, object> {
+                            { "id",          reader.GetInt32(0) },
+                            { "userId",      reader.GetInt32(1) },
+                            { "displayName", reader.GetString(2) },
+                            { "email",       reader.IsDBNull(3) ? "" : reader.GetString(3) },
+                            { "showInTeam",  reader.GetBoolean(4) }
+                        });
                     }
                 }
             }
@@ -338,7 +282,10 @@
             Response.Clear();
             Response.ContentType = "application/json";
             Response.Write(jss.Serialize(new Dictionary<string, object> {
-                { "ok", ok }, { "message", msg }, { "members", ajaxMembers }, { "ownerId", ownerId }
+                { "ok",      ok },
+                { "message", msg },
+                { "members", ajaxMembers },
+                { "ownerId", ownerId }
             }));
             Response.Flush();
             Response.SuppressContent = true;
@@ -347,54 +294,43 @@
         }
 
         /* ── Load current members ── */
-        if (isManager && companyId > 0)
-        {
-            using (var conn = new SqlConnection(connStr))
-            {
+        if (isManager && companyId > 0) {
+            using (var conn = new SqlConnection(connStr)) {
             using (var cmd = new SqlCommand(
-                "SELECT uc.Id, uc.UserId, u.DisplayName, u.Email, uc.ShowInTeam FROM UserCompany uc INNER JOIN Users u ON u.UserID = uc.UserId WHERE uc.CompanyId = @cid ORDER BY u.DisplayName", conn))
-            {
+                "SELECT uc.Id, uc.UserId, u.DisplayName, u.Email, uc.ShowInTeam FROM UserCompany uc INNER JOIN Users u ON u.UserID = uc.UserId WHERE uc.CompanyId = @cid ORDER BY u.DisplayName", conn)) {
                 cmd.Parameters.AddWithValue("@cid", companyId);
                 conn.Open();
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var mUserId = reader.GetInt32(1);
-                        var showInTeam = reader.GetBoolean(4);
-                        members.Add(new {
-                            Id          = reader.GetInt32(0),
-                            UserId      = mUserId,
-                            DisplayName = reader.GetString(2),
-                            Email       = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                            ShowInTeam  = showInTeam
+                using (var reader = cmd.ExecuteReader()) {
+                    while (reader.Read()) {
+                        members.Add(new Dictionary<string, object> {
+                            { "Id",          reader.GetInt32(0) },
+                            { "UserId",      reader.GetInt32(1) },
+                            { "DisplayName", reader.GetString(2) },
+                            { "Email",       reader.IsDBNull(3) ? "" : reader.GetString(3) },
+                            { "ShowInTeam",  reader.GetBoolean(4) }
                         });
                     }
                 }
             }
             }
 
-            /* ── Load community members for add-member dropdown.
-                  Restrict to users that belong to THIS community via UserCommunity. ── */
-            using (var conn = new SqlConnection(connStr))
-            {
+            /* Load community members for add-member dropdown.
+               Restrict to users that belong to THIS community via UserCommunity. */
+            using (var conn = new SqlConnection(connStr)) {
             using (var cmd = new SqlCommand(
                 "SELECT u.UserID, u.DisplayName FROM Users u " +
                 "INNER JOIN UserPortals up ON up.UserId = u.UserID " +
                 "INNER JOIN UserCommunity uc ON uc.UserId = u.UserID " +
                 "WHERE up.PortalId = @pid AND uc.CommunityId = @cid AND u.IsSuperUser = 0 " +
-                "ORDER BY u.DisplayName", conn))
-            {
+                "ORDER BY u.DisplayName", conn)) {
                 cmd.Parameters.AddWithValue("@pid", portalId);
                 cmd.Parameters.AddWithValue("@cid", communityId);
                 conn.Open();
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        allUsers.Add(new {
-                            UserId      = reader.GetInt32(0),
-                            DisplayName = reader.GetString(1)
+                using (var reader = cmd.ExecuteReader()) {
+                    while (reader.Read()) {
+                        allUsers.Add(new Dictionary<string, object> {
+                            { "UserId",      reader.GetInt32(0) },
+                            { "DisplayName", reader.GetString(1) }
                         });
                     }
                 }
@@ -402,297 +338,50 @@
             }
         }
     }
+
+    /* ── Publish to PageData ── */
+    PageData["communityName"] = communityName;
+    PageData["communitySlug"] = communitySlug;
+    PageData["companyName"]   = companyName;
+    PageData["companySlug"]   = companySlug;
+    PageData["ownerId"]       = ownerId;
+    PageData["about"]         = about;
+    PageData["address"]       = address;
+    PageData["phone"]         = phone;
+    PageData["email"]         = email;
+    PageData["website"]       = website;
+    PageData["bannerImage"]   = bannerImage;
+    PageData["hoursOpen"]     = hoursOpen;
+    PageData["hoursClose"]    = hoursClose;
+    PageData["saveSuccess"]   = saveSuccess;
+    PageData["saveError"]     = saveError;
+    PageData["members"]       = members;
+    PageData["allUsers"]      = allUsers;
 }
 
-<main class="max-w-4xl w-full">
-    <!-- ============================================ -->
-    <!-- BREADCRUMB                                     -->
-    <!-- ============================================ -->
-    <section class="w-full">
-        <div class="w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-            <nav class="flex items-center gap-1.5 text-sm text-foreground-400">
-                <a href="/@communitySlug/home" class="hover:text-primary transition">@communityName</a>
-                <i data-lucide="chevron-right" class="size-3.5"></i>
-                <a href="/@communitySlug/companies" class="hover:text-primary transition">Bedrijven</a>
-                <i data-lucide="chevron-right" class="size-3.5"></i>
-                <a href="/@communitySlug/companies/@companySlug" class="hover:text-primary transition truncate max-w-32">@companyName</a>
-                <i data-lucide="chevron-right" class="size-3.5"></i>
-                <span class="text-foreground-700 font-medium">Bewerken</span>
-            </nav>
-        </div>
-    </section>
+<main class="max-w-4xl w-full m-auto">
+    @RenderPage("Shared/CompanyEdit/_Breadcrumb.cshtml")
 
-    @if (!isManager)
-    {
-    <!-- ============================================ -->
-    <!-- ACCESS DENIED                                  -->
-    <!-- ============================================ -->
-    <section class="w-full">
-        <div class="w-full px-4 sm:px-6 lg:px-8 py-12">
-            <div class="flex flex-col items-center gap-4 text-center">
-                <div class="flex items-center justify-center size-16 rounded-full bg-danger-100">
-                    <i data-lucide="shield-x" class="size-8 text-danger"></i>
-                </div>
-                <h1 class="text-xl font-bold text-foreground-900">Geen toegang</h1>
-                <p class="text-sm text-foreground-500 max-w-md">Je hebt geen rechten om dit bedrijf te bewerken. Alleen gekoppelde teamleden kunnen wijzigingen aanbrengen.</p>
-                <a href="/@communitySlug/companies/@companySlug"
-                   class="mt-2 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-                    <i data-lucide="arrow-left" class="size-4"></i>
-                    Terug naar bedrijfspagina
-                </a>
-            </div>
-        </div>
-    </section>
-    }
-    else
-    {
-    <!-- ============================================ -->
-    <!-- EDIT FORM                                      -->
-    <!-- ============================================ -->
-    <section class="flex flex-col gap-6  w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div class="flex items-center justify-between">
-            <h1 class="text-xl sm:text-2xl font-bold text-foreground-900">Bedrijf bewerken</h1>
-            <a href="/@communitySlug/companies/@companySlug"
-                class="inline-flex items-center gap-1.5 text-sm text-foreground-500 hover:text-primary transition">
-                <i data-lucide="x" class="size-4"></i>
-                Annuleren
-            </a>
-        </div>
+    @if (!isManager) {
+        @RenderPage("Shared/CompanyEdit/_AccessDenied.cshtml")
+    } else {
+        <section class="flex flex-col gap-6 w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            @RenderPage("Shared/CompanyEdit/_FormHeader.cshtml")
+            @RenderPage("Shared/CompanyEdit/_SaveAlerts.cshtml")
 
-        @if (saveSuccess)
-        {
-            <div class="flex items-center gap-3 p-4 rounded-xl border border-success-200 bg-success-50">
-                <i data-lucide="check-circle-2" class="size-5 text-success shrink-0"></i>
-                <div class="flex flex-col gap-0.5">
-                    <span class="text-sm font-medium text-success-800">Opgeslagen!</span>
-                    <span class="text-xs text-success-800">De bedrijfsgegevens zijn bijgewerkt.
-                        <a href="/@communitySlug/companies/@companySlug" class="underline font-medium">Bekijk bedrijfspagina</a>
-                    </span>
-                </div>
-            </div>
-        }
+            <form method="post" id="ce-save-form" class="flex flex-col gap-6">
+                <input type="hidden" name="formAction" value="save-info" />
+                @RenderPage("Shared/CompanyEdit/_GeneralInfo.cshtml")
+                @RenderPage("Shared/CompanyEdit/_ContactInfo.cshtml")
+                @RenderPage("Shared/CompanyEdit/_OpeningHours.cshtml")
+                @RenderPage("Shared/CompanyEdit/_SubmitButtons.cshtml")
+            </form>
 
-        @if (!string.IsNullOrEmpty(saveError))
-        {
-            <div class="flex items-center gap-3 p-4 rounded-xl border border-danger-200 bg-danger-50">
-                <i data-lucide="alert-circle" class="size-5 text-danger shrink-0"></i>
-                <span class="text-sm text-danger-800">@saveError</span>
-            </div>
-        }
-
-        <form method="post" id="ce-save-form" class="flex flex-col gap-6">
-            <input type="hidden" name="formAction" value="save-info" />
-            <!-- ── General Info ── -->
-            <div class="flex flex-col gap-4 bg-content1 rounded-xl border border-divider p-5 sm:p-6">
-                <h2 class="text-base font-semibold text-foreground-900">Algemene informatie</h2>
-
-                <div class="flex flex-col gap-1.5">
-                    <label for="companyName" class="text-sm font-medium text-foreground-700">Bedrijfsnaam <span class="text-danger">*</span></label>
-                    <input type="text" id="companyName" name="companyName" value="@companyName" required
-                            class="w-full px-3 py-2 rounded-lg border border-divider bg-background text-sm text-foreground-900 placeholder:text-foreground-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                    <label for="about" class="text-sm font-medium text-foreground-700">Over het bedrijf</label>
-                    <textarea id="about" name="about" rows="4"
-                              class="w-full px-3 py-2 rounded-lg border border-divider bg-background text-sm text-foreground-900 placeholder:text-foreground-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition resize-y"
-                              placeholder="Beschrijf het bedrijf...">@about</textarea>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                    <label class="text-sm font-medium text-foreground-700">Banner afbeelding</label>
-                    @{
-                        var appBaseEdit = (Request.ApplicationPath ?? "").TrimEnd('/');
-                        var bannerUploadUrl = appBaseEdit + "/DesktopModules/Dnn.Modules.TableDZP/API/TableService/Table/UploadImage";
-                        var hasBanner = !string.IsNullOrEmpty(bannerImage);
-                    }
-                    <div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content1 cursor-pointer transition"
-                         tabindex="0" role="button"
-                         data-upload-url="@bannerUploadUrl">
-                        <input type="hidden" name="banner" id="banner" value="@bannerImage" class="dt-dz-value" />
-                        <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
-                        <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none @(hasBanner ? "hidden" : "")">
-                            <i data-lucide="image-up" class="size-8"></i>
-                            <span>Sleep een afbeelding hierheen of klik om te uploaden</span>
-                            <span class="text-xs text-foreground-400">PNG, JPG, GIF of WebP &middot; max 10 MB</span>
-                        </div>
-                        <div class="dt-dz-preview relative w-full @(hasBanner ? "" : "hidden")">
-                            <img class="dt-dz-preview-img w-full max-h-48 object-contain rounded-md" alt="" @(hasBanner ? Html.Raw("src=\"" + HttpUtility.HtmlAttributeEncode(bannerImage) + "\"") : null) />
-                            <button type="button" class="dt-dz-remove absolute top-2 right-2 inline-flex items-center justify-center size-8 rounded-full bg-content1 border border-divider shadow hover:bg-danger-50 hover:text-danger transition" aria-label="Afbeelding verwijderen">
-                                <i data-lucide="x" class="size-4"></i>
-                            </button>
-                        </div>
-                        <div class="dt-dz-progress hidden absolute inset-0 flex items-center justify-center bg-overlay/40 rounded-lg text-sm text-foreground-700">
-                            <i data-lucide="loader-2" class="size-5 animate-spin"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── Contact Info ── -->
-            <div class="flex flex-col gap-4 bg-content1 rounded-xl border border-divider p-5 sm:p-6">
-                <h2 class="text-base font-semibold text-foreground-900">Contactgegevens</h2>
-
-                <div class="flex flex-col gap-1.5">
-                    <label for="address" class="text-sm font-medium text-foreground-700">Adres</label>
-                    <input type="text" id="address" name="address" value="@address"
-                            placeholder="Straat 1, 1234 AB Plaats"
-                            class="w-full px-3 py-2 rounded-lg border border-divider bg-background text-sm text-foreground-900 placeholder:text-foreground-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="flex flex-col gap-1.5">
-                        <label for="phone" class="text-sm font-medium text-foreground-700">Telefoon</label>
-                        <input type="tel" id="phone" name="phone" value="@phone"
-                                placeholder="+31 6 12345678"
-                                class="w-full px-3 py-2 rounded-lg border border-divider bg-background text-sm text-foreground-900 placeholder:text-foreground-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-                    </div>
-                    <div class="flex flex-col gap-1.5">
-                        <label for="email" class="text-sm font-medium text-foreground-700">E-mail</label>
-                        <input type="email" id="email" name="email" value="@email"
-                                placeholder="info@bedrijf.nl"
-                                class="w-full px-3 py-2 rounded-lg border border-divider bg-background text-sm text-foreground-900 placeholder:text-foreground-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-                    </div>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                    <label for="website" class="text-sm font-medium text-foreground-700">Website</label>
-                    <input type="url" id="website" name="website" value="@website"
-                            placeholder="https://bedrijf.nl"
-                            class="w-full px-3 py-2 rounded-lg border border-divider bg-background text-sm text-foreground-900 placeholder:text-foreground-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-                </div>
-            </div>
-
-            <!-- ── Opening Hours ── -->
-            <div class="flex flex-col gap-4 bg-content1 rounded-xl border border-divider p-5 sm:p-6">
-                <div class="flex flex-col gap-1">
-                    <h2 class="text-base font-semibold text-foreground-900">Openingstijden</h2>
-                    <p class="text-xs text-foreground-400">Laat beide velden leeg als het bedrijf die dag gesloten is.</p>
-                </div>
-
-                <div class="flex flex-col gap-3">
-                    @foreach (var day in dayOrder)
-                    {
-                        var openVal  = hoursOpen.ContainsKey(day) ? hoursOpen[day] : "";
-                        var closeVal = hoursClose.ContainsKey(day) ? hoursClose[day] : "";
-                        <div class="grid grid-cols-[80px_1fr_1fr] sm:grid-cols-[100px_1fr_1fr] items-center gap-3">
-                            <span class="text-sm font-medium text-foreground-700">@dayToNl[day]</span>
-                            <input type="time" name="hours_open_@day" value="@openVal"
-                                    class="w-full px-3 py-2 rounded-lg border border-divider bg-background text-sm text-foreground-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-                            <input type="time" name="hours_close_@day" value="@closeVal"
-                                    class="w-full px-3 py-2 rounded-lg border border-divider bg-background text-sm text-foreground-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-                        </div>
-                    }
-                </div>
-            </div>
-
-            <!-- ── Submit ── -->
-            <div class="flex items-center gap-3 pt-2">
-                <button type="submit"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30 transition">
-                    <i data-lucide="save" class="size-4"></i>
-                    Opslaan
-                </button>
-                <a href="/@communitySlug/companies/@companySlug"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-divider text-sm font-medium text-foreground-600 hover:bg-content1 transition">
-                    Annuleren
-                </a>
-            </div>
-        </form>
-
-        <!-- ============================================ -->
-        <!-- TEAM MEMBERS MANAGEMENT                       -->
-        <!-- ============================================ -->
-        <div class="flex flex-col gap-4 bg-content1 rounded-xl border border-divider p-5 sm:p-6">
-            <h2 class="text-base font-semibold text-foreground-900">Teamleden</h2>
-
-            <!-- Add member form -->
-            <div id="ce-add-form" class="flex items-end gap-3">
-                <div class="flex flex-col gap-1.5 flex-1">
-                    <label class="text-sm font-medium text-foreground-700">Lid toevoegen</label>
-                    <div id="ce-add-user-select"></div>
-                </div>
-                <button type="button" id="ce-add-btn"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30 transition shrink-0">
-                    <i data-lucide="user-plus" class="size-4"></i>
-                    Toevoegen
-                </button>
-            </div>
-
-            <!-- Current members list -->
-            <div id="ce-members">
-            @if (members.Count == 0)
-            {
-                <p class="text-sm text-foreground-400 py-2">Er zijn nog geen teamleden gekoppeld.</p>
-            }
-            else
-            {
-                <div class="flex flex-col divide-y divide-divider">
-                    @foreach (var m in members)
-                    {
-                        <div class="flex items-center justify-between gap-4 py-3">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <button type="button" data-toggle-user="@m.UserId" title="@((bool)m.ShowInTeam ? "Verbergen in team" : "Tonen in team")"
-                                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 @((bool)m.ShowInTeam ? "bg-primary" : "bg-foreground-200")">
-                                    <span class="inline-block size-4 rounded-full bg-white shadow-sm transition-transform @((bool)m.ShowInTeam ? "translate-x-6" : "translate-x-1")"></span>
-                                </button>
-                                <div class="size-10 rounded-full overflow-hidden border-2 border-divider shrink-0">
-                                    <img src="/DnnImageHandler.ashx?mode=profilepic&userId=@m.UserId&w=80&h=80" alt="@m.DisplayName" class="w-full h-full object-cover rounded-full" />
-                                </div>
-                                <div class="flex flex-col min-w-0">
-                                    <span class="text-sm font-medium text-foreground-900 truncate">@m.DisplayName</span>
-                                    @if (!string.IsNullOrEmpty((string)m.Email))
-                                    {
-                                        <span class="text-xs text-foreground-400 truncate">@m.Email</span>
-                                    }
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                @if ((int)m.UserId == ownerId) {
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-primary/20 bg-primary/5 text-xs font-medium text-primary">
-                                    <i data-lucide="crown" class="size-3.5"></i>
-                                    Eigenaar
-                                </span>
-                                } else {
-                                <button type="button" data-remove-id="@m.Id"
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-divider text-xs font-medium text-danger hover:bg-danger-50 hover:border-danger/30 transition">
-                                    <i data-lucide="user-minus" class="size-3.5"></i>
-                                    Verwijderen
-                                </button>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-            }
-            </div>
-        </div>
-    </section>
+            @RenderPage("Shared/CompanyEdit/_MembersList.cshtml")
+        </section>
     }
 </main>
 
-@if (isManager)
-{
-<link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/module.css" />
-<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/dropzone.js"></script>
-<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/select.js"></script>
-<script>
-var CE_USERS = @(new HtmlString(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(allUsers.Select(u => new { value = u.UserId.ToString(), label = (string)u.DisplayName }))));
-var CE_MEMBER_IDS = [@foreach (var m in members) {<text>@m.UserId,</text>}];
-(function () {
-    function initBannerDz() {
-        if (window.DtDropzone && typeof window.DtDropzone.initAll === 'function') {
-            window.DtDropzone.initAll(document);
-        }
-        if (typeof lucide !== 'undefined' && lucide.createIcons) { lucide.createIcons(); }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initBannerDz);
-    } else {
-        initBannerDz();
-    }
-})();
-</script>
-<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/company-edit.js"></script>
+@if (isManager) {
+    @RenderPage("Shared/CompanyEdit/_Scripts.cshtml")
 }
-

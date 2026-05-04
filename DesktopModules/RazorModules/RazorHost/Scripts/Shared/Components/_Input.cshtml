@@ -1,0 +1,56 @@
+@*
+    Shared text input. Params (via PageData):
+      id          (string, optional)
+      name        (string, optional)
+      type        (string, optional) - text | email | tel | url | number | password (default: text)
+      value       (string, optional)
+      placeholder (string, optional)
+      required    (bool,   optional)
+      disabled    (bool,   optional)
+      autocomplete(string, optional)
+      icon        (string, optional) - lucide icon name (rendered inside the input on the left)
+      iconColor   (string, optional) - tailwind text color suffix WITHOUT "text-" prefix
+                                       (e.g. "primary", "danger", "foreground-400")
+                                       default: "foreground-700"
+      extraClass  (string, optional)
+      attrs       (string, optional) - extra raw attributes
+*@
+@{
+    var inId       = PageData["id"]          as string;
+    var inName     = PageData["name"]        as string;
+    var inType     = PageData["type"]        as string ?? "text";
+    var inValue    = PageData["value"]       as string ?? "";
+    var inPlace    = PageData["placeholder"] as string ?? "";
+    var inAutoComp = PageData["autocomplete"] as string;
+    var inIcon     = PageData["icon"]        as string;
+    var inIconClr  = PageData["iconColor"]   as string ?? "foreground-700";
+    var inExtra    = PageData["extraClass"]  as string ?? "";
+    var inAttrs    = PageData["attrs"]       as string ?? "";
+    var inRequired = PageData["required"] != null && (bool)PageData["required"];
+    var inDisabled = PageData["disabled"] != null && (bool)PageData["disabled"];
+
+    var hasIcon  = !string.IsNullOrEmpty(inIcon);
+    var leftPad  = hasIcon ? "pl-10" : "px-4";
+    var rightPad = hasIcon ? "pr-4"  : "";
+    var inClass  = "w-full " + leftPad + " " + rightPad + " py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition disabled:opacity-50 disabled:cursor-not-allowed " + inExtra;
+}
+@if (hasIcon) {
+    <div class="relative">
+        <i data-lucide="@inIcon" class="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-@inIconClr pointer-events-none"></i>
+        <input type="@inType" class="@inClass" value="@inValue" placeholder="@inPlace"
+               @(new System.Web.HtmlString(inId    != null ? "id=\""    + inId    + "\"" : ""))
+               @(new System.Web.HtmlString(inName  != null ? "name=\""  + inName  + "\"" : ""))
+               @(new System.Web.HtmlString(inAutoComp != null ? "autocomplete=\"" + inAutoComp + "\"" : ""))
+               @(inRequired ? new System.Web.HtmlString("required=\"required\"") : new System.Web.HtmlString(""))
+               @(inDisabled ? new System.Web.HtmlString("disabled=\"disabled\"") : new System.Web.HtmlString(""))
+               @(new System.Web.HtmlString(inAttrs)) />
+    </div>
+} else {
+    <input type="@inType" class="@inClass" value="@inValue" placeholder="@inPlace"
+           @(new System.Web.HtmlString(inId    != null ? "id=\""    + inId    + "\"" : ""))
+           @(new System.Web.HtmlString(inName  != null ? "name=\""  + inName  + "\"" : ""))
+           @(new System.Web.HtmlString(inAutoComp != null ? "autocomplete=\"" + inAutoComp + "\"" : ""))
+           @(inRequired ? new System.Web.HtmlString("required=\"required\"") : new System.Web.HtmlString(""))
+           @(inDisabled ? new System.Web.HtmlString("disabled=\"disabled\"") : new System.Web.HtmlString(""))
+           @(new System.Web.HtmlString(inAttrs)) />
+}

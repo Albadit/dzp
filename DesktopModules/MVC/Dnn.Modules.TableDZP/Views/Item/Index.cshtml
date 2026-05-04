@@ -35,11 +35,8 @@
 
     // ── Lookup execution (perf): collect every distinct select/multiselect
     //    column once, then run all of their queries against a SINGLE pooled
-    //    SqlConnection. Previously the view opened a new connection per column,
-    //    which multiplied connect/auth overhead and held the request open
-    //    longer. We also build a key→label dictionary per column so that
-    //    rendering each cell becomes O(1) instead of O(options) — the old
-    //    code did a linear scan inside every multiselect cell render.
+    //    SqlConnection. We also build a key→label dictionary per column so
+    //    that rendering each cell becomes O(1) instead of O(options).
     var lookups   = new Dictionary<string, List<KeyValuePair<string, string>>>();
     var lookupMap = new Dictionary<string, Dictionary<string, string>>();
     var selectCols = new List<Dnn.Modules.TableDZP.Models.DataTableColumn>();
@@ -108,11 +105,24 @@
     // "Dnn.Modules.TableDZP".
     var appBase   = (Request.ApplicationPath ?? "").TrimEnd('/');
     var uploadUrl = appBase + "/DesktopModules/Dnn.Modules.TableDZP/API/TableService/Table/UploadImage";
+
+    var alertMsg  = !string.IsNullOrEmpty(Model.SuccessMsg) ? Model.SuccessMsg : Model.ErrorMsg;
+    var isSuccess = !string.IsNullOrEmpty(Model.SuccessMsg);
+
+    // Bag of values shared with all child partials.
+    var sharedVD = new ViewDataDictionary {
+        { "tid",          tid },
+        { "pk",           pk },
+        { "tableColumns", tableColumns },
+        { "gridCols",     gridCols },
+        { "lookups",      lookups },
+        { "lookupMap",    lookupMap },
+        { "uploadUrl",    uploadUrl }
+    };
 }
 
-@* <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script> *@
 <link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/module.css" />
-@Html.Partial("_Select")
+@Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Select.cshtml")
 
 <div id="@tid" class="w-full max-w-7xl mx-auto flex flex-col gap-4 py-6" data-page-size="10" data-total="@Model.TotalRows">
 
@@ -121,362 +131,24 @@
         <h2 class="text-2xl font-bold text-foreground-900">@config.Title</h2>
     }
 
-    @{
-        var alertMsg = !string.IsNullOrEmpty(Model.SuccessMsg) ? Model.SuccessMsg : Model.ErrorMsg;
-        var isSuccess = !string.IsNullOrEmpty(Model.SuccessMsg);
-    }
-    @if (!string.IsNullOrEmpty(alertMsg))
-    {
-        <div class="fixed bottom-4 right-5 z-1100 w-full max-w-[350px] flex items-center gap-2 rounded-lg px-4 py-3 text-sm dt-alert @(isSuccess ? "bg-success-50 border border-success-200 text-success-800" : "bg-danger-50 border border-danger-200 text-danger-800")" @(isSuccess ? Html.Raw("data-auto-dismiss=\"4000\"") : null)>
-            @if (isSuccess)
-            {
-                <i data-lucide="circle-check" class="size-4 shrink-0"></i>
-            }
-            else
-            {
-                <i data-lucide="circle-x" class="size-4 shrink-0"></i>
-            }
-            @alertMsg
-        </div>
-    }
+    @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Alert.cshtml", null, new ViewDataDictionary {
+        { "alert-message", alertMsg },
+        { "alert-success", isSuccess ? "true" : "" },
+        { "alert-dismiss", isSuccess ? "4000"  : "" }
+    })
 
-    <!-- Toolbar -->
-    <div class="flex flex-wrap justify-between items-center gap-3">
-        <div class="relative flex-1 min-w-[200px] max-w-sm">
-            <span class="absolute left-3 top-0 bottom-0 flex items-center pointer-events-none"><i data-lucide="search" class="size-4 text-foreground-400"></i></span>
-            <input type="text" placeholder="Search&#8230;"
-                   class="dt-search w-full pl-9 pr-3 py-2 text-sm border border-divider rounded-lg focus:ring-2 focus:ring-focus focus:border-focus outline-none"
-                   data-target="@tid" />
-        </div>
-        <div class="flex gap-2">
-            @if (config.AllowBulkDelete)
-            {
-                <button type="button" class="dt-btn-bulk-del flex hidden items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-danger rounded-lg hover:bg-danger-700 transition" data-target="@tid">
-                    <i data-lucide="trash-2" class="size-4"></i>
-                    Delete <span class="dt-bulk-count"></span>
-                </button>
-            }
-            @if (config.AllowCreate)
-            {
-                <button type="button" class="dt-btn-add flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition" data-target="@tid">
-                    <i data-lucide="plus" class="size-4"></i>
-                    New
-                </button>
-            }
-        </div>
-    </div>
-
-    <!-- Table -->
-    <div class="overflow-x-auto rounded-lg border border-divider bg-background shadow-card">
-        <div class="dt-table min-w-full text-sm" data-id="@tid" style="display:grid; grid-template-columns: @gridCols;">
-
-            @* Header *@
-            @if (config.AllowBulkDelete)
-            {
-                <div class="bg-content2 px-3 py-3 flex items-center">
-                    <input type="checkbox" class="dt-check-all size-4 rounded border-divider text-primary focus:ring-focus cursor-pointer" data-target="@tid" />
-                </div>
-            }
-            @foreach (var col in tableColumns)
-            {
-                if (col.Sortable)
-                {
-                    <div class="bg-content2 px-4 py-3 text-left font-semibold text-foreground-700 select-none flex items-center cursor-pointer dt-sort"
-                         data-col="@col.Key" data-dir="" data-target="@tid">
-                        <span class="inline-flex items-center gap-1">
-                            @col.Label
-                            <span class="inline-flex items-center gap-0.5">
-                                <span class="dt-sort-icon-wrap" style="visibility:hidden;"><i data-lucide="chevron-down" class="size-4 shrink-0"></i></span>
-                                <span class="dt-sort-num text-xs font-bold text-primary hidden"></span>
-                            </span>
-                        </span>
-                    </div>
-                }
-                else
-                {
-                    <div class="bg-content2 px-4 py-3 text-left font-semibold text-foreground-700 select-none flex items-center">
-                        <span class="inline-flex items-center gap-1">@col.Label</span>
-                    </div>
-                }
-            }
-            @if (config.AllowEdit || config.AllowDelete)
-            {
-                <div class="bg-content2 px-4 py-3 text-right font-semibold text-foreground-700 flex items-center justify-end">Actions</div>
-            }
-
-            @* Body *@
-            <div class="dt-tbody contents">
-                @if (Model.Rows.Count == 0 && string.IsNullOrEmpty(Model.ErrorMsg))
-                {
-                    <div class="dt-row-empty" style="grid-column: 1 / -1;">
-                        <div class="px-4 py-12 text-center text-foreground-400">
-                            <i data-lucide="inbox" class="size-8 mx-auto mb-2 opacity-40"></i>
-                            <p>@L("NoData.Text")</p>
-                        </div>
-                    </div>
-                }
-                @foreach (var row in Model.Rows)
-                {
-                    var pkVal = row.ContainsKey(config.PrimaryKey ?? "") ? (row[config.PrimaryKey] != null ? row[config.PrimaryKey].ToString() : "") : "";
-                    <div class="dt-row contents group" data-pk="@pkVal">
-                        @if (config.AllowBulkDelete)
-                        {
-                            <div class="px-3 py-3 border-t border-default-100 flex items-center group-hover:bg-default-50/50 transition-colors">
-                                <input type="checkbox" class="dt-check-row size-4 rounded border-divider text-primary focus:ring-focus cursor-pointer" value="@pkVal" data-target="@tid" />
-                            </div>
-                        }
-                        @foreach (var col in tableColumns)
-                        {
-                            var cellVal = row.ContainsKey(col.Key) ? (row[col.Key] != null ? row[col.Key].ToString() : "") : "";
-                            var needsRaw = (col.Type == "select" || col.Type == "multiselect" || col.Type == "image");
-                            var dataRawAttr = needsRaw ? Html.Raw(" data-raw=\"" + Html.Encode(cellVal) + "\"") : null;
-                            <div class="px-4 py-3 border-t border-default-100 flex items-center group-hover:bg-default-50/50 transition-colors whitespace-nowrap" data-col="@col.Key"@dataRawAttr>
-                                @if (col.Type == "select" && lookupMap.ContainsKey(col.Key))
-                                {
-                                    string matchLabel;
-                                    if (!lookupMap[col.Key].TryGetValue(cellVal, out matchLabel)) { matchLabel = cellVal; }
-                                    <span class="dt-cell-text">@matchLabel</span>
-                                }
-                                else if (col.Type == "multiselect" && lookupMap.ContainsKey(col.Key))
-                                {
-                                    var lblMap = lookupMap[col.Key];
-                                    var ids = cellVal.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
-                                    var labels = new List<string>(ids.Length);
-                                    foreach (var id in ids)
-                                    {
-                                        var trimId = id.Trim();
-                                        string lbl;
-                                        labels.Add(lblMap.TryGetValue(trimId, out lbl) ? lbl : trimId);
-                                    }
-                                    <span class="dt-cell-text">@string.Join(", ", labels)</span>
-                                }
-                                else if (col.Type == "image" && !string.IsNullOrEmpty(cellVal))
-                                {
-                                    <a href="@cellVal" target="_blank" rel="noopener noreferrer" class="inline-block">
-                                        <img src="@cellVal" alt="" class="size-10 rounded object-cover border border-divider" loading="lazy" />
-                                    </a>
-                                }
-                                else if (col.Type == "url" && !string.IsNullOrEmpty(cellVal))
-                                {
-                                    <a href="@cellVal" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline truncate block max-w-[200px]">@cellVal</a>
-                                }
-                                else
-                                {
-                                    <span class="dt-cell-text">@cellVal</span>
-                                }
-                            </div>
-                        }
-                        @if (config.AllowEdit || config.AllowDelete)
-                        {
-                            <div class="px-4 py-3 border-t border-default-100 flex items-center justify-end group-hover:bg-default-50/50 transition-colors">
-                                <div class="inline-flex items-center gap-1">
-                                    @if (config.AllowEdit)
-                                    {
-                                        <button type="button" class="dt-btn-edit p-1.5 rounded-md text-foreground-400 hover:text-primary hover:bg-primary-50 transition" data-pk="@pkVal" data-target="@tid" title="Edit">
-                                            <i data-lucide="square-pen" class="size-4"></i>
-                                        </button>
-                                    }
-                                    @if (config.AllowDelete)
-                                    {
-                                        <button type="button" class="dt-btn-del p-1.5 rounded-md text-foreground-400 hover:text-danger hover:bg-danger-50 transition" data-pk="@pkVal" data-target="@tid" title="Delete">
-                                            <i data-lucide="trash-2" class="size-4"></i>
-                                        </button>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
-    <!-- Pagination -->
-    <div class="flex flex-wrap items-center justify-end gap-3 text-sm text-foreground-600">
-        <span class="dt-row-count inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-foreground-600 bg-default-100 rounded-full">Rows <span class="dt-row-count-num font-semibold text-foreground-900"></span></span>
-        <div class="inline-flex items-center gap-1 dt-pagination">
-            <button type="button" class="dt-page-prev p-1.5 rounded-md transition text-foreground-600 hover:bg-default-100 cursor-pointer disabled:text-foreground-300 disabled:cursor-not-allowed disabled:hover:bg-transparent" data-target="@tid">
-                <i data-lucide="chevron-left"></i>
-            </button>
-            <input type="number" min="1" value="1" class="dt-page-input w-14 text-center px-1 py-1.5 text-sm border border-divider rounded-md focus:ring-2 focus:ring-focus focus:border-focus outline-none" data-target="@tid" />
-            <span class="dt-page-total text-sm text-foreground-500"></span>
-            <button type="button" class="dt-page-next p-1.5 rounded-md transition text-foreground-600 hover:bg-default-100 cursor-pointer disabled:text-foreground-300 disabled:cursor-not-allowed disabled:hover:bg-transparent" data-target="@tid">
-                <i data-lucide="chevron-right"></i>
-            </button>
-        </div>
-        <div class="dt-page-size" data-target="@tid"></div>
-    </div>
+    @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Item/_Toolbar.cshtml",    Model, sharedVD)
+    @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Item/_Table.cshtml",      Model, sharedVD)
+    @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Item/_Pagination.cshtml", Model, sharedVD)
 
 </div>
 
-<!-- Edit modal -->
-<div id="@(tid)-modal" class="dt-modal hidden fixed inset-0 z-1100 flex items-center justify-center bg-overlay backdrop-blur-sm">
-    <div class="bg-background rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-divider">
-            <h3 class="font-semibold text-foreground-900">@L("EditRow.Text")</h3>
-            <button type="button" class="dt-modal-close p-1 rounded-md hover:bg-default-100 transition text-foreground-400 hover:text-foreground-600" data-target="@tid">
-                <i data-lucide="x" class="size-5"></i>
-            </button>
-        </div>
-        <form onsubmit="event.preventDefault();this.querySelector('.dt-modal-save').click();">
-            <div class="px-5 py-4 space-y-4">
-                @foreach (var col in Model.EditableColumns)
-                {
-                    // Skip the primary key column in the edit modal — the row is already identified
-                    if (col.Key == pk) { continue; }
-                    <div>
-                        <label class="block text-xs font-medium text-foreground-600 mb-1">
-                            @col.Label @if (col.Required) { <span class="text-danger">*</span> }
-                        </label>
-                        @if (col.Type == "select" && lookups.ContainsKey(col.Key))
-                        {
-                            <div class="dt-modal-lookup" data-col="@col.Key" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
-                        }
-                        else if (col.Type == "multiselect" && lookups.ContainsKey(col.Key))
-                        {
-                            <div class="dt-modal-lookup" data-col="@col.Key" data-multi="true" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
-                        }
-                        else if (col.Type == "image")
-                        {
-                            @* Image dropzone — value travels in the hidden .dt-dz-value input.
-                               module.js picks it up via getModalFields() because it carries the
-                               data-col attribute too (rendered as dt-modal-input below). *@
-                            <div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content1 cursor-pointer transition"
-                                 tabindex="0" role="button"
-                                 data-upload-url="@uploadUrl"
-                                 data-col="@col.Key">
-                                <input type="hidden" class="dt-dz-value dt-modal-input" data-col="@col.Key" value="" @(col.Required ? Html.Raw("required") : null) />
-                                <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
-                                <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none">
-                                    <i data-lucide="image-up" class="size-8"></i>
-                                    <span>@L("DropImage.Text")</span>
-                                    <span class="text-xs text-foreground-400">@L("DropImage.Hint")</span>
-                                </div>
-                                <div class="dt-dz-preview hidden relative w-full">
-                                    <img class="dt-dz-preview-img w-full max-h-48 object-contain rounded-md" alt="" />
-                                    <button type="button" class="dt-dz-remove absolute top-2 right-2 inline-flex items-center justify-center size-8 rounded-full bg-content1 border border-divider shadow hover:bg-danger-50 hover:text-danger transition" aria-label="@L("RemoveImage.Text")">
-                                        <i data-lucide="x" class="size-4"></i>
-                                    </button>
-                                </div>
-                                <div class="dt-dz-progress hidden absolute inset-0 flex items-center justify-center bg-overlay/40 rounded-lg text-sm text-foreground-700">
-                                    <i data-lucide="loader-2" class="size-5 animate-spin"></i>
-                                </div>
-                            </div>
-                        }
-                        else
-                        {
-                            <input type="@(col.Type == "slug" ? "text" : col.Type)"
-                                class="dt-modal-input w-full px-3 py-2 text-sm border border-divider rounded-lg focus:ring-2 focus:ring-focus focus:border-focus outline-none"
-                                data-col="@col.Key"
-                                @(col.Required ? Html.Raw("required") : null)
-                                @(col.MaxLength.HasValue ? Html.Raw("maxlength=\"" + col.MaxLength + "\"") : null)
-                                @(!string.IsNullOrEmpty(col.Pattern) ? Html.Raw("pattern=\"" + Html.Encode(col.Pattern) + "\" title=\"" + Html.Encode(col.PatternMessage ?? "") + "\"") : null) />
-                        }
-                    </div>
-                }
-            </div>
-            <div class="flex justify-end gap-2 px-5 py-4 border-t border-divider bg-content2">
-                <button type="button" class="dt-modal-close px-4 py-2 text-sm font-medium text-foreground-700 bg-background border border-divider rounded-lg hover:bg-content2 transition" data-target="@tid">@L("Cancel.Text")</button>
-                <button type="submit" class="dt-modal-save px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition" data-target="@tid">@L("Save.Text")</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Create modal -->
+@Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Item/_EditModal.cshtml", Model, sharedVD)
 @if (config.AllowCreate)
 {
-<div id="@(tid)-create-modal" class="dt-create-modal hidden fixed inset-0 z-1100 flex items-center justify-center bg-overlay backdrop-blur-sm">
-        <div class="bg-background rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
-            <div class="flex items-center justify-between px-5 py-4 border-b border-divider">
-                <h3 class="font-semibold text-foreground-900">@L("AddNewItem.Text")</h3>
-                <button type="button" class="dt-create-modal-close p-1 rounded-md hover:bg-default-100 transition text-foreground-400 hover:text-foreground-600" data-target="@tid">
-                    <i data-lucide="x" class="size-5"></i>
-                </button>
-            </div>
-            <form class="dt-create-form" onsubmit="event.preventDefault();this.querySelector('.dt-create-save').click();">
-                <div class="px-5 py-4 space-y-4">
-                    @foreach (var col in Model.EditableColumns)
-                    {
-                        // Skip columns not referenced in the insert query (edit-only columns)
-                        var insertQ = config.QueryInsert ?? "";
-                        if (!insertQ.Contains("@" + col.Key)) { continue; }
-                        <div>
-                            <label class="block text-xs font-medium text-foreground-600 mb-1">
-                                @col.Label @if (col.Required) { <span class="text-danger">*</span> }
-                            </label>
-                            @if (col.Type == "select" && lookups.ContainsKey(col.Key))
-                            {
-                                <div class="dt-create-lookup" data-col="@col.Key" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
-                            }
-                            else if (col.Type == "multiselect" && lookups.ContainsKey(col.Key))
-                            {
-                                <div class="dt-create-lookup" data-col="@col.Key" data-multi="true" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
-                            }
-                            else if (col.Type == "image")
-                            {
-                                <div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content1 cursor-pointer transition"
-                                     tabindex="0" role="button"
-                                     data-upload-url="@uploadUrl"
-                                     data-col="@col.Key">
-                                    <input type="hidden" class="dt-dz-value dt-create-input" data-col="@col.Key" value="" @(col.Required ? Html.Raw("required") : null) />
-                                    <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
-                                    <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none">
-                                        <i data-lucide="image-up" class="size-8"></i>
-                                        <span>@L("DropImage.Text")</span>
-                                        <span class="text-xs text-foreground-400">@L("DropImage.Hint")</span>
-                                    </div>
-                                    <div class="dt-dz-preview hidden relative w-full">
-                                        <img class="dt-dz-preview-img w-full max-h-48 object-contain rounded-md" alt="" />
-                                        <button type="button" class="dt-dz-remove absolute top-2 right-2 inline-flex items-center justify-center size-8 rounded-full bg-content1 border border-divider shadow hover:bg-danger-50 hover:text-danger transition" aria-label="@L("RemoveImage.Text")">
-                                            <i data-lucide="x" class="size-4"></i>
-                                        </button>
-                                    </div>
-                                    <div class="dt-dz-progress hidden absolute inset-0 flex items-center justify-center bg-overlay/40 rounded-lg text-sm text-foreground-700">
-                                        <i data-lucide="loader-2" class="size-5 animate-spin"></i>
-                                    </div>
-                                </div>
-                            }
-                            else
-                            {
-                                <input type="@(col.Type == "slug" ? "text" : col.Type)"
-                                       data-col="@col.Key"
-                                       placeholder="@(col.Placeholder ?? col.Label)"
-                                       @(col.Required ? Html.Raw("required") : null)
-                                       @(col.MaxLength.HasValue ? Html.Raw("maxlength=\"" + col.MaxLength + "\"") : null)
-                                       @(!string.IsNullOrEmpty(col.Pattern) ? Html.Raw("pattern=\"" + Html.Encode(col.Pattern) + "\" title=\"" + Html.Encode(col.PatternMessage ?? "") + "\"") : null)
-                                       class="dt-create-input w-full px-3 py-2 text-sm border border-divider rounded-lg focus:ring-2 focus:ring-focus focus:border-focus outline-none" />
-                            }
-                        </div>
-                    }
-                </div>
-                <div class="flex justify-end gap-2 px-5 py-4 border-t border-divider bg-content2">
-                    <button type="button" class="dt-create-modal-close px-4 py-2 text-sm font-medium text-foreground-700 bg-background border border-divider rounded-lg hover:bg-content2 transition" data-target="@tid">@L("Cancel.Text")</button>
-                    <button type="submit" class="dt-create-save px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-700 transition">@L("Save.Text")</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Item/_CreateModal.cshtml", Model, sharedVD)
 }
-
-<!-- Delete confirm modal -->
-<div id="@(tid)-del-modal" class="dt-del-modal hidden fixed inset-0 z-1100 flex items-center justify-center bg-overlay backdrop-blur-sm">
-    <div class="bg-background rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
-        <form onsubmit="event.preventDefault();this.querySelector('.dt-del-confirm').click();">
-        <div class="px-5 py-6 text-center">
-            <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-danger-100 mb-4">
-                <i data-lucide="triangle-alert" class="size-6 text-danger"></i>
-            </div>
-            <h3 class="font-semibold text-foreground-900 mb-1">@L("DeleteConfirm.Title")</h3>
-            <p class="text-sm text-foreground-500 dt-del-msg">@L("DeleteConfirm.Message")</p>
-        </div>
-        <div class="flex gap-2 px-5 py-4 border-t border-divider bg-content2 justify-end">
-            <button type="button" class="dt-del-cancel px-4 py-2 text-sm font-medium text-foreground-700 bg-background border border-divider rounded-lg hover:bg-content2 transition" data-target="@tid">@L("Cancel.Text")</button>
-            <button type="submit" class="dt-del-confirm px-4 py-2 text-sm font-medium text-white bg-danger rounded-lg hover:bg-danger-700 transition" data-target="@tid">@L("Delete.Text")</button>
-        </div>
-        </form>
-    </div>
-</div>
+@Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Item/_DeleteModal.cshtml", Model, sharedVD)
 
 <script>
     window['__dtLookups_@(tid)'] = {};

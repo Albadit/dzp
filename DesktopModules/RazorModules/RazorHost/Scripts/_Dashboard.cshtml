@@ -4,12 +4,19 @@
 @using System.Data.SqlClient
 @using System.Configuration
 @using System.Web.Helpers
-
+@using System.Linq
+@*
+    Dashboard ("Mijn communities").
+    Owns all data fetching: membership list, optional admin top-up to "see
+    all communities", banner-image lookup, and JSON serialization for the
+    client. Section partials in Shared/Dashboard/ stay markup-only.
+*@
 @{
-    var user = Dnn.User;
-    var adminRoleName = PortalSettings.Current != null ? PortalSettings.Current.AdministratorRoleName : "Administrators";
+    var user            = Dnn.User;
+    var adminRoleName   = PortalSettings.Current != null ? PortalSettings.Current.AdministratorRoleName : "Administrators";
     var isAdministrator = user != null && !string.IsNullOrEmpty(adminRoleName) && user.IsInRole(adminRoleName);
-    var isElevated = user != null && (user.IsSuperUser || isAdministrator);
+    var isSuperUser     = user != null && user.IsSuperUser;
+    var isElevated      = isSuperUser || isAdministrator;
 
     var communities = (user != null && user.UserID > 0)
         ? CommunityAuth.GetUserCommunities(user)
@@ -18,83 +25,65 @@
     /* ── Administrators get the same "see all communities" view as SuperUsers.
           The shared library only grants this to SuperUsers, so for
           Administrators we top up the list manually here. ── */
-    if (isAdministrator && !user.IsSuperUser)
-    {
+    if (isAdministrator && !isSuperUser) {
         var cs = ConfigurationManager.ConnectionStrings["SiteSqlServer"];
-        if (cs != null && !string.IsNullOrEmpty(cs.ConnectionString))
-        {
-            try
-            {
+        if (cs != null && !string.IsNullOrEmpty(cs.ConnectionString)) {
+            try {
                 var seen = new HashSet<int>(communities.Select(c => c.Id));
-                using (var conn = new SqlConnection(cs.ConnectionString))
-                {
-                    using (var cmd = new SqlCommand("SELECT Id, Slug, Name FROM Community ORDER BY Name", conn))
-                    {
-                        conn.Open();
-                        using (var rdr = cmd.ExecuteReader())
-                        {
-                            while (rdr.Read())
-                            {
-                                var id = rdr.GetInt32(0);
-                                if (seen.Contains(id)) { continue; }
-                                communities.Add(new CommunityAuth.CommunityInfo {
-                                    Id   = id,
-                                    Slug = rdr.GetString(1),
-                                    Name = rdr.GetString(2)
-                                });
-                                seen.Add(id);
-                            }
+                using (var conn = new SqlConnection(cs.ConnectionString)) {
+                using (var cmd = new SqlCommand("SELECT Id, Slug, Name FROM Community ORDER BY Name", conn)) {
+                    conn.Open();
+                    using (var rdr = cmd.ExecuteReader()) {
+                        while (rdr.Read()) {
+                            var id = rdr.GetInt32(0);
+                            if (seen.Contains(id)) { continue; }
+                            communities.Add(new CommunityAuth.CommunityInfo {
+                                Id   = id,
+                                Slug = rdr.GetString(1),
+                                Name = rdr.GetString(2)
+                            });
+                            seen.Add(id);
                         }
                     }
                 }
-            }
-            catch { /* fall back to membership-only list on error */ }
+                }
+            } catch { /* fall back to membership-only list on error */ }
         }
     }
 
-    // Single community → skip dashboard and go straight to it (unless elevated)
-    if (communities.Count == 1 && !isElevated)
-    {
+    /* Single community → skip dashboard and go straight to it (unless elevated). */
+    if (communities.Count == 1 && !isElevated) {
         Response.Redirect("/" + communities[0].Slug + "/home", true);
         return;
     }
 
     /* ── Lookup ImageUrl for the listed communities ── */
     var imageUrls = new Dictionary<int, string>();
-    if (communities.Count > 0)
-    {
+    if (communities.Count > 0) {
         var csImg = ConfigurationManager.ConnectionStrings["SiteSqlServer"];
-        if (csImg != null && !string.IsNullOrEmpty(csImg.ConnectionString))
-        {
-            try
-            {
-                using (var iconn = new SqlConnection(csImg.ConnectionString))
-                {
-                    using (var icmd = iconn.CreateCommand())
-                    {
-                        var isb = new System.Text.StringBuilder("SELECT Id, ImageUrl FROM Community WHERE Id IN (");
-                        for (var ix = 0; ix < communities.Count; ix++)
-                        {
-                            if (ix > 0) { isb.Append(","); }
-                            isb.Append("@cid").Append(ix);
-                            icmd.Parameters.AddWithValue("@cid" + ix, communities[ix].Id);
-                        }
-                        isb.Append(")");
-                        icmd.CommandText = isb.ToString();
-                        iconn.Open();
-                        using (var ir = icmd.ExecuteReader())
-                        {
-                            while (ir.Read())
-                            {
-                                var iid = (int)ir["Id"];
-                                var url = ir["ImageUrl"] as string;
-                                if (!string.IsNullOrEmpty(url)) { imageUrls[iid] = url; }
-                            }
+        if (csImg != null && !string.IsNullOrEmpty(csImg.ConnectionString)) {
+            try {
+                using (var iconn = new SqlConnection(csImg.ConnectionString)) {
+                using (var icmd = iconn.CreateCommand()) {
+                    var isb = new System.Text.StringBuilder("SELECT Id, ImageUrl FROM Community WHERE Id IN (");
+                    for (var ix = 0; ix < communities.Count; ix++) {
+                        if (ix > 0) { isb.Append(","); }
+                        isb.Append("@cid").Append(ix);
+                        icmd.Parameters.AddWithValue("@cid" + ix, communities[ix].Id);
+                    }
+                    isb.Append(")");
+                    icmd.CommandText = isb.ToString();
+                    iconn.Open();
+                    using (var ir = icmd.ExecuteReader()) {
+                        while (ir.Read()) {
+                            var iid = (int)ir["Id"];
+                            var url = ir["ImageUrl"] as string;
+                            if (!string.IsNullOrEmpty(url)) { imageUrls[iid] = url; }
                         }
                     }
                 }
-            }
-            catch { /* leave map empty → fall back to letter avatar */ }
+                }
+            } catch { /* leave map empty → fall back to letter avatar client-side */ }
         }
     }
 
@@ -106,158 +95,22 @@
         image = imageUrls.ContainsKey(c.Id) ? imageUrls[c.Id] : null
     }).ToList();
     var communitiesJson = Json.Encode(communityPayload);
+
+    /* ── Publish to PageData ── */
+    PageData["isElevated"]      = isElevated;
+    PageData["isSuperUser"]     = isSuperUser;
+    PageData["communityCount"]  = communities.Count;
+    PageData["communitiesJson"] = communitiesJson;
 }
 
 <section class="w-full flex flex-col">
-    <h1 class="text-3xl font-bold text-foreground-900 mb-2">Mijn communities</h1>
-    <p class="text-foreground-500 mb-6">
-        @if (isElevated)
-        {
-            <span>Je ziet alle communities (@(user.IsSuperUser ? "superuser" : "administrator")).</span>
-        }
-        else
-        {
-            <span>Communities waar je lid van bent.</span>
-        }
-    </p>
+    @RenderPage("Shared/Dashboard/_Header.cshtml")
 
-    @if (communities.Count == 0)
-    {
-        <div class="bg-warning-50 border border-warning-200 rounded-xl px-5 py-4">
-            <p class="text-sm text-warning-800">Je bent nog niet gekoppeld aan een community.</p>
-        </div>
-    }
-    else
-    {
-        <!-- Search bar -->
-        <div class="relative mb-6 max-w-md">
-            <i data-lucide="search" class="size-4 text-foreground-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-            <input id="dashCommunitySearch" type="text" placeholder="Zoek community of slug..." autocomplete="off"
-                   class="w-full pl-9 pr-9 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
-            <button id="dashCommunitySearchClear" type="button" class="hidden absolute right-2 top-1/2 -translate-y-1/2 size-7 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-default-200 flex items-center justify-center transition">
-                <i data-lucide="x" class="size-4"></i>
-            </button>
-        </div>
-
-        <!-- Result count -->
-        <p id="dashCommunityCount" class="text-xs text-foreground-400 mb-3"></p>
-
-        <!-- Grid (rendered by JS, with chunked/lazy rendering) -->
-        <div id="dashCommunityGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
-
-        <!-- Empty state -->
-        <div id="dashCommunityEmpty" class="hidden py-12 text-center">
-            <p class="text-sm text-foreground-400">Geen communities gevonden.</p>
-        </div>
-
-        <!-- Sentinel for lazy-loading more rows on scroll -->
-        <div id="dashCommunitySentinel" class="h-8"></div>
-
-        <!-- Inline data payload -->
-        <script id="dashCommunityData" type="application/json">@Html.Raw(communitiesJson)</script>
-
-        <script>
-            (function () {
-                var raw = document.getElementById('dashCommunityData');
-                if (!raw) return;
-                var ALL = [];
-                try { ALL = JSON.parse(raw.textContent || '[]'); } catch (e) { ALL = []; }
-
-                var grid     = document.getElementById('dashCommunityGrid');
-                var empty    = document.getElementById('dashCommunityEmpty');
-                var count    = document.getElementById('dashCommunityCount');
-                var sentinel = document.getElementById('dashCommunitySentinel');
-                var input    = document.getElementById('dashCommunitySearch');
-                var clearBtn = document.getElementById('dashCommunitySearchClear');
-
-                var BATCH = 24;
-                var filtered = ALL.slice();
-                var rendered = 0;
-
-                function escapeHtml(s) {
-                    return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
-                        return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[ch];
-                    });
-                }
-
-                function buildCard(c) {
-                    var slug = escapeHtml(c.slug);
-                    var name = escapeHtml(c.name);
-                    var letter = escapeHtml((c.name || '?').substring(0, 1).toUpperCase());
-                    var avatar = c.image
-                        ? '<img src="' + escapeHtml(c.image) + '" alt="' + name + '" loading="lazy" decoding="async" class="w-full h-full object-cover" />'
-                        : '<div class="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-bold text-lg">' + letter + '</div>';
-
-                    return ''
-                      + '<a href="/' + slug + '/home" class="group block rounded-lg bg-content2 p-3 hover:bg-primary/5 transition">'
-                      +   '<div class="flex items-center gap-3">'
-                      +     '<div class="size-16 rounded-md overflow-hidden shrink-0">' + avatar + '</div>'
-                      +     '<div class="min-w-0">'
-                      +       '<h2 class="text-lg font-semibold text-foreground-700 group-hover:text-primary transition truncate">' + name + '</h2>'
-                      +       '<p class="text-sm text-foreground-400 font-mono truncate">/' + slug + '</p>'
-                      +     '</div>'
-                      +     '<i data-lucide="chevron-right" class="size-5 text-foreground-300 group-hover:text-primary group-hover:translate-x-0.5 ml-auto shrink-0 transition"></i>'
-                      +   '</div>'
-                      + '</a>';
-                }
-
-                function renderChunk() {
-                    if (rendered >= filtered.length) return;
-                    var end = Math.min(rendered + BATCH, filtered.length);
-                    var html = '';
-                    for (var i = rendered; i < end; i++) { html += buildCard(filtered[i]); }
-                    grid.insertAdjacentHTML('beforeend', html);
-                    rendered = end;
-                    if (window.lucide && typeof lucide.createIcons === 'function') { lucide.createIcons(); }
-                }
-
-                function applyFilter() {
-                    var q = (input.value || '').trim().toLowerCase();
-                    clearBtn.classList.toggle('hidden', q.length === 0);
-                    filtered = q
-                        ? ALL.filter(function (c) {
-                            return (c.name || '').toLowerCase().indexOf(q) !== -1
-                                || (c.slug || '').toLowerCase().indexOf(q) !== -1;
-                        })
-                        : ALL.slice();
-
-                    grid.innerHTML = '';
-                    rendered = 0;
-                    empty.classList.toggle('hidden', filtered.length !== 0);
-                    count.textContent = filtered.length + ' / ' + ALL.length + ' communities';
-                    renderChunk();
-                }
-
-                // Lazy-load more rows as the sentinel enters the viewport
-                if ('IntersectionObserver' in window) {
-                    var io = new IntersectionObserver(function (entries) {
-                        entries.forEach(function (e) {
-                            if (e.isIntersecting) { renderChunk(); }
-                        });
-                    }, { rootMargin: '300px 0px' });
-                    io.observe(sentinel);
-                } else {
-                    // Fallback: render everything at once
-                    BATCH = ALL.length;
-                }
-
-                // Debounced search
-                var debounceTimer = null;
-                input.addEventListener('input', function () {
-                    clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(applyFilter, 120);
-                });
-                clearBtn.addEventListener('click', function () {
-                    input.value = '';
-                    applyFilter();
-                    input.focus();
-                });
-
-                applyFilter();
-            })();
-        </script>
+    @if (communities.Count == 0) {
+        @RenderPage("Shared/Dashboard/_EmptyState.cshtml")
+    } else {
+        @RenderPage("Shared/Dashboard/_SearchBar.cshtml")
+        @RenderPage("Shared/Dashboard/_Grid.cshtml")
+        @RenderPage("Shared/Dashboard/_Script.cshtml")
     }
 </section>
-
-
-

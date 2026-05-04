@@ -1,0 +1,45 @@
+@*
+    Reusable image upload dropzone for the table modules.
+
+    ViewData (all required unless noted):
+      "dz-input-class"   – CSS class on the hidden value input (e.g. "dt-modal-input")
+      "dz-col"           – data-col value
+      "dz-upload-url"    – upload endpoint
+      "dz-required"      – "true" to mark hidden input required (optional)
+      "dz-empty-text"    – primary "drop image" label
+      "dz-empty-hint"    – secondary hint text (optional)
+      "dz-remove-label"  – aria-label for the remove button
+*@
+@{
+    var dzInputClass = ViewData["dz-input-class"] as string ?? "dt-modal-input";
+    var dzCol        = ViewData["dz-col"]         as string ?? "";
+    var dzUploadUrl  = ViewData["dz-upload-url"]  as string ?? "";
+    var dzRequired   = (ViewData["dz-required"]   as string) == "true";
+    var dzEmptyText  = ViewData["dz-empty-text"]  as string ?? "Drop an image here";
+    var dzEmptyHint  = ViewData["dz-empty-hint"]  as string ?? "";
+    var dzRemoveLbl  = ViewData["dz-remove-label"] as string ?? "Remove";
+}
+<div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content2 cursor-pointer transition"
+     tabindex="0" role="button"
+     data-upload-url="@dzUploadUrl"
+     data-col="@dzCol">
+    <input type="hidden" class="dt-dz-value @dzInputClass" data-col="@dzCol" value="" @(dzRequired ? Html.Raw("required") : null) />
+    <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
+    <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none">
+        <i data-lucide="image-up" class="size-8"></i>
+        <span>@dzEmptyText</span>
+        @if (!string.IsNullOrEmpty(dzEmptyHint))
+        {
+            <span class="text-xs text-foreground-400">@dzEmptyHint</span>
+        }
+    </div>
+    <div class="dt-dz-preview hidden relative w-full">
+        <img class="dt-dz-preview-img w-full max-h-48 object-contain rounded-md" alt="" />
+        <button type="button" class="dt-dz-remove absolute top-2 right-2 inline-flex items-center justify-center size-8 rounded-full bg-content1 shadow hover:bg-danger-50 hover:text-danger transition" aria-label="@dzRemoveLbl">
+            <i data-lucide="x" class="size-4"></i>
+        </button>
+    </div>
+    <div class="dt-dz-progress hidden absolute inset-0 flex items-center justify-center bg-overlay/40 rounded-lg text-sm text-foreground-700">
+        <i data-lucide="loader-2" class="size-5 animate-spin"></i>
+    </div>
+</div>

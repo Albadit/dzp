@@ -1,26 +1,28 @@
 -- ═══════════════════════════════════════════════════════════════
---  Seed: Dummy "Wijkcentra" (NL community/neighborhood centers)
+--  Seed: Stress-test "Wijkcentra" (Dutch community centers)
 --
---  All-in-one seed. Creates / refreshes:
---    1) 6 Wijkcentrum communities (skipped if slug exists).
---    2) 10 CommunityGroups per centrum.
---    3) 10 Companies per centrum (with rich CompanyInfo JSON:
---       about, address, phone, email, website, banner, opening hours).
---    4) 30 Blog posts per centrum (PostType 1-3 random, never 0,
---       IsDraft=0, IsDeleted=0, picsum image, lorem-ish content).
---    5) 20 dummy NL users (via AddUser proc, portal 0).
---    6) Distributes users across centra + a random group + company.
---    7) Tags ~70% of posts to 1-2 community groups (PostGroups).
---    8) Generates real Dnn_Modules_Blog_Comments matching each
---       post's CommentCount so the UI actually renders them.
+--  Tunable counters at the top control everything. Defaults:
+--       50 communities (fixed — one per Rotterdam location in @Cities)
+--      500 dummy users  (Username LIKE 'dzpdummy.%')
+--      200 community groups (~2 per community)
+--      500 companies   (~5 per community)
+--     1000 blog posts  (~10 per community)
+--    Per published post: 5-15 comments (capped at audience size,
+--    audience users may comment more than once for stress data).
 --
---  Idempotent-ish:
---    * Communities skipped if slug already exists.
---    * Users dedup by Username.
---    * UserCommunity / UserCommunityGroups / UserCompany guarded.
---    * Comments only inserted on posts that have none.
+--  Set-based wherever possible — runs in seconds even at scale.
 --
---  Run with sqlcmd -I (QUOTED_IDENTIFIER ON) — script also sets it.
+--  Dummy user authoring is restricted by the Drafts feed, so the
+--  FIRST post in every community is authored by the host/super-
+--  user and marked as a draft. The SECOND post is "scheduled"
+--  (PublishOn in the future). The rest are published.
+--
+--  Audience model (used for both comments and view/click stats):
+--      * Members of the post's community whose group memberships
+--        intersect the post's tagged groups (when any).
+--      * Plus all "Community beheerders" of the community.
+--
+--  Run with sqlcmd -I (script also sets QUOTED_IDENTIFIER ON).
 -- ═══════════════════════════════════════════════════════════════
 
 SET NOCOUNT ON;
@@ -28,8 +30,25 @@ SET QUOTED_IDENTIFIER ON;
 SET ANSI_NULLS ON;
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║ 0) Globals                                                ║
+-- ║ 0) Tunable scale + globals                                ║
+-- ║    All counts must be supplied via sqlcmd -v.              ║
+-- ║    Communities are fixed (50 Rotterdam locations in        ║
+-- ║    @Cities). In-script :setvar would override -v           ║
+-- ║    (sqlcmd precedence), so no defaults here.               ║
+-- ║    To run standalone:                                      ║
+-- ║      sqlcmd -i seed-wijkcentra.sql ^                       ║
+-- ║        -v NumUsers=50 ^                                    ║
+-- ║           GroupsPerCommunity=20 CompaniesPerCommunity=10 ^ ║
+-- ║           PostsPerCommunity=10 MinCommentsPerPost=5 ^      ║
+-- ║           MaxCommentsPerPost=15                            ║
 -- ╚══════════════════════════════════════════════════════════╝
+
+DECLARE @NumUsers               INT = $(NumUsers);
+DECLARE @GroupsPerCommunity     INT = $(GroupsPerCommunity);
+DECLARE @CompaniesPerCommunity  INT = $(CompaniesPerCommunity);
+DECLARE @PostsPerCommunity      INT = $(PostsPerCommunity);
+DECLARE @MinCommentsPerPost     INT = $(MinCommentsPerPost);
+DECLARE @MaxCommentsPerPost     INT = $(MaxCommentsPerPost);
 
 DECLARE @ModuleId      INT = (SELECT TOP 1 m.ModuleID
                               FROM Modules m
@@ -39,6 +58,7 @@ DECLARE @ModuleId      INT = (SELECT TOP 1 m.ModuleID
 DECLARE @PortalId      INT = 0;
 DECLARE @DefaultAuthor INT = (SELECT TOP 1 UserID FROM Users WHERE IsDeleted = 0 AND IsSuperUser = 1);
 DECLARE @CreatedBy     INT = @DefaultAuthor;
+DECLARE @BeheerderRole INT = (SELECT TOP 1 RoleID FROM Roles WHERE RoleName = N'Community beheerder');
 
 IF @ModuleId IS NULL
 BEGIN
@@ -46,109 +66,94 @@ BEGIN
     RETURN;
 END
 
--- ╔══════════════════════════════════════════════════════════╗
--- ║ 1) Create 20 dummy users FIRST so they can author posts  ║
--- ╚══════════════════════════════════════════════════════════╝
-
-DECLARE @DummyUsers TABLE (
-    Idx       INT,
-    FirstName NVARCHAR(50),
-    LastName  NVARCHAR(50),
-    Username  NVARCHAR(100),
-    Email     NVARCHAR(256),
-    UserId    INT NULL
-);
-
-INSERT INTO @DummyUsers (Idx, FirstName, LastName, Username, Email) VALUES
-    ( 1, N'Sanne',    N'de Vries',     N'sanne.devries',     N'sanne.devries@example.com'),
-    ( 2, N'Jeroen',   N'Bakker',       N'jeroen.bakker',     N'jeroen.bakker@example.com'),
-    ( 3, N'Lotte',    N'Visser',       N'lotte.visser',      N'lotte.visser@example.com'),
-    ( 4, N'Bram',     N'Janssen',      N'bram.janssen',      N'bram.janssen@example.com'),
-    ( 5, N'Eva',      N'Smit',         N'eva.smit',          N'eva.smit@example.com'),
-    ( 6, N'Tim',      N'Mulder',       N'tim.mulder',        N'tim.mulder@example.com'),
-    ( 7, N'Anouk',    N'de Boer',      N'anouk.deboer',      N'anouk.deboer@example.com'),
-    ( 8, N'Daan',     N'van Dijk',     N'daan.vandijk',      N'daan.vandijk@example.com'),
-    ( 9, N'Fleur',    N'Peters',       N'fleur.peters',      N'fleur.peters@example.com'),
-    (10, N'Sven',     N'Hendriks',     N'sven.hendriks',     N'sven.hendriks@example.com'),
-    (11, N'Iris',     N'Dekker',       N'iris.dekker',       N'iris.dekker@example.com'),
-    (12, N'Joris',    N'van der Berg', N'joris.vanderberg',  N'joris.vanderberg@example.com'),
-    (13, N'Maud',     N'Brouwer',      N'maud.brouwer',      N'maud.brouwer@example.com'),
-    (14, N'Niels',    N'Vermeulen',    N'niels.vermeulen',   N'niels.vermeulen@example.com'),
-    (15, N'Sophie',   N'Hoekstra',     N'sophie.hoekstra',   N'sophie.hoekstra@example.com'),
-    (16, N'Kasper',   N'van Leeuwen',  N'kasper.vanleeuwen', N'kasper.vanleeuwen@example.com'),
-    (17, N'Lisa',     N'Kramer',       N'lisa.kramer',       N'lisa.kramer@example.com'),
-    (18, N'Mark',     N'Schouten',     N'mark.schouten',     N'mark.schouten@example.com'),
-    (19, N'Esmee',    N'Maas',         N'esmee.maas',        N'esmee.maas@example.com'),
-    (20, N'Pieter',   N'Willems',      N'pieter.willems',    N'pieter.willems@example.com');
-
-DECLARE @uIdx INT = 1, @uFn NVARCHAR(50), @uLn NVARCHAR(50),
-        @uName NVARCHAR(100), @uEmail NVARCHAR(256), @newUid INT;
-DECLARE @uidTbl TABLE (Uid INT);
-
-WHILE @uIdx <= 20
-BEGIN
-    SELECT @uFn = FirstName, @uLn = LastName, @uName = Username, @uEmail = Email
-    FROM @DummyUsers WHERE Idx = @uIdx;
-
-    DELETE FROM @uidTbl;
-    INSERT INTO @uidTbl
-    EXEC AddUser
-        @PortalID        = @PortalId,
-        @Username        = @uName,
-        @FirstName       = @uFn,
-        @LastName        = @uLn,
-        @AffiliateId     = NULL,
-        @IsSuperUser     = 0,
-        @Email           = @uEmail,
-        @DisplayName     = @uFn,
-        @UpdatePassword  = 0,
-        @Authorised      = 1,
-        @CreatedByUserID = @CreatedBy;
-
-    SELECT @newUid = Uid FROM @uidTbl;
-    IF @newUid IS NULL
-        SELECT @newUid = UserID FROM Users WHERE Username = @uName;
-
-    -- Reactivate if a previous clear soft-deleted this dummy user.
-    UPDATE Users SET DisplayName = @uFn + N' ' + @uLn, IsDeleted = 0 WHERE UserID = @newUid;
-    UPDATE UserPortals SET IsDeleted = 0 WHERE UserId = @newUid AND PortalId = @PortalId;
-    UPDATE @DummyUsers SET UserId = @newUid WHERE Idx = @uIdx;
-    SET @uIdx = @uIdx + 1;
-END
-
-PRINT N'Step 1: 20 dummy users ready.';
-
--- ── Author pool: dummy users + any non-deleted portal users ──
-DECLARE @Authors TABLE (UserId INT);
-INSERT INTO @Authors (UserId)
-SELECT UserId FROM @DummyUsers WHERE UserId IS NOT NULL
-UNION
-SELECT u.UserID
-FROM Users u
-INNER JOIN UserPortals up ON up.UserId = u.UserID
-WHERE u.IsDeleted = 0 AND up.PortalId = @PortalId;
-
-IF NOT EXISTS (SELECT 1 FROM @Authors)
-    INSERT INTO @Authors VALUES (@DefaultAuthor);
+-- A reusable Numbers table (1..50 * @PostsPerCommunity * 16, plenty).
+-- Built once; cheap.
+IF OBJECT_ID('tempdb..#Numbers') IS NOT NULL DROP TABLE #Numbers;
+CREATE TABLE #Numbers (n INT PRIMARY KEY);
+;WITH gen AS (
+    SELECT TOP (CASE WHEN 50 * @PostsPerCommunity * 16 < 16384
+                     THEN 16384 ELSE 50 * @PostsPerCommunity * 16 END)
+           ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b
+)
+INSERT INTO #Numbers (n) SELECT n FROM gen;
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║ 2) Word pools                                             ║
+-- ║ 1) Word pools                                             ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-DECLARE @Centra TABLE (Slug NVARCHAR(64), Name NVARCHAR(128), City NVARCHAR(64));
-INSERT INTO @Centra VALUES
-    (N'wijkcentrum-de-meern',        N'Wijkcentrum De Meern',        N'Utrecht'),
-    (N'wijkcentrum-overvecht',       N'Wijkcentrum Overvecht',       N'Utrecht'),
-    (N'wijkcentrum-bos-en-lommer',   N'Wijkcentrum Bos en Lommer',   N'Amsterdam'),
-    (N'wijkcentrum-charlois',        N'Wijkcentrum Charlois',        N'Rotterdam'),
-    (N'wijkcentrum-escamp',          N'Wijkcentrum Escamp',          N'Den Haag'),
-    (N'wijkcentrum-stratum',         N'Wijkcentrum Stratum',         N'Eindhoven');
+DECLARE @Cities TABLE (Id INT IDENTITY(1,1), City NVARCHAR(128), Slug NVARCHAR(128));
+INSERT INTO @Cities (City, Slug) VALUES
+    (N'Lijnbaan',                              N'lijnbaan'),
+    (N'Koopgoot / Beurstraverse',              N'koopgoot-beurstraverse'),
+    (N'Winkelcentrum Zuidplein',               N'winkelcentrum-zuidplein'),
+    (N'Alexandrium Shopping Center',           N'alexandrium-shopping-center'),
+    (N'Alexandrium Megastores',                N'alexandrium-megastores'),
+    (N'Alexandrium Woonmall',                  N'alexandrium-woonmall'),
+    (N'Markthal Rotterdam',                    N'markthal-rotterdam'),
+    (N'Hoogstraat',                            N'hoogstraat'),
+    (N'Meent',                                 N'meent'),
+    (N'Oude Binnenweg',                        N'oude-binnenweg'),
+    (N'Nieuwe Binnenweg',                      N'nieuwe-binnenweg'),
+    (N'Van Oldenbarneveltstraat',              N'van-oldenbarneveltstraat'),
+    (N'De Bijenkorf / Binnenwegplein-gebied',  N'de-bijenkorf-binnenwegplein-gebied'),
+    (N'Coolsingel-winkelgebied',               N'coolsingel-winkelgebied'),
+    (N'Beursplein',                            N'beursplein'),
+    (N'Binnenwegplein',                        N'binnenwegplein'),
+    (N'Korte Hoogstraat',                      N'korte-hoogstraat'),
+    (N'Witte de Withstraat',                   N'witte-de-withstraat'),
+    (N'West-Kruiskade',                        N'west-kruiskade'),
+    (N'Kruiskade',                             N'kruiskade'),
+    (N'Pannekoekstraat',                       N'pannekoekstraat'),
+    (N'Goudsesingel',                          N'goudsesingel'),
+    (N'Zwaanshalskwartier',                    N'zwaanshalskwartier'),
+    (N'Noordplein / Oude Noorden',             N'noordplein-oude-noorden'),
+    (N'Lusthofstraat',                         N'lusthofstraat'),
+    (N'Vlietlaan / Kralingen',                 N'vlietlaan-kralingen'),
+    (N'Winkelcentrum Hesseplaats',             N'winkelcentrum-hesseplaats'),
+    (N'Boulevard Nesselande',                  N'boulevard-nesselande'),
+    (N'Winkelcentrum Schiebroek',              N'winkelcentrum-schiebroek'),
+    (N'Kleiwegkwartier',                       N'kleiwegkwartier'),
+    (N'Bergse Dorpsstraat / Hillegersberg',    N'bergse-dorpsstraat-hillegersberg'),
+    (N'Binnenban Hoogvliet',                   N'binnenban-hoogvliet'),
+    (N'Winkelcentrum Hoogvliet Centrum',       N'winkelcentrum-hoogvliet-centrum'),
+    (N'Winkelcentrum Zalmplaat',               N'winkelcentrum-zalmplaat'),
+    (N'Plein 1953',                            N'plein-1953'),
+    (N'Slinge / De Slinge',                    N'slinge-de-slinge'),
+    (N'Spinozaweg',                            N'spinozaweg'),
+    (N'Beverwaard winkelgebied',               N'beverwaard-winkelgebied'),
+    (N'Groene Hilledijk',                      N'groene-hilledijk'),
+    (N'Boulevard Zuid',                        N'boulevard-zuid'),
+    (N'Afrikaanderplein',                      N'afrikaanderplein-gebied'),
+    (N'Vuurplaat',                             N'vuurplaat'),
+    (N'Cor Kieboomplein / Stadionweg',         N'cor-kieboomplein-stadionweg'),
+    (N'De Veranda / Pathe-De Kuip gebied',     N'de-veranda-pathe-de-kuip-gebied'),
+    (N'Bigshops Parkboulevard',                N'bigshops-parkboulevard'),
+    (N'Vierambachtsstraat',                    N'vierambachtsstraat'),
+    (N'Mathenesserplein',                      N'mathenesserplein'),
+    (N'Crooswijkseweg winkelgebied',           N'crooswijkseweg-winkelgebied'),
+    (N'Crooswijkse Winkelhoek',                N'crooswijkse-winkelhoek'),
+    (N'De Esch winkelgebied',                  N'de-esch-winkelgebied');
+
+DECLARE @FirstNames TABLE (Id INT IDENTITY(1,1), F NVARCHAR(40));
+INSERT INTO @FirstNames (F) VALUES
+    (N'Sanne'),(N'Jeroen'),(N'Lotte'),(N'Bram'),(N'Eva'),(N'Tim'),(N'Anouk'),(N'Daan'),(N'Fleur'),(N'Sven'),
+    (N'Iris'),(N'Joris'),(N'Maud'),(N'Niels'),(N'Sophie'),(N'Kasper'),(N'Lisa'),(N'Mark'),(N'Esmee'),(N'Pieter'),
+    (N'Noa'),(N'Tess'),(N'Finn'),(N'Roos'),(N'Jens'),(N'Liam'),(N'Sara'),(N'Luuk'),(N'Lara'),(N'Floris'),
+    (N'Yara'),(N'Senna'),(N'Milan'),(N'Julie'),(N'Bas'),(N'Lieke'),(N'Stijn'),(N'Lynn'),(N'Tom'),(N'Mila');
+
+DECLARE @LastNames TABLE (Id INT IDENTITY(1,1), L NVARCHAR(40));
+INSERT INTO @LastNames (L) VALUES
+    (N'de Vries'),(N'Bakker'),(N'Visser'),(N'Janssen'),(N'Smit'),(N'Mulder'),(N'de Boer'),(N'van Dijk'),(N'Peters'),(N'Hendriks'),
+    (N'Dekker'),(N'van der Berg'),(N'Brouwer'),(N'Vermeulen'),(N'Hoekstra'),(N'van Leeuwen'),(N'Kramer'),(N'Schouten'),(N'Maas'),(N'Willems'),
+    (N'Kuiper'),(N'de Wit'),(N'Hofman'),(N'Bos'),(N'Vos'),(N'Boer'),(N'Verhoef'),(N'Smits'),(N'van Beek'),(N'Koster');
 
 DECLARE @GroupNames TABLE (Id INT IDENTITY(1,1), Name NVARCHAR(64));
 INSERT INTO @GroupNames (Name) VALUES
     (N'Tuinieren'), (N'Koken'), (N'Wandelen'), (N'Boeken'), (N'Schilderen'),
     (N'Yoga'), (N'Buurtfeest'), (N'Klussen'), (N'Muziek'), (N'Fietsen'),
-    (N'Zwemmen'), (N'Schaken'), (N'Filmavond'), (N'Quizzen'), (N'Naaicafe');
+    (N'Zwemmen'), (N'Schaken'), (N'Filmavond'), (N'Quizzen'), (N'Naaicafe'),
+    (N'Hardlopen'), (N'Tekenen'), (N'Dansen'), (N'Volleybal'), (N'Vrijwilligers');
 
 DECLARE @CompanyAdjectives TABLE (Id INT IDENTITY(1,1), Word NVARCHAR(32));
 INSERT INTO @CompanyAdjectives (Word) VALUES
@@ -212,385 +217,506 @@ INSERT INTO @CommentBodies (Body) VALUES
     (N'Echt iets voor mijn dochter, ik ga het haar laten weten.');
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║ 3a) Pre-create communities + assign dummy users to them   ║
--- ║     (so companies/posts can pick owners/authors that are  ║
--- ║      actually members of the community).                  ║
+-- ║ 2) Communities (set-based)                               ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-DECLARE @Slug NVARCHAR(64), @Name NVARCHAR(128), @City NVARCHAR(64);
-DECLARE @CommunityId INT;
-DECLARE @i INT, @j INT;
-DECLARE @gName NVARCHAR(64), @cName NVARCHAR(128), @cSlug NVARCHAR(128);
-DECLARE @ownerId INT;
-DECLARE @phone NVARCHAR(64), @email NVARCHAR(256), @website NVARCHAR(256);
-DECLARE @open NVARCHAR(8), @close NVARCHAR(8), @hoursJson NVARCHAR(MAX);
-DECLARE @info NVARCHAR(MAX);
-
--- Make sure all centra communities exist up front.
-DECLARE pre_centra CURSOR LOCAL FAST_FORWARD FOR
-    SELECT Slug, Name FROM @Centra;
-OPEN pre_centra;
-FETCH NEXT FROM pre_centra INTO @Slug, @Name;
-WHILE @@FETCH_STATUS = 0
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM Community WHERE Slug = @Slug)
-    BEGIN
-        INSERT INTO Community (Slug, Name, ImageUrl)
-        VALUES (@Slug, @Name, N'https://picsum.photos/seed/' + @Slug + N'/1200/400');
-    END
-    FETCH NEXT FROM pre_centra INTO @Slug, @Name;
-END
-CLOSE pre_centra;
-DEALLOCATE pre_centra;
-
--- Build ordered list of seed communities.
-DECLARE @SeedCommunities TABLE (RowNo INT IDENTITY(1,1), Id INT);
-INSERT INTO @SeedCommunities (Id)
-SELECT c.Id
-FROM Community c
-JOIN @Centra ce ON ce.Slug = c.Slug
-ORDER BY c.Id;
-
-DECLARE @SeedCommCount INT = (SELECT COUNT(*) FROM @SeedCommunities);
-
--- Assign every dummy user to exactly one centrum (round-robin).
--- Two extra users per centrum become "Community beheerder" (RoleID=100).
-DECLARE @UserCommunityMap TABLE (
-    UserId      INT,
-    CommunityId INT,
-    IsBeheerder BIT
+-- Build planned community list: Slug + Name.
+IF OBJECT_ID('tempdb..#PlanCommunities') IS NOT NULL DROP TABLE #PlanCommunities;
+CREATE TABLE #PlanCommunities (
+    Seq  INT PRIMARY KEY,
+    Slug NVARCHAR(96) NOT NULL UNIQUE,
+    Name NVARCHAR(128) NOT NULL,
+    City NVARCHAR(64) NOT NULL
 );
 
-;WITH Numbered AS (
-    SELECT UserId,
-           ROW_NUMBER() OVER (ORDER BY Idx) - 1 AS RowIdx
-    FROM @DummyUsers
-    WHERE UserId IS NOT NULL
+;WITH C AS (
+    SELECT n.n AS Seq,
+           ((n.n - 1) % (SELECT COUNT(*) FROM @Cities)) + 1 AS CityIdx
+    FROM   #Numbers n
+    WHERE  n.n <= (SELECT COUNT(*) FROM @Cities)
 )
-INSERT INTO @UserCommunityMap (UserId, CommunityId, IsBeheerder)
-SELECT  n.UserId,
-        sc.Id,
-        CASE WHEN n.RowIdx / @SeedCommCount < 2 THEN 1 ELSE 0 END   -- first 2 rotations = beheerder
-FROM    Numbered n
-JOIN    @SeedCommunities sc ON sc.RowNo = (n.RowIdx % @SeedCommCount) + 1;
+INSERT INTO #PlanCommunities (Seq, Slug, Name, City)
+SELECT  c.Seq,
+        ci.Slug,
+        ci.City,
+        ci.City
+FROM    C c
+JOIN    @Cities ci ON ci.Id = c.CityIdx;
 
--- Materialize UserCommunity + UserCommunityRole (Community beheerder).
-DECLARE @BeheerderRoleId INT = (SELECT TOP 1 RoleID FROM Roles WHERE RoleName = N'Community beheerder');
+INSERT INTO Community (Slug, Name, ImageUrl)
+SELECT pc.Slug, pc.Name,
+       N'https://picsum.photos/seed/' + pc.Slug + N'/1200/400'
+FROM   #PlanCommunities pc
+WHERE  NOT EXISTS (SELECT 1 FROM Community c WHERE c.Slug = pc.Slug);
 
+RAISERROR(N'Step 2: Communities ensured (50).', 0, 1) WITH NOWAIT;
+
+-- Resolve community ids back into the plan.
+ALTER TABLE #PlanCommunities ADD CommunityId INT NULL;
+UPDATE pc
+SET    pc.CommunityId = c.Id
+FROM   #PlanCommunities pc
+JOIN   Community        c ON c.Slug = pc.Slug;
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║ 3) Dummy users (loop — AddUser proc isn't set-able)       ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+DECLARE @uIdx INT = 1;
+DECLARE @uFn NVARCHAR(40), @uLn NVARCHAR(40), @uName NVARCHAR(100), @uEmail NVARCHAR(256), @newUid INT;
+DECLARE @uidTbl TABLE (Uid INT);
+DECLARE @FirstCount INT = (SELECT COUNT(*) FROM @FirstNames);
+DECLARE @LastCount  INT = (SELECT COUNT(*) FROM @LastNames);
+
+IF OBJECT_ID('tempdb..#PlanUsers') IS NOT NULL DROP TABLE #PlanUsers;
+CREATE TABLE #PlanUsers (Idx INT PRIMARY KEY, Username NVARCHAR(100), UserId INT NULL);
+
+WHILE @uIdx <= @NumUsers
+BEGIN
+    SELECT @uFn = F FROM @FirstNames WHERE Id = ((@uIdx - 1) % @FirstCount) + 1;
+    SELECT @uLn = L FROM @LastNames  WHERE Id = ((@uIdx - 1) % @LastCount)  + 1;
+    SET @uName  = N'dzpdummy.' + RIGHT(N'0000000' + CAST(@uIdx AS NVARCHAR(16)), 7);
+    SET @uEmail = @uName + N'@example.com';
+
+    DELETE FROM @uidTbl;
+    INSERT INTO @uidTbl
+    EXEC AddUser
+        @PortalID        = @PortalId,
+        @Username        = @uName,
+        @FirstName       = @uFn,
+        @LastName        = @uLn,
+        @AffiliateId     = NULL,
+        @IsSuperUser     = 0,
+        @Email           = @uEmail,
+        @DisplayName     = @uFn,
+        @UpdatePassword  = 0,
+        @Authorised      = 1,
+        @CreatedByUserID = @CreatedBy;
+
+    SELECT @newUid = Uid FROM @uidTbl;
+    IF @newUid IS NULL
+        SELECT @newUid = UserID FROM Users WHERE Username = @uName;
+
+    UPDATE Users        SET DisplayName = @uFn + N' ' + @uLn, IsDeleted = 0 WHERE UserID = @newUid;
+    UPDATE UserPortals  SET IsDeleted = 0 WHERE UserId = @newUid AND PortalId = @PortalId;
+
+    INSERT INTO #PlanUsers (Idx, Username, UserId) VALUES (@uIdx, @uName, @newUid);
+    SET @uIdx = @uIdx + 1;
+END
+
+DECLARE @msg3 NVARCHAR(200) = N'Step 3: Dummy users ready (' + CAST(@NumUsers AS NVARCHAR(16)) + N').'; RAISERROR(@msg3, 0, 1) WITH NOWAIT;
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║ 4) UserCommunity round-robin + Beheerder roles            ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+-- Each user is assigned to exactly one community (round-robin).
+-- The first 2 full rotations of users (per community) become
+-- Community beheerders.
+DECLARE @CommCount INT = (SELECT COUNT(*) FROM #PlanCommunities);
+
+;WITH UC AS (
+    SELECT pu.UserId,
+           ((pu.Idx - 1) % @CommCount) + 1 AS Seq,
+           (pu.Idx - 1) / @CommCount      AS Rotation
+    FROM   #PlanUsers pu
+)
 INSERT INTO UserCommunity (UserId, CommunityId)
-SELECT m.UserId, m.CommunityId
-FROM @UserCommunityMap m
-WHERE NOT EXISTS (
-    SELECT 1 FROM UserCommunity uc
-    WHERE uc.UserId = m.UserId AND uc.CommunityId = m.CommunityId
+SELECT u.UserId, pc.CommunityId
+FROM   UC u
+JOIN   #PlanCommunities pc ON pc.Seq = u.Seq
+WHERE  NOT EXISTS (
+    SELECT 1 FROM UserCommunity x
+    WHERE x.UserId = u.UserId AND x.CommunityId = pc.CommunityId
 );
 
-IF @BeheerderRoleId IS NOT NULL
+IF @BeheerderRole IS NOT NULL
 BEGIN
+    ;WITH Beh AS (
+        SELECT pu.UserId,
+               ((pu.Idx - 1) % @CommCount) + 1 AS Seq,
+               (pu.Idx - 1) / @CommCount      AS Rotation
+        FROM   #PlanUsers pu
+    )
     INSERT INTO UserCommunityRole (UserCommunityId, RoleId)
-    SELECT uc.Id, @BeheerderRoleId
-    FROM   UserCommunity uc
-    JOIN   @UserCommunityMap m
-        ON m.UserId = uc.UserId AND m.CommunityId = uc.CommunityId
-    WHERE  m.IsBeheerder = 1
+    SELECT uc.Id, @BeheerderRole
+    FROM   Beh b
+    JOIN   #PlanCommunities pc ON pc.Seq = b.Seq
+    JOIN   UserCommunity    uc ON uc.UserId = b.UserId AND uc.CommunityId = pc.CommunityId
+    WHERE  b.Rotation < 2
       AND  NOT EXISTS (
-            SELECT 1 FROM UserCommunityRole ucr
-            WHERE ucr.UserCommunityId = uc.Id AND ucr.RoleId = @BeheerderRoleId
+            SELECT 1 FROM UserCommunityRole x
+            WHERE x.UserCommunityId = uc.Id AND x.RoleId = @BeheerderRole
       );
 END
 
-PRINT N'Step 3a: Communities created and dummy users distributed (incl. Community beheerder).';
+RAISERROR(N'Step 4: Users distributed across communities (incl. Beheerders).', 0, 1) WITH NOWAIT;
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║ 3b) Loop per wijkcentrum: groups, companies, posts        ║
--- ║     (owners/authors are picked from this community's      ║
--- ║      members only).                                        ║
+-- ║ 5) CommunityGroups (set-based)                            ║
+-- ║    @GroupsPerCommunity groups per community.              ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-DECLARE cursor_centra CURSOR LOCAL FAST_FORWARD FOR
-    SELECT Slug, Name, City FROM @Centra;
-OPEN cursor_centra;
-FETCH NEXT FROM cursor_centra INTO @Slug, @Name, @City;
-WHILE @@FETCH_STATUS = 0
-BEGIN
-    SELECT @CommunityId = Id FROM Community WHERE Slug = @Slug;
+DECLARE @GroupNameCount INT = (SELECT COUNT(*) FROM @GroupNames);
 
-    -- ── Member pool for this community (used for owner/author picks) ──
-    DECLARE @CommunityMembers TABLE (UserId INT);
-    DELETE FROM @CommunityMembers;
-    INSERT INTO @CommunityMembers (UserId)
-    SELECT UserId FROM UserCommunity WHERE CommunityId = @CommunityId;
+;WITH G AS (
+    SELECT pc.CommunityId, pc.City, pc.Name AS CommName, pc.Seq AS CommSeq, n.n AS Idx,
+           ((pc.Seq - 1) * @GroupsPerCommunity + n.n) AS GlobalSeq
+    FROM   #PlanCommunities pc
+    JOIN   #Numbers         n  ON n.n <= @GroupsPerCommunity
+)
+INSERT INTO CommunityGroups (CommunityId, Name, Description)
+SELECT g.CommunityId,
+       gn.Name,
+       N'Groep voor ' + gn.Name + N' liefhebbers in ' + g.CommName + N'.'
+FROM   G g
+JOIN   @GroupNames gn ON gn.Id = ((g.Idx - 1) % @GroupNameCount) + 1;
 
-    -- Fallback if for some reason no members exist (shouldn't happen).
-    IF NOT EXISTS (SELECT 1 FROM @CommunityMembers)
-        INSERT INTO @CommunityMembers (UserId) VALUES (@DefaultAuthor);
+DECLARE @msg5 NVARCHAR(200) = N'Step 5: Groups created (' + CAST(@CommCount * @GroupsPerCommunity AS NVARCHAR(16)) + N').'; RAISERROR(@msg5, 0, 1) WITH NOWAIT;
 
-    -- ── 10 groups (skip if community already populated) ─────
-    IF NOT EXISTS (SELECT 1 FROM CommunityGroups WHERE CommunityId = @CommunityId)
-    BEGIN
-        SET @i = 1;
-        WHILE @i <= 10
-        BEGIN
-            SELECT @gName = Name FROM @GroupNames WHERE Id = ((@i - 1) % 15) + 1;
-            INSERT INTO CommunityGroups (CommunityId, Name, Description)
-            VALUES (@CommunityId,
-                    @gName + N' ' + @City + N' #' + CAST(@i AS NVARCHAR(8)),
-                    N'Groep voor ' + @gName + N' liefhebbers in ' + @Name + N'.');
-            SET @i = @i + 1;
-        END
-    END
+-- Cache (CommunityId, GroupId) for downstream lookups.
+IF OBJECT_ID('tempdb..#GroupsByComm') IS NOT NULL DROP TABLE #GroupsByComm;
+SELECT g.Id AS GroupId, g.CommunityId,
+       ROW_NUMBER() OVER (PARTITION BY g.CommunityId ORDER BY g.Id) AS GroupSeq
+INTO   #GroupsByComm
+FROM   CommunityGroups g
+JOIN   #PlanCommunities pc ON pc.CommunityId = g.CommunityId;
 
-    -- ── 10 companies with rich CompanyInfo ─────────────────
-    IF NOT EXISTS (SELECT 1 FROM Company WHERE CommunityId = @CommunityId)
-    BEGIN
-        SET @i = 1;
-        WHILE @i <= 10
-        BEGIN
-            SELECT @cName = a.Word + N' ' + n.Word
-            FROM @CompanyAdjectives a
-            CROSS JOIN @CompanyNouns n
-            WHERE a.Id = ((@i - 1) % 10) + 1
-              AND n.Id = ((@i - 1 + ABS(CHECKSUM(@Slug))) % 12) + 1;
-
-            SET @cSlug   = LOWER(REPLACE(@cName, N' ', N'-'))
-                         + N'-' + @Slug + N'-' + CAST(@i AS NVARCHAR(8));
-            SET @phone   = N'+31 6 '
-                         + RIGHT(N'0000' + CAST((ABS(CHECKSUM(NEWID())) % 10000) AS NVARCHAR(8)), 4)
-                         + N' '
-                         + RIGHT(N'0000' + CAST((ABS(CHECKSUM(NEWID())) % 10000) AS NVARCHAR(8)), 4);
-            SET @email   = LOWER(REPLACE(@cName, N' ', N'.')) + N'@example.com';
-            SET @website = N'https://www.' + LOWER(REPLACE(REPLACE(@cName, N' ', N''), N'''', N'')) + N'.nl';
-            SET @open    = CAST(8  + (ABS(CHECKSUM(NEWID())) % 3) AS NVARCHAR(2)) + N':00';
-            SET @close   = CAST(17 + (ABS(CHECKSUM(NEWID())) % 5) AS NVARCHAR(2)) + N':00';
-            SET @hoursJson =
-                N'{' +
-                    N'"mon":["' + @open + N'","' + @close + N'"],' +
-                    N'"tue":["' + @open + N'","' + @close + N'"],' +
-                    N'"wed":["' + @open + N'","' + @close + N'"],' +
-                    N'"thu":["' + @open + N'","' + @close + N'"],' +
-                    N'"fri":["' + @open + N'","' + @close + N'"],' +
-                    N'"sat":["10:00","14:00"],' +
-                    N'"sun":[]' +
-                N'}';
-            SET @info =
-                N'{' +
-                    N'"about":"' + @cName + N' is een fictief bedrijf in ' + @City + N'. Wij zijn er voor jou.",' +
-                    N'"address":"Hoofdstraat ' + CAST(((ABS(CHECKSUM(NEWID())) % 200) + 1) AS NVARCHAR(8))
-                                          + N', ' + @City + N'",' +
-                    N'"phone":"' + @phone + N'",' +
-                    N'"email":"' + @email + N'",' +
-                    N'"website":"' + @website + N'",' +
-                    N'"banner":"https://picsum.photos/seed/banner-' + @cSlug + N'/1200/400",' +
-                    N'"openingHours":' + @hoursJson +
-                N'}';
-
-            SELECT TOP 1 @ownerId = UserId FROM @CommunityMembers ORDER BY NEWID();
-
-            INSERT INTO Company (CommunityId, Slug, Name, OwnerId, CompanyInfo, ImageUrl, CreatedOn)
-            VALUES (@CommunityId, @cSlug, @cName, @ownerId, @info,
-                    N'https://picsum.photos/seed/co-' + @cSlug + N'/600/400',
-                    GETUTCDATE());
-
-            SET @i = @i + 1;
-        END
-    END
-
-    -- ── 30 posts (only if none exist yet for this community) ─
-    IF NOT EXISTS (SELECT 1 FROM Dnn_Modules_Blog_Posts WHERE CommunityId = @CommunityId)
-    BEGIN
-        SET @j = 1;
-        WHILE @j <= 30
-        BEGIN
-            DECLARE @ptype TINYINT = ((ABS(CHECKSUM(NEWID())) % 3) + 1);
-            DECLARE @author INT;
-            DECLARE @title NVARCHAR(128);
-            DECLARE @body  NVARCHAR(MAX);
-            DECLARE @img   NVARCHAR(512);
-            DECLARE @views INT      = ABS(CHECKSUM(NEWID())) % 500;
-            DECLARE @clicks INT     = @views / 5;
-            DECLARE @comments INT   = ABS(CHECKSUM(NEWID())) % 25;
-            DECLARE @publishOn DATETIME2  = DATEADD(MINUTE, -1 * (ABS(CHECKSUM(NEWID())) % (60 * 24 * 90)), GETUTCDATE());
-            DECLARE @eventClose DATETIME2 = CASE WHEN @ptype = 2
-                                                 THEN DATEADD(DAY, (ABS(CHECKSUM(NEWID())) % 60) + 1, @publishOn)
-                                                 ELSE NULL END;
-
-            SELECT TOP 1 @author = UserId FROM @CommunityMembers ORDER BY NEWID();
-            SELECT TOP 1 @title  = Title  FROM @PostTitleStems ORDER BY NEWID();
-            SELECT TOP 1 @body   = Body   FROM @PostBodies     ORDER BY NEWID();
-
-            SET @title = @title + N' (' + @City + N' #' + CAST(@j AS NVARCHAR(8)) + N')';
-            SET @img   = N'https://picsum.photos/seed/post-' + @Slug + N'-' + CAST(@j AS NVARCHAR(8)) + N'/800/450';
-
-            INSERT INTO Dnn_Modules_Blog_Posts
-                (ModuleId, CommunityId, PostType, Title, Content, ImageUrl,
-                 AuthorUserId, PublishOn, EventClosingOn,
-                 IsDraft, IsDeleted, ViewCount, ClickCount, CommentCount,
-                 CreatedOn, ModifiedOn)
-            VALUES
-                (@ModuleId, @CommunityId, @ptype, @title, @body, @img,
-                 @author, @publishOn, @eventClose,
-                 0, 0, @views, @clicks, @comments,
-                 @publishOn, @publishOn);
-
-            SET @j = @j + 1;
-        END
-    END
-
-    PRINT N'Centrum: ' + @Name + N' (CommunityId=' + CAST(@CommunityId AS NVARCHAR(16)) + N') ready.';
-
-    FETCH NEXT FROM cursor_centra INTO @Slug, @Name, @City;
-END
-CLOSE cursor_centra;
-DEALLOCATE cursor_centra;
-
-PRINT N'Step 2-3: Communities, groups, companies, posts seeded.';
+CREATE INDEX IX_GroupsByComm_Comm ON #GroupsByComm (CommunityId, GroupSeq);
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║ 4) Link community members to a group + a company         ║
--- ║    (UserCommunity rows themselves were created in 3a.)   ║
+-- ║ 6) Companies                                              ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-DECLARE @uid INT, @cid INT, @groupId INT, @companyId INT;
+DECLARE @AdjCount INT = (SELECT COUNT(*) FROM @CompanyAdjectives);
+DECLARE @NounCount INT = (SELECT COUNT(*) FROM @CompanyNouns);
 
-DECLARE userCur CURSOR LOCAL FAST_FORWARD FOR
+;WITH PerComm AS (
+    SELECT pc.CommunityId, pc.Slug, pc.Name AS CommName, pc.City, pc.Seq AS CommSeq, n.n AS Idx
+    FROM   #PlanCommunities pc
+    JOIN   #Numbers n ON n.n <= @CompaniesPerCommunity
+), Cmp AS (
+    SELECT  pc.CommunityId, pc.Slug, pc.CommName, pc.City, pc.Idx,
+            a.Word + N' ' + nm.Word AS CName,
+            pc.CommSeq * 1000 + pc.Idx AS UniqueOrd
+    FROM    PerComm pc
+    JOIN    @CompanyAdjectives a  ON a.Id  = ((pc.Idx - 1) % @AdjCount)  + 1
+    JOIN    @CompanyNouns       nm ON nm.Id = ((pc.Idx - 1 + (CHECKSUM(pc.Slug) & 0x7fffffff)) % @NounCount) + 1
+)
+INSERT INTO Company (CommunityId, Slug, Name, OwnerId, CompanyInfo, ImageUrl, CreatedOn)
+SELECT  c.CommunityId,
+        LOWER(REPLACE(c.CName, N' ', N'-')) + N'-' + c.Slug + N'-' + CAST(c.Idx AS NVARCHAR(8)) AS CSlug,
+        c.CName,
+        ISNULL((SELECT TOP 1 uc.UserId FROM UserCommunity uc
+                WHERE uc.CommunityId = c.CommunityId
+                ORDER BY (c.UniqueOrd + uc.UserId)), @DefaultAuthor),
+        N'{"about":"' + c.CName + N' is een fictief bedrijf in ' + c.City + N'.",'
+            + N'"address":"Hoofdstraat ' + CAST((((CHECKSUM(NEWID()) & 0x7fffffff) % 200) + 1) AS NVARCHAR(8)) + N', ' + c.City + N'",'
+            + N'"phone":"+31 6 1234 ' + RIGHT(N'0000' + CAST(((CHECKSUM(NEWID()) & 0x7fffffff) % 10000) AS NVARCHAR(8)), 4) + N'",'
+            + N'"email":"' + LOWER(REPLACE(c.CName, N' ', N'.')) + N'@example.com",'
+            + N'"website":"https://www.' + LOWER(REPLACE(REPLACE(c.CName, N' ', N''), N'''', N'')) + N'.nl",'
+            + N'"banner":"https://picsum.photos/seed/banner-' + c.Slug + N'-' + CAST(c.Idx AS NVARCHAR(8)) + N'/1200/400",'
+            + N'"openingHours":{"mon":["09:00","17:00"],"tue":["09:00","17:00"],"wed":["09:00","17:00"],'
+            + N'"thu":["09:00","17:00"],"fri":["09:00","17:00"],"sat":["10:00","14:00"],"sun":[]}}',
+        N'https://picsum.photos/seed/co-' + c.Slug + N'-' + CAST(c.Idx AS NVARCHAR(8)) + N'/600/400',
+        GETUTCDATE()
+FROM    Cmp c;
+
+DECLARE @msg6 NVARCHAR(200) = N'Step 6: Companies created (' + CAST(@CommCount * @CompaniesPerCommunity AS NVARCHAR(16)) + N').'; RAISERROR(@msg6, 0, 1) WITH NOWAIT;
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║ 7) UserCommunityGroups + UserCompany                      ║
+-- ║    Each user joins one random group + one company in      ║
+-- ║    their community. (Set-based, deterministic.)           ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+;WITH UserComm AS (
+    SELECT uc.UserId, uc.CommunityId,
+           ROW_NUMBER() OVER (PARTITION BY uc.CommunityId ORDER BY uc.UserId) AS RankInComm,
+           (SELECT COUNT(*) FROM #GroupsByComm g WHERE g.CommunityId = uc.CommunityId) AS GrpCnt
+    FROM   UserCommunity uc
+    JOIN   #PlanCommunities pc ON pc.CommunityId = uc.CommunityId
+)
+INSERT INTO UserCommunityGroups (UserId, CommunityGroupId)
+SELECT u.UserId, g.GroupId
+FROM   UserComm u
+JOIN   #GroupsByComm g
+       ON g.CommunityId = u.CommunityId
+      AND g.GroupSeq    = CASE WHEN u.GrpCnt > 0 THEN ((u.RankInComm - 1) % u.GrpCnt) + 1 ELSE 0 END
+WHERE  u.GrpCnt > 0
+  AND  NOT EXISTS (
+        SELECT 1 FROM UserCommunityGroups x
+        WHERE x.UserId = u.UserId AND x.CommunityGroupId = g.GroupId
+  );
+
+-- Optional second group for ~50% of users.
+;WITH UserComm AS (
+    SELECT uc.UserId, uc.CommunityId,
+           ROW_NUMBER() OVER (PARTITION BY uc.CommunityId ORDER BY uc.UserId DESC) AS RankInComm,
+           (SELECT COUNT(*) FROM #GroupsByComm g WHERE g.CommunityId = uc.CommunityId) AS GrpCnt
+    FROM   UserCommunity uc
+    JOIN   #PlanCommunities pc ON pc.CommunityId = uc.CommunityId
+)
+INSERT INTO UserCommunityGroups (UserId, CommunityGroupId)
+SELECT u.UserId, g.GroupId
+FROM   UserComm u
+JOIN   #GroupsByComm g
+       ON g.CommunityId = u.CommunityId
+      AND g.GroupSeq    = CASE WHEN u.GrpCnt > 0 THEN ((u.RankInComm - 1) % u.GrpCnt) + 1 ELSE 0 END
+WHERE  u.UserId % 2 = 0  -- approximately half
+  AND  u.GrpCnt > 0
+  AND  NOT EXISTS (
+        SELECT 1 FROM UserCommunityGroups x
+        WHERE x.UserId = u.UserId AND x.CommunityGroupId = g.GroupId
+  );
+
+-- UserCompany: assign each user to one company in their community.
+IF OBJECT_ID('tempdb..#CompaniesByComm') IS NOT NULL DROP TABLE #CompaniesByComm;
+SELECT  c.Id AS CompanyId, c.CommunityId,
+        ROW_NUMBER() OVER (PARTITION BY c.CommunityId ORDER BY c.Id) AS CmpSeq
+INTO    #CompaniesByComm
+FROM    Company c
+JOIN    #PlanCommunities pc ON pc.CommunityId = c.CommunityId;
+
+;WITH UserComm AS (
+    SELECT uc.UserId, uc.CommunityId,
+           ROW_NUMBER() OVER (PARTITION BY uc.CommunityId ORDER BY uc.UserId) AS RankInComm,
+           (SELECT COUNT(*) FROM #CompaniesByComm cc WHERE cc.CommunityId = uc.CommunityId) AS CmpCnt
+    FROM   UserCommunity uc
+    JOIN   #PlanCommunities pc ON pc.CommunityId = uc.CommunityId
+)
+INSERT INTO UserCompany (UserId, CompanyId, ShowInTeam)
+SELECT u.UserId, c.CompanyId, 1
+FROM   UserComm u
+JOIN   #CompaniesByComm c
+       ON c.CommunityId = u.CommunityId
+      AND c.CmpSeq      = CASE WHEN u.CmpCnt > 0 THEN ((u.RankInComm - 1) % u.CmpCnt) + 1 ELSE 0 END
+WHERE  u.CmpCnt > 0
+  AND  NOT EXISTS (
+        SELECT 1 FROM UserCompany x
+        WHERE x.UserId = u.UserId AND x.CompanyId = c.CompanyId
+  );
+
+RAISERROR(N'Step 7: UserCommunityGroups + UserCompany populated.', 0, 1) WITH NOWAIT;
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║ 8) Posts (set-based)                                      ║
+-- ║    Per community: post #1 = draft (host-authored),        ║
+-- ║                   post #2 = scheduled (future PublishOn), ║
+-- ║                   rest    = published.                    ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+DECLARE @TitleCount INT = (SELECT COUNT(*) FROM @PostTitleStems);
+DECLARE @BodyCount  INT = (SELECT COUNT(*) FROM @PostBodies);
+
+-- Precompute deterministic per-(community,post) randoms.
+-- (Avoids NEWID() inside CROSS APPLY/JOIN predicates, which re-evaluates
+--  per inner row and silently drops rows.)
+IF OBJECT_ID('tempdb..#PostPlan') IS NOT NULL DROP TABLE #PostPlan;
+SELECT  pc.CommunityId, pc.Slug AS CSlug, pc.City, pc.Seq AS CommSeq, n.n AS PostIdx,
+        (CHECKSUM(pc.CommunityId, n.n, 1) & 0x7fffffff) AS R1,
+        (CHECKSUM(pc.CommunityId, n.n, 2) & 0x7fffffff) AS R2,
+        (CHECKSUM(pc.CommunityId, n.n, 3) & 0x7fffffff) AS R3,
+        (CHECKSUM(pc.CommunityId, n.n, 4) & 0x7fffffff) AS R4
+INTO    #PostPlan
+FROM    #PlanCommunities pc
+JOIN    #Numbers         n  ON n.n <= @PostsPerCommunity;
+
+INSERT INTO Dnn_Modules_Blog_Posts
+    (ModuleId, CommunityId, PostType, Title, Content, ImageUrl,
+     AuthorUserId, PublishOn, EventClosingOn,
+     IsDraft, IsDeleted, ViewCount, ClickCount, CommentCount,
+     CreatedOn, ModifiedOn)
+SELECT  @ModuleId,
+        p.CommunityId,
+        ((p.R1 % 3) + 1) AS PostType,
+        CASE WHEN p.PostIdx = 1 THEN N'[Concept] '
+             WHEN p.PostIdx = 2 THEN N'[Gepland] '
+             ELSE N'' END
+            + ts.Title + N' (' + p.City + N' #' + CAST(p.PostIdx AS NVARCHAR(8)) + N')',
+        bd.Body,
+        N'https://picsum.photos/seed/post-' + p.CSlug + N'-' + CAST(p.PostIdx AS NVARCHAR(8)) + N'/800/450',
+        CASE WHEN p.PostIdx = 1 THEN @DefaultAuthor
+             ELSE ISNULL(
+                    (SELECT TOP 1 uc.UserId FROM UserCommunity uc
+                     WHERE uc.CommunityId = p.CommunityId
+                     ORDER BY (CHECKSUM(p.R2, uc.UserId) & 0x7fffffff)),
+                    @DefaultAuthor) END,
+        CASE WHEN p.PostIdx = 2
+             THEN DATEADD(MINUTE,  (p.R3 % (60*24*30)) + 60, GETUTCDATE())
+             ELSE DATEADD(MINUTE, -((p.R3 % (60*24*90)) + 1), GETUTCDATE())
+        END AS PublishOn,
+        NULL,                              -- EventClosingOn (set later for events)
+        CASE WHEN p.PostIdx = 1 THEN 1 ELSE 0 END,    -- IsDraft
+        0,                                 -- IsDeleted
+        0, 0, 0,                           -- counts (later steps populate)
+        DATEADD(DAY, -((p.R4 % 90) + 1), GETUTCDATE()),
+        GETUTCDATE()
+FROM    #PostPlan p
+JOIN    @PostTitleStems ts ON ts.Id = ((p.R1 / 3)  % @TitleCount) + 1
+JOIN    @PostBodies     bd ON bd.Id = ((p.R1 / 17) % @BodyCount)  + 1;
+
+-- Set EventClosingOn for PostType=2 (Event) posts.
+UPDATE p
+SET    p.EventClosingOn = DATEADD(DAY,
+        ((CHECKSUM(NEWID(), p.PostId) & 0x7fffffff) % 60) + 1,
+        ISNULL(p.PublishOn, GETUTCDATE()))
+FROM   Dnn_Modules_Blog_Posts p
+JOIN   #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+WHERE  p.PostType = 2 AND p.EventClosingOn IS NULL;
+
+DECLARE @msg8 NVARCHAR(200) = N'Step 8: Posts created (' + CAST(@CommCount * @PostsPerCommunity AS NVARCHAR(16)) + N').'; RAISERROR(@msg8, 0, 1) WITH NOWAIT;
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║ 9) PostGroups: tag ~70% of posts to 1-2 groups            ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+;WITH Eligible AS (
+    SELECT p.PostId, p.CommunityId,
+           (SELECT COUNT(*) FROM #GroupsByComm g WHERE g.CommunityId = p.CommunityId) AS GrpCnt,
+           (CHECKSUM(NEWID(), p.PostId) & 0x7fffffff) AS Rnd
+    FROM   Dnn_Modules_Blog_Posts p
+    JOIN   #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+)
+-- Primary tag: ~70% of posts pick one group.
+INSERT INTO Dnn_Modules_Blog_PostGroups (PostId, CommunityGroupId)
+SELECT e.PostId, g.GroupId
+FROM   Eligible e
+JOIN   #GroupsByComm g
+       ON g.CommunityId = e.CommunityId
+      AND g.GroupSeq    = CASE WHEN e.GrpCnt > 0 THEN (e.Rnd % e.GrpCnt) + 1 ELSE 0 END
+WHERE  e.GrpCnt > 0 AND (e.Rnd % 10) < 7;
+
+;WITH Eligible AS (
+    SELECT p.PostId, p.CommunityId,
+           (SELECT COUNT(*) FROM #GroupsByComm g WHERE g.CommunityId = p.CommunityId) AS GrpCnt,
+           (CHECKSUM(NEWID(), p.PostId, 'second') & 0x7fffffff) AS Rnd
+    FROM   Dnn_Modules_Blog_Posts p
+    JOIN   #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+)
+-- Secondary tag: ~30% of posts pick a different group.
+INSERT INTO Dnn_Modules_Blog_PostGroups (PostId, CommunityGroupId)
+SELECT e.PostId, g.GroupId
+FROM   Eligible e
+JOIN   #GroupsByComm g
+       ON g.CommunityId = e.CommunityId
+      AND g.GroupSeq    = CASE WHEN e.GrpCnt > 1 THEN (e.Rnd % e.GrpCnt) + 1 ELSE 0 END
+WHERE  e.GrpCnt > 1 AND (e.Rnd % 10) < 3
+  AND  NOT EXISTS (
+        SELECT 1 FROM Dnn_Modules_Blog_PostGroups pg
+        WHERE pg.PostId = e.PostId AND pg.CommunityGroupId = g.GroupId
+  );
+
+RAISERROR(N'Step 9: Posts tagged to community groups.', 0, 1) WITH NOWAIT;
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║ 10) Per-post audience (community members in tagged       ║
+-- ║     groups OR all members if untagged) + Beheerders.     ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+IF OBJECT_ID('tempdb..#PostAudience') IS NOT NULL DROP TABLE #PostAudience;
+CREATE TABLE #PostAudience (PostId INT NOT NULL, UserId INT NOT NULL,
+    PRIMARY KEY (PostId, UserId));
+
+;WITH WPosts AS (
+    SELECT p.PostId, p.CommunityId
+    FROM   Dnn_Modules_Blog_Posts p
+    JOIN   #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+    WHERE  p.IsDeleted = 0
+), Beheerders AS (
     SELECT uc.UserId, uc.CommunityId
     FROM   UserCommunity uc
-    JOIN   Community c ON c.Id = uc.CommunityId
-    JOIN   @Centra ce  ON ce.Slug = c.Slug
-    WHERE  uc.UserId IN (SELECT UserId FROM @DummyUsers WHERE UserId IS NOT NULL);
-OPEN userCur;
-FETCH NEXT FROM userCur INTO @uid, @cid;
-WHILE @@FETCH_STATUS = 0
-BEGIN
-    -- Primary group
-    SELECT TOP 1 @groupId = Id FROM CommunityGroups WHERE CommunityId = @cid ORDER BY NEWID();
-    IF @groupId IS NOT NULL
-        AND NOT EXISTS (SELECT 1 FROM UserCommunityGroups WHERE UserId = @uid AND CommunityGroupId = @groupId)
-        INSERT INTO UserCommunityGroups (UserId, CommunityGroupId) VALUES (@uid, @groupId);
+    JOIN   UserCommunityRole ucr ON ucr.UserCommunityId = uc.Id
+    WHERE  ucr.RoleId = @BeheerderRole
+)
+INSERT INTO #PostAudience (PostId, UserId)
+SELECT DISTINCT w.PostId, x.UserId
+FROM   WPosts w
+CROSS APPLY (
+    -- Community members, restricted to tagged groups when applicable.
+    SELECT uc.UserId
+    FROM   UserCommunity uc
+    WHERE  uc.CommunityId = w.CommunityId
+      AND (
+            NOT EXISTS (SELECT 1 FROM Dnn_Modules_Blog_PostGroups pg WHERE pg.PostId = w.PostId)
+         OR EXISTS (
+                SELECT 1
+                FROM   UserCommunityGroups ucg
+                JOIN   Dnn_Modules_Blog_PostGroups pg
+                       ON pg.CommunityGroupId = ucg.CommunityGroupId
+                WHERE  ucg.UserId = uc.UserId AND pg.PostId = w.PostId)
+          )
+    UNION
+    SELECT b.UserId FROM Beheerders b WHERE b.CommunityId = w.CommunityId
+) x;
 
-    -- Optional second group
-    IF (ABS(CHECKSUM(NEWID())) % 2) = 0
-    BEGIN
-        SELECT TOP 1 @groupId = Id
-        FROM CommunityGroups
-        WHERE CommunityId = @cid
-          AND Id NOT IN (SELECT CommunityGroupId FROM UserCommunityGroups WHERE UserId = @uid)
-        ORDER BY NEWID();
-        IF @groupId IS NOT NULL
-            INSERT INTO UserCommunityGroups (UserId, CommunityGroupId) VALUES (@uid, @groupId);
-    END
+CREATE INDEX IX_PostAud_Post ON #PostAudience (PostId) INCLUDE (UserId);
 
-    -- Link to a company within the same community
-    SELECT TOP 1 @companyId = Id FROM Company WHERE CommunityId = @cid ORDER BY NEWID();
-    IF @companyId IS NOT NULL
-        AND NOT EXISTS (SELECT 1 FROM UserCompany WHERE UserId = @uid AND CompanyId = @companyId)
-        INSERT INTO UserCompany (UserId, CompanyId, ShowInTeam) VALUES (@uid, @companyId, 1);
-
-    FETCH NEXT FROM userCur INTO @uid, @cid;
-END
-CLOSE userCur;
-DEALLOCATE userCur;
-
-PRINT N'Step 4: Users linked to a group + a company within their community.';
+RAISERROR(N'Step 10: Per-post audience computed.', 0, 1) WITH NOWAIT;
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║ 5) Tag posts to 0-2 community groups                      ║
+-- ║ 11) Comments (set-based, audience-bound)                  ║
+-- ║     Per published post: random 5-15 comments, sampled    ║
+-- ║     with replacement from #PostAudience.                  ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-DECLARE @postId INT, @postCommId INT, @rnd INT, @groupsToTag INT;
+DECLARE @CmtBodyCount INT = (SELECT COUNT(*) FROM @CommentBodies);
 
-DECLARE postGroupCur CURSOR LOCAL FAST_FORWARD FOR
-    SELECT p.PostId, p.CommunityId
-    FROM Dnn_Modules_Blog_Posts p
-    JOIN Community c ON c.Id = p.CommunityId
-    WHERE c.Slug LIKE N'wijkcentrum-%'
-      AND NOT EXISTS (SELECT 1 FROM Dnn_Modules_Blog_PostGroups pg WHERE pg.PostId = p.PostId);
-OPEN postGroupCur;
-FETCH NEXT FROM postGroupCur INTO @postId, @postCommId;
-WHILE @@FETCH_STATUS = 0
-BEGIN
-    SET @rnd = ABS(CHECKSUM(NEWID())) % 10;
-    SET @groupsToTag = CASE WHEN @rnd < 3 THEN 0
-                            WHEN @rnd < 8 THEN 1
-                            ELSE 2 END;
+;WITH Targets AS (
+    SELECT  p.PostId, p.CreatedOn,
+            -- Random comment count in [@MinCommentsPerPost, @MaxCommentsPerPost]
+            @MinCommentsPerPost
+              + ((CHECKSUM(NEWID(), p.PostId) & 0x7fffffff)
+                 % (@MaxCommentsPerPost - @MinCommentsPerPost + 1)) AS NumCmts,
+            (SELECT COUNT(*) FROM #PostAudience pa WHERE pa.PostId = p.PostId) AS AudSize
+    FROM    Dnn_Modules_Blog_Posts p
+    JOIN    #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+    WHERE   p.IsDraft = 0 AND p.IsDeleted = 0 AND p.PublishOn <= GETUTCDATE()
+), Expanded AS (
+    SELECT  t.PostId, t.CreatedOn, n.n AS Slot,
+            t.AudSize,
+            (CHECKSUM(NEWID(), t.PostId, n.n) & 0x7fffffff) AS R
+    FROM    Targets t
+    JOIN    #Numbers n ON n.n <= t.NumCmts
+    WHERE   t.AudSize > 0
+)
+INSERT INTO Dnn_Modules_Blog_Comments (PostId, UserId, Body, IsDeleted, CreatedOn)
+SELECT  e.PostId,
+        au.UserId,
+        bd.Body,
+        0,
+        DATEADD(MINUTE, e.R % (60 * 24 * 7), e.CreatedOn)
+FROM    Expanded e
+CROSS APPLY (
+    SELECT TOP 1 pa.UserId
+    FROM   #PostAudience pa
+    WHERE  pa.PostId = e.PostId
+    ORDER BY (CHECKSUM(NEWID(), e.PostId, e.Slot, pa.UserId) & 0x7fffffff)
+) au
+CROSS APPLY (
+    SELECT TOP 1 cb.Body
+    FROM   @CommentBodies cb
+    WHERE  cb.Id = ((e.R / 7) % @CmtBodyCount) + 1
+) bd;
 
-    IF @groupsToTag > 0
-        INSERT INTO Dnn_Modules_Blog_PostGroups (PostId, CommunityGroupId)
-        SELECT TOP (@groupsToTag) @postId, g.Id
-        FROM CommunityGroups g
-        WHERE g.CommunityId = @postCommId
-        ORDER BY NEWID();
+-- Sync CommentCount on every published post.
+UPDATE p
+SET    p.CommentCount = ISNULL(cmt.cnt, 0)
+FROM   Dnn_Modules_Blog_Posts p
+JOIN   #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+OUTER APPLY (
+    SELECT COUNT(*) AS cnt
+    FROM   Dnn_Modules_Blog_Comments c
+    WHERE  c.PostId = p.PostId AND c.IsDeleted = 0
+) cmt;
 
-    FETCH NEXT FROM postGroupCur INTO @postId, @postCommId;
-END
-CLOSE postGroupCur;
-DEALLOCATE postGroupCur;
-
-PRINT N'Step 5: Posts tagged to community groups.';
+RAISERROR(N'Step 11: Comments inserted and CommentCount synced.', 0, 1) WITH NOWAIT;
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║ 6) Generate real comments matching CommentCount           ║
+-- ║ 12) Survey questions for PostType=3 (set-based)           ║
+-- ║     One single + one multi + one open per such post.      ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-DECLARE @CommentAuthors TABLE (UserId INT);
-INSERT INTO @CommentAuthors (UserId)
-SELECT UserId FROM @DummyUsers WHERE UserId IS NOT NULL
-UNION
-SELECT u.UserID
-FROM Users u
-INNER JOIN UserPortals up ON up.UserId = u.UserID
-WHERE u.IsDeleted = 0 AND up.PortalId = @PortalId AND u.IsSuperUser = 0;
-
-DECLARE @desired INT, @inserted INT, @authorId INT, @cBody NVARCHAR(500);
-DECLARE @postCreated DATETIME2, @commentDate DATETIME2;
-
-DECLARE commentCur CURSOR LOCAL FAST_FORWARD FOR
-    SELECT p.PostId, p.CommentCount, p.CreatedOn
-    FROM Dnn_Modules_Blog_Posts p
-    JOIN Community c ON c.Id = p.CommunityId
-    WHERE c.Slug LIKE N'wijkcentrum-%'
-      AND p.IsDraft = 0
-      AND p.IsDeleted = 0
-      AND NOT EXISTS (SELECT 1 FROM Dnn_Modules_Blog_Comments cm
-                      WHERE cm.PostId = p.PostId AND cm.IsDeleted = 0);
-OPEN commentCur;
-FETCH NEXT FROM commentCur INTO @postId, @desired, @postCreated;
-WHILE @@FETCH_STATUS = 0
-BEGIN
-    IF @desired < 3  SET @desired = 3 + (ABS(CHECKSUM(NEWID())) % 4);
-    IF @desired > 12 SET @desired = 12;
-
-    SET @inserted = 0;
-    WHILE @inserted < @desired
-    BEGIN
-        SELECT TOP 1 @authorId = UserId FROM @CommentAuthors ORDER BY NEWID();
-        SELECT TOP 1 @cBody    = Body   FROM @CommentBodies  ORDER BY NEWID();
-        SET @commentDate = DATEADD(MINUTE, ABS(CHECKSUM(NEWID())) % (60 * 24 * 7), @postCreated);
-
-        INSERT INTO Dnn_Modules_Blog_Comments (PostId, UserId, Body, IsDeleted, CreatedOn)
-        VALUES (@postId, @authorId, @cBody, 0, @commentDate);
-
-        SET @inserted = @inserted + 1;
-    END
-
-    UPDATE Dnn_Modules_Blog_Posts
-    SET CommentCount = (SELECT COUNT(*) FROM Dnn_Modules_Blog_Comments
-                        WHERE PostId = @postId AND IsDeleted = 0)
-    WHERE PostId = @postId;
-
-    FETCH NEXT FROM commentCur INTO @postId, @desired, @postCreated;
-END
-CLOSE commentCur;
-DEALLOCATE commentCur;
-
-PRINT N'Step 6: Comments generated and post counts synced.';
-
--- ╔══════════════════════════════════════════════════════════╗
--- ║ 7) Survey questions: 3 per PostType=3 (Investigation)     ║
--- ║    Always one of each type (single, multi, open).         ║
--- ╚══════════════════════════════════════════════════════════╝
-
--- Pools of survey question stems + option sets (Dutch, neighborhood-y).
 DECLARE @SingleQ TABLE (Id INT IDENTITY(1,1), Q NVARCHAR(256), O1 NVARCHAR(128), O2 NVARCHAR(128), O3 NVARCHAR(128), O4 NVARCHAR(128));
 INSERT INTO @SingleQ (Q, O1, O2, O3, O4) VALUES
     (N'Hoe vaak bezoek je ons wijkcentrum?',     N'Wekelijks',           N'Maandelijks',         N'Een paar keer per jaar',  N'(Bijna) nooit'),
@@ -612,73 +738,100 @@ INSERT INTO @OpenQ (Q) VALUES
     (N'Welke nieuwe activiteit zou je graag terugzien?'),
     (N'Heb je tips voor de organisatie?');
 
-DECLARE @qPostId INT, @qid INT;
-DECLARE @qText NVARCHAR(256), @oA NVARCHAR(128), @oB NVARCHAR(128), @oC NVARCHAR(128), @oD NVARCHAR(128);
+DECLARE @SingleQCount INT = (SELECT COUNT(*) FROM @SingleQ);
+DECLARE @MultiQCount  INT = (SELECT COUNT(*) FROM @MultiQ);
+DECLARE @OpenQCount   INT = (SELECT COUNT(*) FROM @OpenQ);
 
-DECLARE surveyCur CURSOR LOCAL FAST_FORWARD FOR
-    SELECT p.PostId
-    FROM Dnn_Modules_Blog_Posts p
-    JOIN Community c ON c.Id = p.CommunityId
-    WHERE c.Slug LIKE N'wijkcentrum-%'
-      AND p.PostType = 3
-      AND p.IsDeleted = 0
-      AND NOT EXISTS (SELECT 1 FROM Dnn_Modules_Blog_Questions q WHERE q.PostId = p.PostId);
-OPEN surveyCur;
-FETCH NEXT FROM surveyCur INTO @qPostId;
-WHILE @@FETCH_STATUS = 0
-BEGIN
-    -- Q1: single-choice (QuestionType = 1)
-    SELECT TOP 1 @qText = Q, @oA = O1, @oB = O2, @oC = O3, @oD = O4
-    FROM @SingleQ ORDER BY NEWID();
-    INSERT INTO Dnn_Modules_Blog_Questions (PostId, QuestionType, QuestionText, SortOrder)
-    VALUES (@qPostId, 1, @qText, 1);
-    SET @qid = SCOPE_IDENTITY();
-    INSERT INTO Dnn_Modules_Blog_QuestionOptions (QuestionId, OptionText, SortOrder) VALUES
-        (@qid, @oA, 1), (@qid, @oB, 2), (@qid, @oC, 3), (@qid, @oD, 4);
+-- Q1 (single)
+IF OBJECT_ID('tempdb..#NewQs') IS NOT NULL DROP TABLE #NewQs;
+CREATE TABLE #NewQs (PostId INT, QuestionId INT, QType INT,
+                     O1 NVARCHAR(128), O2 NVARCHAR(128), O3 NVARCHAR(128), O4 NVARCHAR(128));
 
-    -- Q2: multi-choice (QuestionType = 2)
-    SELECT TOP 1 @qText = Q, @oA = O1, @oB = O2, @oC = O3, @oD = O4
-    FROM @MultiQ ORDER BY NEWID();
-    INSERT INTO Dnn_Modules_Blog_Questions (PostId, QuestionType, QuestionText, SortOrder)
-    VALUES (@qPostId, 2, @qText, 2);
-    SET @qid = SCOPE_IDENTITY();
-    INSERT INTO Dnn_Modules_Blog_QuestionOptions (QuestionId, OptionText, SortOrder) VALUES
-        (@qid, @oA, 1), (@qid, @oB, 2), (@qid, @oC, 3), (@qid, @oD, 4);
+INSERT INTO Dnn_Modules_Blog_Questions (PostId, QuestionType, QuestionText, SortOrder)
+OUTPUT inserted.PostId, inserted.QuestionId, 1, NULL, NULL, NULL, NULL INTO #NewQs (PostId, QuestionId, QType, O1, O2, O3, O4)
+SELECT  p.PostId, 1, sq.Q, 1
+FROM    Dnn_Modules_Blog_Posts p
+JOIN    #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+JOIN    @SingleQ sq ON sq.Id = (((CHECKSUM(p.PostId, 1) & 0x7fffffff) % @SingleQCount) + 1)
+WHERE   p.PostType = 3 AND p.IsDeleted = 0
+  AND   NOT EXISTS (SELECT 1 FROM Dnn_Modules_Blog_Questions q WHERE q.PostId = p.PostId AND q.QuestionType = 1);
 
-    -- Q3: open text (QuestionType = 3, no options)
-    SELECT TOP 1 @qText = Q FROM @OpenQ ORDER BY NEWID();
-    INSERT INTO Dnn_Modules_Blog_Questions (PostId, QuestionType, QuestionText, SortOrder)
-    VALUES (@qPostId, 3, @qText, 3);
+-- Fill option text for single questions (deterministic from question text hash)
+UPDATE nq
+SET    O1 = sq.O1, O2 = sq.O2, O3 = sq.O3, O4 = sq.O4
+FROM   #NewQs nq
+JOIN   Dnn_Modules_Blog_Questions q ON q.QuestionId = nq.QuestionId
+JOIN   @SingleQ sq ON sq.Id = (((CHECKSUM(q.QuestionText) & 0x7fffffff) % @SingleQCount) + 1)
+WHERE  nq.QType = 1;
 
-    FETCH NEXT FROM surveyCur INTO @qPostId;
-END
-CLOSE surveyCur;
-DEALLOCATE surveyCur;
+INSERT INTO Dnn_Modules_Blog_QuestionOptions (QuestionId, OptionText, SortOrder)
+SELECT QuestionId, OptionText, SortOrder
+FROM (
+    SELECT QuestionId, O1 AS OptionText, 1 AS SortOrder FROM #NewQs WHERE QType = 1
+    UNION ALL SELECT QuestionId, O2, 2 FROM #NewQs WHERE QType = 1
+    UNION ALL SELECT QuestionId, O3, 3 FROM #NewQs WHERE QType = 1
+    UNION ALL SELECT QuestionId, O4, 4 FROM #NewQs WHERE QType = 1
+) x;
 
-PRINT N'Step 7: Survey questions ensured (single + multi + open per PostType=3 post).';
+-- Q2 (multi)
+DELETE FROM #NewQs;
+INSERT INTO Dnn_Modules_Blog_Questions (PostId, QuestionType, QuestionText, SortOrder)
+OUTPUT inserted.PostId, inserted.QuestionId, 2, NULL, NULL, NULL, NULL INTO #NewQs (PostId, QuestionId, QType, O1, O2, O3, O4)
+SELECT  p.PostId, 2, mq.Q, 2
+FROM    Dnn_Modules_Blog_Posts p
+JOIN    #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+JOIN    @MultiQ mq ON mq.Id = (((CHECKSUM(p.PostId, 2) & 0x7fffffff) % @MultiQCount) + 1)
+WHERE   p.PostType = 3 AND p.IsDeleted = 0
+  AND   NOT EXISTS (SELECT 1 FROM Dnn_Modules_Blog_Questions q WHERE q.PostId = p.PostId AND q.QuestionType = 2);
+
+UPDATE nq
+SET    O1 = mq.O1, O2 = mq.O2, O3 = mq.O3, O4 = mq.O4
+FROM   #NewQs nq
+JOIN   Dnn_Modules_Blog_Questions q ON q.QuestionId = nq.QuestionId
+JOIN   @MultiQ mq ON mq.Id = (((CHECKSUM(q.QuestionText) & 0x7fffffff) % @MultiQCount) + 1)
+WHERE  nq.QType = 2;
+
+INSERT INTO Dnn_Modules_Blog_QuestionOptions (QuestionId, OptionText, SortOrder)
+SELECT QuestionId, OptionText, SortOrder
+FROM (
+    SELECT QuestionId, O1 AS OptionText, 1 AS SortOrder FROM #NewQs WHERE QType = 2
+    UNION ALL SELECT QuestionId, O2, 2 FROM #NewQs WHERE QType = 2
+    UNION ALL SELECT QuestionId, O3, 3 FROM #NewQs WHERE QType = 2
+    UNION ALL SELECT QuestionId, O4, 4 FROM #NewQs WHERE QType = 2
+) x;
+
+-- Q3 (open) — no options
+INSERT INTO Dnn_Modules_Blog_Questions (PostId, QuestionType, QuestionText, SortOrder)
+SELECT  p.PostId, 3, oq.Q, 3
+FROM    Dnn_Modules_Blog_Posts p
+JOIN    #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+JOIN    @OpenQ oq ON oq.Id = (((CHECKSUM(p.PostId, 3) & 0x7fffffff) % @OpenQCount) + 1)
+WHERE   p.PostType = 3 AND p.IsDeleted = 0
+  AND   NOT EXISTS (SELECT 1 FROM Dnn_Modules_Blog_Questions q WHERE q.PostId = p.PostId AND q.QuestionType = 3);
+
+RAISERROR(N'Step 12: Survey questions ensured (single + multi + open per PostType=3 post).', 0, 1) WITH NOWAIT;
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║ 8) Reset post stats so Views/Clicks <= Audience           ║
--- ║    Audience = UserCommunity members of post's community.  ║
--- ║    Views: random 30-100% of audience.                     ║
--- ║    Clicks: random 20-80% of Views.                        ║
+-- ║ 13) View / Click stats bounded by audience                ║
+-- ║     Views: 30-100% of audience                            ║
+-- ║     Clicks: 20-80% of Views                               ║
+-- ║     Drafts and not-yet-published: zeroed.                 ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-;WITH PostAudience AS (
+;WITH PostAudienceCnt AS (
     SELECT  p.PostId,
-            ISNULL((SELECT COUNT(*) FROM UserCommunity uc WHERE uc.CommunityId = p.CommunityId), 0) AS Audience
+            ISNULL((SELECT COUNT(*) FROM #PostAudience pa WHERE pa.PostId = p.PostId), 0) AS Audience
     FROM    Dnn_Modules_Blog_Posts p
-    JOIN    Community c ON c.Id = p.CommunityId
-    WHERE   c.Slug LIKE N'wijkcentrum-%'
+    JOIN    #PlanCommunities pc ON pc.CommunityId = p.CommunityId
 )
 UPDATE p
 SET    p.ViewCount  = v.Views,
        p.ClickCount = v.Clicks
 FROM   Dnn_Modules_Blog_Posts p
-JOIN   PostAudience pa ON pa.PostId = p.PostId
+JOIN   PostAudienceCnt pa ON pa.PostId = p.PostId
 CROSS APPLY (
     SELECT  CASE WHEN pa.Audience = 0 THEN 0
-                 ELSE pa.Audience - (ABS(CHECKSUM(NEWID(), p.PostId)) % CASE WHEN pa.Audience > 1
+                 ELSE pa.Audience - ((CHECKSUM(NEWID(), p.PostId) & 0x7fffffff) % CASE WHEN pa.Audience > 1
                                                                               THEN CAST(CEILING(pa.Audience * 0.7) AS INT)
                                                                               ELSE 1 END)
             END AS Views
@@ -686,36 +839,53 @@ CROSS APPLY (
 CROSS APPLY (
     SELECT  vRaw.Views,
             CASE WHEN vRaw.Views = 0 THEN 0
-                 ELSE CAST(vRaw.Views * (0.2 + (ABS(CHECKSUM(NEWID(), p.PostId)) % 60) / 100.0) AS INT)
+                 ELSE CAST(vRaw.Views * (0.2 + ((CHECKSUM(NEWID(), p.PostId) & 0x7fffffff) % 60) / 100.0) AS INT)
             END AS Clicks
 ) v;
 
-PRINT N'Step 8: Post Views/Clicks reset within Audience bounds.';
+UPDATE p
+SET    p.ViewCount = 0, p.ClickCount = 0, p.CommentCount = 0
+FROM   Dnn_Modules_Blog_Posts p
+JOIN   #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+WHERE  p.IsDraft = 1 OR p.PublishOn > GETUTCDATE();
+
+RAISERROR(N'Step 13: View / Click counts bounded by audience.', 0, 1) WITH NOWAIT;
 
 -- ╔══════════════════════════════════════════════════════════╗
--- ║ 9) Final summary                                          ║
+-- ║ 14) Final summary                                         ║
 -- ╚══════════════════════════════════════════════════════════╝
 
 SELECT
-    c.Id,
-    c.Slug,
-    (SELECT COUNT(*) FROM UserCommunity        WHERE CommunityId = c.Id)            AS Members,
-    (SELECT COUNT(*) FROM CommunityGroups      WHERE CommunityId = c.Id)            AS Groups,
-    (SELECT COUNT(*) FROM Company              WHERE CommunityId = c.Id)            AS Companies,
-    (SELECT COUNT(*) FROM Dnn_Modules_Blog_Posts p WHERE p.CommunityId = c.Id)      AS Posts,
-    (SELECT COUNT(*) FROM Dnn_Modules_Blog_Comments cm
-        JOIN Dnn_Modules_Blog_Posts p ON p.PostId = cm.PostId
-        WHERE p.CommunityId = c.Id)                                                  AS Comments,
+    @CommCount                                                         AS Communities,
+    (SELECT COUNT(*) FROM Users WHERE Username LIKE N'dzpdummy.%')     AS DummyUsers,
+    (SELECT COUNT(*) FROM CommunityGroups g
+        JOIN Community c ON c.Id = g.CommunityId
+        WHERE c.Id IN (SELECT pc.CommunityId FROM #PlanCommunities pc))  AS Groups,
+    (SELECT COUNT(*) FROM Company co
+        JOIN Community c ON c.Id = co.CommunityId
+        WHERE c.Id IN (SELECT pc.CommunityId FROM #PlanCommunities pc))  AS Companies,
+    (SELECT COUNT(*) FROM Dnn_Modules_Blog_Posts p
+        JOIN Community c ON c.Id = p.CommunityId
+        WHERE c.Id IN (SELECT pc.CommunityId FROM #PlanCommunities pc))  AS Posts,
+    (SELECT COUNT(*) FROM Dnn_Modules_Blog_Posts p
+        JOIN Community c ON c.Id = p.CommunityId
+        WHERE c.Id IN (SELECT pc.CommunityId FROM #PlanCommunities pc)
+          AND p.IsDraft = 1)                                             AS Drafts,
+    (SELECT COUNT(*) FROM Dnn_Modules_Blog_Posts p
+        JOIN Community c ON c.Id = p.CommunityId
+        WHERE c.Id IN (SELECT pc.CommunityId FROM #PlanCommunities pc)
+          AND p.PublishOn > GETUTCDATE() AND p.IsDraft = 0)              AS Scheduled,
     (SELECT COUNT(*) FROM Dnn_Modules_Blog_PostGroups pg
         JOIN Dnn_Modules_Blog_Posts p ON p.PostId = pg.PostId
-        WHERE p.CommunityId = c.Id)                                                  AS PostGroupTags,
-    (SELECT COUNT(*) FROM Dnn_Modules_Blog_Posts p
-        WHERE p.CommunityId = c.Id AND p.PostType = 3)                               AS Surveys,
+        JOIN Community c ON c.Id = p.CommunityId
+        WHERE c.Id IN (SELECT pc.CommunityId FROM #PlanCommunities pc))  AS PostGroupTags,
+    (SELECT COUNT(*) FROM Dnn_Modules_Blog_Comments cm
+        JOIN Dnn_Modules_Blog_Posts p ON p.PostId = cm.PostId
+        JOIN Community c ON c.Id = p.CommunityId
+        WHERE c.Id IN (SELECT pc.CommunityId FROM #PlanCommunities pc))  AS Comments,
     (SELECT COUNT(*) FROM Dnn_Modules_Blog_Questions q
         JOIN Dnn_Modules_Blog_Posts p ON p.PostId = q.PostId
-        WHERE p.CommunityId = c.Id)                                                  AS Questions
-FROM Community c
-WHERE c.Slug LIKE N'wijkcentrum-%'
-ORDER BY c.Id;
+        JOIN Community c ON c.Id = p.CommunityId
+        WHERE c.Id IN (SELECT pc.CommunityId FROM #PlanCommunities pc))  AS Questions;
 
-PRINT N'Done.';
+RAISERROR(N'Done.', 0, 1) WITH NOWAIT;

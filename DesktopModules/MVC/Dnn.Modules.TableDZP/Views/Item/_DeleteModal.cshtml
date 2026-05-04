@@ -1,0 +1,42 @@
+@model Dnn.Modules.TableDZP.Models.DataTableViewModel
+@functions{
+    static string L(string key) {
+        var v = DotNetNuke.Services.Localization.Localization.GetString(
+            key, "/DesktopModules/MVC/Dnn.Modules.TableDZP/App_LocalResources/SharedResources.resx");
+        return string.IsNullOrEmpty(v) ? key : v;
+    }
+}
+@{
+    var tid = ViewData["tid"] as string ?? Model.TableId;
+}
+<!-- Delete confirm modal -->
+<div id="@(tid)-del-modal" class="dt-del-modal hidden fixed inset-0 z-1100 flex items-center justify-center bg-overlay backdrop-blur-sm">
+    <div class="bg-background rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+        <form onsubmit="event.preventDefault();this.querySelector('.dt-del-confirm').click();">
+            <div class="px-5 py-6 text-center">
+                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-danger-100 mb-4">
+                    <i data-lucide="triangle-alert" class="size-6 text-danger"></i>
+                </div>
+                <h3 class="font-semibold text-foreground-900 mb-1">@L("DeleteConfirm.Title")</h3>
+                <p class="text-sm text-foreground-500 dt-del-msg">@L("DeleteConfirm.Message")</p>
+            </div>
+            <div class="flex gap-2 px-5 py-4 border-t border-divider justify-end">
+                @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Button.cshtml", null, new ViewDataDictionary {
+                    { "btn-class",   "dt-del-cancel" },
+                    { "btn-label",   L("Cancel.Text") },
+                    { "btn-mobile",  "true" },
+                    { "btn-variant", "secondary" },
+                    { "btn-data",    new System.Collections.Generic.Dictionary<string, string> { { "data-target", tid } } }
+                })
+                @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Button.cshtml", null, new ViewDataDictionary {
+                    { "btn-class",   "dt-del-confirm" },
+                    { "btn-label",   L("Delete.Text") },
+                    { "btn-mobile",  "true" },
+                    { "btn-type",    "submit" },
+                    { "btn-variant", "danger" },
+                    { "btn-data",    new System.Collections.Generic.Dictionary<string, string> { { "data-target", tid } } }
+                })
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,54 @@
+@*
+    "Openingstijden" section: a row of <input type="time"> per day.
+    A day is "closed" when both inputs are empty, which is enforced server-
+    side when serializing the openingHours dict.
+    Reads from PageData: hoursOpen, hoursClose (Dictionary<string,string>).
+*@
+@{
+    var hoursOpen  = (Dictionary<string, string>)PageData["hoursOpen"];
+    var hoursClose = (Dictionary<string, string>)PageData["hoursClose"];
+
+    var dayOrder = new[] { "mon", "tue", "wed", "thu", "fri", "sat", "sun" };
+    var dayToNl = new Dictionary<string, string> {
+        { "mon", "Ma" }, { "tue", "Di" }, { "wed", "Wo" },
+        { "thu", "Do" }, { "fri", "Vr" }, { "sat", "Za" }, { "sun", "Zo" }
+    };
+
+    Func<string, string> normalizeTime = t => {
+        if (string.IsNullOrEmpty(t)) { return ""; }
+        var parts = t.Split(':');
+        if (parts.Length < 2) { return t; }
+        int h, m;
+        if (!int.TryParse(parts[0], out h)) { return t; }
+        if (!int.TryParse(parts[1], out m)) { return t; }
+        return h.ToString("00") + ":" + m.ToString("00");
+    };
+}
+
+<div class="flex flex-col gap-4 bg-content1 rounded-xl border border-divider p-5 sm:p-6">
+    <div class="flex flex-col gap-1">
+        <h2 class="text-base font-semibold text-foreground-900">Openingstijden</h2>
+        <p class="text-xs text-foreground-400">Laat beide velden leeg als het bedrijf die dag gesloten is.</p>
+    </div>
+
+    <div class="flex flex-col gap-3">
+        @foreach (var day in dayOrder) {
+            var openVal  = hoursOpen.ContainsKey(day)  ? normalizeTime(hoursOpen[day])  : "";
+            var closeVal = hoursClose.ContainsKey(day) ? normalizeTime(hoursClose[day]) : "";
+            <div class="grid grid-cols-[80px_1fr_1fr] sm:grid-cols-[100px_1fr_1fr] items-center gap-3">
+                <span class="text-sm font-medium text-foreground-700">@dayToNl[day]</span>
+                @{
+                    PageData["name"]  = "hours_open_" + day;
+                    PageData["type"]  = "time";
+                    PageData["value"] = openVal;
+                }
+                @RenderPage("../Components/_Input.cshtml")
+                @{
+                    PageData["name"]  = "hours_close_" + day;
+                    PageData["value"] = closeVal;
+                }
+                @RenderPage("../Components/_Input.cshtml")
+            </div>
+        }
+    </div>
+</div>

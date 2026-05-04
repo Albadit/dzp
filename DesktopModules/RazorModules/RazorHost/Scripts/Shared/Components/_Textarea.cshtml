@@ -1,0 +1,31 @@
+@*
+    Shared textarea. Params (via PageData):
+      id          (string, optional)
+      name        (string, optional)
+      value       (string, optional)
+      placeholder (string, optional)
+      rows        (int,    optional) - default: 4
+      required    (bool,   optional)
+      disabled    (bool,   optional)
+      extraClass  (string, optional)
+      attrs       (string, optional) - extra raw attributes
+*@
+@{
+    var taId       = PageData["id"]          as string;
+    var taName     = PageData["name"]        as string;
+    var taValue    = PageData["value"]       as string ?? "";
+    var taPlace    = PageData["placeholder"] as string ?? "";
+    var taExtra    = PageData["extraClass"]  as string ?? "";
+    var taAttrs    = PageData["attrs"]       as string ?? "";
+    var taRows     = PageData["rows"] != null ? (int)PageData["rows"] : 4;
+    var taRequired = PageData["required"] != null && (bool)PageData["required"];
+    var taDisabled = PageData["disabled"] != null && (bool)PageData["disabled"];
+
+    var taClass = "w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition disabled:opacity-50 disabled:cursor-not-allowed resize-y " + taExtra;
+}
+<textarea class="@taClass" rows="@taRows" placeholder="@taPlace"
+          @(new System.Web.HtmlString(taId   != null ? "id=\""   + taId   + "\"" : ""))
+          @(new System.Web.HtmlString(taName != null ? "name=\"" + taName + "\"" : ""))
+          @(taRequired ? new System.Web.HtmlString("required=\"required\"") : new System.Web.HtmlString(""))
+          @(taDisabled ? new System.Web.HtmlString("disabled=\"disabled\"") : new System.Web.HtmlString(""))
+          @(new System.Web.HtmlString(taAttrs))>@taValue</textarea>

@@ -1,0 +1,28 @@
+@*
+    Dismissable toast / alert.
+
+    ViewData:
+      "alert-message"  – text to display
+      "alert-success"  – "true" for success styling, otherwise treated as danger
+      "alert-dismiss"  – ms before auto-dismiss (only used for success)
+*@
+@{
+    var aMsg     = ViewData["alert-message"] as string;
+    var aSuccess = (ViewData["alert-success"] as string) == "true";
+    var aDismiss = ViewData["alert-dismiss"]  as string;
+}
+@if (!string.IsNullOrEmpty(aMsg))
+{
+    <div class="fixed bottom-4 right-5 z-1100 w-full max-w-[350px] flex items-center gap-2 rounded-lg px-4 py-3 text-sm dt-alert @(aSuccess ? "bg-success-50 border border-success-200 text-success-800" : "bg-danger-50 border border-danger-200 text-danger-800")"
+         @(aSuccess && !string.IsNullOrEmpty(aDismiss) ? Html.Raw("data-auto-dismiss=\"" + aDismiss + "\"") : null)>
+        @if (aSuccess)
+        {
+            <i data-lucide="circle-check" class="size-4 shrink-0"></i>
+        }
+        else
+        {
+            <i data-lucide="circle-x" class="size-4 shrink-0"></i>
+        }
+        @aMsg
+    </div>
+}

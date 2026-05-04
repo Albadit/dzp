@@ -1,0 +1,17 @@
+@*
+    Page heading + cancel link for the company-edit form.
+    Reads from PageData: communitySlug, companySlug.
+*@
+@{
+    var communitySlug = (string)PageData["communitySlug"];
+    var companySlug   = (string)PageData["companySlug"];
+}
+
+<div class="flex items-center justify-between">
+    <h1 class="text-xl sm:text-2xl font-bold text-foreground-900">Bedrijf bewerken</h1>
+    <a href="/@communitySlug/companies/@companySlug"
+        class="inline-flex items-center gap-1.5 text-sm text-foreground-500 hover:text-primary transition">
+        <i data-lucide="x" class="size-4"></i>
+        Annuleren
+    </a>
+</div>

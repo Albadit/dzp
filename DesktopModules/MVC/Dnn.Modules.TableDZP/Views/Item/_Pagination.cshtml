@@ -1,0 +1,29 @@
+@model Dnn.Modules.TableDZP.Models.DataTableViewModel
+@functions{
+    static string L(string key) {
+        var v = DotNetNuke.Services.Localization.Localization.GetString(
+            key, "/DesktopModules/MVC/Dnn.Modules.TableDZP/App_LocalResources/SharedResources.resx");
+        return string.IsNullOrEmpty(v) ? key : v;
+    }
+}
+@{
+    var tid = ViewData["tid"] as string ?? Model.TableId;
+}
+<div class="flex flex-wrap items-center justify-end gap-3 text-sm text-foreground-600">
+    <span class="dt-row-count inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-foreground-600 bg-default-100 rounded-full">
+        Rows <span class="dt-row-count-num font-semibold text-foreground-900"></span>
+    </span>
+    <div class="inline-flex items-center gap-1 dt-pagination">
+        <button type="button" class="dt-page-prev p-1.5 rounded-md transition text-foreground-600 hover:bg-default-100 cursor-pointer disabled:text-foreground-300 disabled:cursor-not-allowed disabled:hover:bg-transparent" data-target="@tid">
+            <i data-lucide="chevron-left"></i>
+        </button>
+        <input type="number" min="1" value="1"
+               class="dt-page-input w-14 text-center px-1 py-1.5 text-sm rounded-md bg-content2 focus:outline-none focus:ring-2 focus:ring-primary/30 transition"
+               data-target="@tid" />
+        <span class="dt-page-total text-sm text-foreground-500"></span>
+        <button type="button" class="dt-page-next p-1.5 rounded-md transition text-foreground-600 hover:bg-default-100 cursor-pointer disabled:text-foreground-300 disabled:cursor-not-allowed disabled:hover:bg-transparent" data-target="@tid">
+            <i data-lucide="chevron-right"></i>
+        </button>
+    </div>
+    <div class="dt-page-size" data-target="@tid"></div>
+</div>

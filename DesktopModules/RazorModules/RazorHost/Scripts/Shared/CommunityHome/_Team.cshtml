@@ -1,0 +1,71 @@
+@*
+    "Ontmoet het team" — drag-scrollable team strip + member modal.
+    Reads from PageData: communitySlug, teamMembers (List<Dictionary<string,object>>).
+*@
+@{
+    var communitySlug = (string)PageData["communitySlug"];
+    var teamMembers   = (List<Dictionary<string, object>>)PageData["teamMembers"];
+}
+
+<section class="w-full">
+    <div class="w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-3 sm:gap-4 py-4 sm:py-6">
+        <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-foreground-900">Ontmoet het team</h2>
+            <a href="/@communitySlug/manage/managers" class="text-sm font-medium text-foreground-500 hover:text-primary transition flex items-center gap-1">
+                Ga naar <i data-lucide="arrow-right" class="size-3.5"></i>
+            </a>
+        </div>
+    </div>
+    @if (teamMembers.Count == 0) {
+        <div class="w-full px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col items-center gap-3 py-8 text-center">
+                <p class="text-sm text-foreground-400">Er zijn nog geen teamleden in deze community.</p>
+            </div>
+        </div>
+    } else {
+        <div class="w-full px-4 sm:px-6 lg:px-8">
+            <div class="js-team-strip flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                @foreach (var member in teamMembers) {
+                    var name  = (string)member["Name"];
+                    var role  = (string)member["Role"];
+                    var email = (string)member["Email"];
+                    var image = (string)member["Image"];
+                    <button type="button" onclick="openTeamModal(this)" data-name="@name" data-role="@role" data-email="@email" data-image="@image" class="flex flex-col items-center gap-1.5 sm:gap-2 shrink-0 snap-start cursor-pointer hover:opacity-80 transition">
+                        <div class="size-16 sm:size-20 rounded-full overflow-hidden border-2 border-divider">
+                            <img src="@image" alt="@name" class="w-full h-full object-cover rounded-full" />
+                        </div>
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-sm font-semibold text-foreground-900">@name</span>
+                            <span class="text-xs text-foreground-400">@role</span>
+                        </div>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</section>
+
+<!-- Team member modal -->
+<div id="teamModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm" onclick="if(event.target===this)closeTeamModal()">
+    <div class="bg-content1 rounded-2xl shadow-xl w-[90vw] max-w-sm mx-auto p-6 flex flex-col items-center gap-4 relative">
+        <button type="button" onclick="closeTeamModal()" class="absolute top-3 right-3 text-foreground-400 hover:text-foreground-900 transition">
+            <i data-lucide="x" class="size-5"></i>
+        </button>
+        <div class="size-24 rounded-full overflow-hidden border-2 border-divider">
+            <img id="tmImg" src="" alt="" class="w-full h-full object-cover rounded-full" />
+        </div>
+        <div class="flex flex-col items-center gap-1">
+            <h3 id="tmName" class="text-lg font-bold text-foreground-900"></h3>
+            <span id="tmRole" class="text-sm text-foreground-400"></span>
+        </div>
+        <div id="tmEmailRow" class="flex items-center gap-2 w-full bg-background rounded-xl border border-divider px-3 py-2.5">
+            <i data-lucide="mail" class="size-4 text-foreground-400 shrink-0"></i>
+            <span id="tmEmail" class="text-sm text-foreground-700 truncate flex-1"></span>
+            <button type="button" onclick="copyTeamEmail()" class="shrink-0 text-primary hover:text-primary/70 transition" title="Kopieer e-mail">
+                <i data-lucide="copy" class="size-4"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/team-modal.js"></script>

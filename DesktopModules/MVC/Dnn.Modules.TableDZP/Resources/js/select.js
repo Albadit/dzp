@@ -1,16 +1,16 @@
 var MultiSelect = (function () {
   'use strict'; var uid = 0; var C = {
     d: 'relative inline-block w-full min-w-20 text-sm font-[inherit]',
-    s: 'flex items-center gap-[0.3rem] min-h-10 px-2.5 py-[0.35rem] bg-white border border-default-300 rounded-lg cursor-pointer select-none outline-none transition-[border-color,box-shadow] duration-150 hover:border-default-400 list-none [&::-webkit-details-marker]:hidden',
-    sOpen: 'flex items-center gap-[0.3rem] min-h-10 px-2.5 py-[0.35rem] bg-white border border-primary-500 rounded-lg cursor-pointer select-none outline-none shadow-[0_0_0_3px_rgba(59,130,246,0.12)] list-none [&::-webkit-details-marker]:hidden',
+    s: 'flex items-center gap-[0.3rem] min-h-10 px-2.5 py-[0.35rem] bg-content2 rounded-lg cursor-pointer select-none outline-none transition-[box-shadow] duration-150 hover:bg-primary/5 list-none [&::-webkit-details-marker]:hidden',
+    sOpen: 'flex items-center gap-[0.3rem] min-h-10 px-2.5 py-[0.35rem] bg-content2 rounded-lg cursor-pointer select-none outline-none shadow-[0_0_0_3px_rgba(59,130,246,0.12)] list-none [&::-webkit-details-marker]:hidden',
     ch: 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700',
     tw: 'flex flex-1 flex-wrap gap-1 min-w-0',
     tp: 'flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap leading-[1.75] text-[0.8125rem] text-default-400',
     tv: 'flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap leading-[1.75] text-sm text-default-900',
     a: 'shrink-0 ml-auto flex items-center text-default-400 transition-transform duration-200',
     aOpen: 'shrink-0 ml-auto flex items-center text-default-400 transition-transform duration-200 rotate-180',
-    l: 'overflow-y-auto max-h-72 min-w-20 py-1',
-    lb: 'flex items-center justify-between gap-4 px-4 py-2.5 cursor-pointer select-none transition-colors has-checked:bg-primary-50 hover:bg-primary-50 has-checked:hover:bg-primary-100',
+    l: 'overflow-y-auto max-h-72 min-w-20 py-1 px-1',
+    lb: 'flex items-center justify-between gap-4 px-3 py-2.5 rounded-md cursor-pointer select-none transition-colors has-checked:bg-primary-50 hover:bg-primary-50 has-checked:hover:bg-primary-100',
     i: 'peer sr-only',
     it: 'text-sm font-normal text-default-800 whitespace-nowrap peer-checked:font-medium peer-checked:text-primary-700',
     ck: 'hidden peer-checked:flex shrink-0 items-center text-primary-600 leading-none',
@@ -22,7 +22,7 @@ var MultiSelect = (function () {
     var txt = document.createElement('span');
     var arr = document.createElement('span'); arr.className = C.a; arr.innerHTML = '<i data-lucide="chevron-up" class="size-4"></i>';
     sum.appendChild(txt); sum.appendChild(arr);
-    var dd = document.createElement('div'); dd.style.cssText = 'display:none;position:fixed;z-index:99999;flex-direction:column;'; dd.className = 'bg-white border border-default-200 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col';
+    var dd = document.createElement('div'); dd.style.cssText = 'display:none;position:fixed;z-index:99999;flex-direction:column;'; dd.className = 'bg-content1 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col';
     var ls = document.createElement('div'); ls.className = C.l; dd.appendChild(ls);
     wrap.appendChild(sum); ctr.innerHTML = ''; ctr.appendChild(wrap); document.body.appendChild(dd);
     var isOpen = false;

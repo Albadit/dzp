@@ -1,0 +1,32 @@
+@*
+    Roadmap teaser — upcoming features.
+*@
+@{
+    var items = new[] {
+        new { Icon = "bar-chart-3",     Bg = "bg-indigo-100", Color = "text-indigo-600", Title = "KPI dashboards per gebied" },
+        new { Icon = "clipboard-check", Bg = "bg-amber-100",  Color = "text-amber-600",  Title = "Moderatieflows en approvals" },
+        new { Icon = "refresh-cw",      Bg = "bg-green-100",  Color = "text-green-600",  Title = "Versiebeheer documenten" },
+        new { Icon = "bell",            Bg = "bg-purple-100", Color = "text-purple-600", Title = "Meer notificatieopties" }
+    };
+}
+
+<section aria-label="Roadmap" class="w-full bg-content2 py-20 flex flex-col items-center">
+    <div class="max-w-7xl w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
+        <div class="max-w-3xl flex flex-col items-center text-center gap-4">
+            <h2 class="text-3xl font-bold text-foreground-900">
+                Binnenkort nog meer
+            </h2>
+            <p class="text-foreground-600">Deze features staan al op de roadmap.</p>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl w-full">
+            @foreach (var rm in items) {
+            <div class="bg-background rounded-xl p-5 shadow-card flex flex-col items-center gap-3 text-center">
+                <div class="w-10 h-10 rounded-full @rm.Bg flex items-center justify-center">
+                    <i data-lucide="@rm.Icon" class="size-5 @rm.Color"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-foreground-900">@rm.Title</h3>
+            </div>
+            }
+        </div>
+    </div>
+</section>

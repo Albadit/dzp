@@ -1,0 +1,43 @@
+@*
+    Horizontal drag-scrollable groups strip.
+    Reads from PageData: communitySlug, displayGroups (List<DZP.CommunityAuth.CommunityAuth.GroupInfo>),
+                         groupImages (Dictionary<int,string>).
+*@
+@{
+    var communitySlug = (string)PageData["communitySlug"];
+    var displayGroups = (List<DZP.CommunityAuth.CommunityAuth.GroupInfo>)PageData["displayGroups"];
+    var groupImages   = (Dictionary<int, string>)PageData["groupImages"];
+}
+
+<section class="w-full">
+    <div class="w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-3 sm:gap-4 py-4 sm:py-6">
+        <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-foreground-900">Groepen</h2>
+            <a href="/@communitySlug/manage/groups" class="text-sm font-medium text-foreground-500 hover:text-primary transition flex items-center gap-1">
+                Ga naar <i data-lucide="arrow-right" class="size-3.5"></i>
+            </a>
+        </div>
+    </div>
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+        <div class="js-groups-strip flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+            @if (displayGroups.Count == 0) {
+                <div class="flex flex-col items-center gap-3 py-8 text-center w-full">
+                    <p class="text-sm text-foreground-400">Er zijn nog geen groepen in deze community.</p>
+                </div>
+            } else {
+                foreach (var g in displayGroups) {
+                    var groupImg = groupImages.ContainsKey(g.Id) && !string.IsNullOrEmpty(groupImages[g.Id])
+                        ? groupImages[g.Id]
+                        : "https://picsum.photos/seed/group" + g.Id + "/300/400";
+                    <div class="relative w-32 h-40 sm:w-36 sm:h-44 shrink-0 rounded-lg overflow-hidden group snap-start">
+                        <img src="@groupImg" alt="@g.Name" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <div class="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent"></div>
+                        <div class="relative flex items-end h-full p-3">
+                            <span class="text-xs font-semibold text-white leading-tight">@g.Name</span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</section>

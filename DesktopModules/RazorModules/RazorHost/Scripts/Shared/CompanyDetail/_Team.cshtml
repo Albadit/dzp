@@ -1,0 +1,42 @@
+@*
+    Team grid — manager cards (avatar + name + email).
+    Reads from PageData: managers (List<Dictionary<string,object>> with Name, Email, Image).
+*@
+@{
+    var managers = (List<Dictionary<string, object>>)PageData["managers"];
+}
+
+<section class="w-full">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div class="flex flex-col gap-3 sm:gap-4">
+            <h2 class="text-base font-semibold text-foreground-900">Team</h2>
+
+            @if (managers.Count == 0) {
+                <div class="flex flex-col items-center gap-3 py-8 text-center">
+                    <p class="text-sm text-foreground-400">Er zijn nog geen teamleden gekoppeld aan dit bedrijf.</p>
+                </div>
+            } else {
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach (var member in managers) {
+                        var name  = (string)member["Name"];
+                        var email = (string)member["Email"];
+                        var image = (string)member["Image"];
+                        <div class="flex items-center gap-4 p-4 rounded-xl border border-divider bg-background hover:border-primary/30 transition">
+                            <div class="size-14 rounded-full overflow-hidden border-2 border-divider shrink-0">
+                                <img src="@image" alt="@name" class="w-full h-full object-cover rounded-full" />
+                            </div>
+                            <div class="flex flex-col gap-0.5 min-w-0">
+                                <span class="text-sm font-semibold text-foreground-900 truncate">@name</span>
+                                @if (!string.IsNullOrEmpty(email)) {
+                                    <a href="mailto:@email" class="text-xs text-foreground-400 hover:text-primary transition truncate">
+                                        @email
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</section>

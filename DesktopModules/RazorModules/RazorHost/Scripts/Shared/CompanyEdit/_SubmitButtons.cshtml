@@ -1,0 +1,35 @@
+@*
+    Submit + cancel buttons for the company edit form.
+    Reads from PageData: communitySlug, companySlug.
+*@
+@{
+    var communitySlug = (string)PageData["communitySlug"];
+    var companySlug   = (string)PageData["companySlug"];
+}
+
+<div class="flex items-center gap-3 pt-2">
+    @{
+        PageData["text"]    = "Opslaan";
+        PageData["variant"] = "primary";
+        PageData["type"]    = "submit";
+        PageData["icon"]    = "save";
+        PageData["href"]    = null;
+        PageData["onclick"] = null;
+        PageData["id"]      = null;
+        PageData["name"]    = null;
+        PageData["value"]   = null;
+        PageData["disabled"]   = null;
+        PageData["extraClass"] = null;
+        PageData["attrs"]      = null;
+    }
+    @RenderPage("../Components/_Button.cshtml")
+
+    @{
+        PageData["text"]    = "Annuleren";
+        PageData["variant"] = "ghost";
+        PageData["icon"]    = null;
+        PageData["href"]    = "/" + communitySlug + "/companies/" + companySlug;
+        PageData["extraClass"] = "border border-divider";
+    }
+    @RenderPage("../Components/_Button.cshtml")
+</div>

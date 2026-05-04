@@ -1,0 +1,65 @@
+@*
+    Form-field renderer for ONE editable column inside the edit/create modal.
+
+    ViewData (required):
+      "fld-col"          – Dnn.Modules.TableDZP.Models.DataTableColumn instance
+      "fld-input-class"  – CSS class on the underlying input/lookup/dropzone
+                           (e.g. "dt-modal-input" or "dt-create-input")
+      "fld-lookups"      – Dictionary<string, List<KeyValuePair<string,string>>>
+      "fld-upload-url"   – Upload endpoint for image columns
+      "fld-empty-text"   – Localized "drop image" label
+      "fld-empty-hint"   – Localized image hint
+      "fld-remove-label" – Localized remove-image button label
+      "fld-lookup-class" – "dt-modal-lookup" or "dt-create-lookup"
+*@
+@{
+    var col           = ViewData["fld-col"]         as Dnn.Modules.TableDZP.Models.DataTableColumn;
+    var inputClass    = ViewData["fld-input-class"] as string ?? "dt-modal-input";
+    var lookupClass   = ViewData["fld-lookup-class"] as string ?? "dt-modal-lookup";
+    var lookups       = ViewData["fld-lookups"]     as System.Collections.Generic.IDictionary<string, System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, string>>>;
+    var uploadUrl     = ViewData["fld-upload-url"]  as string ?? "";
+    var dzText        = ViewData["fld-empty-text"]  as string ?? "Drop an image here";
+    var dzHint        = ViewData["fld-empty-hint"]  as string ?? "";
+    var dzRemoveLabel = ViewData["fld-remove-label"] as string ?? "Remove";
+}
+@if (col != null)
+{
+    <div>
+        <label class="block text-xs font-medium text-foreground-600 mb-1">
+            @col.Label @if (col.Required) { <span class="text-danger">*</span> }
+        </label>
+        @if (col.Type == "select" && lookups != null && lookups.ContainsKey(col.Key))
+        {
+            <div class="@lookupClass" data-col="@col.Key" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
+        }
+        else if (col.Type == "multiselect" && lookups != null && lookups.ContainsKey(col.Key))
+        {
+            <div class="@lookupClass" data-col="@col.Key" data-multi="true" @(col.Required ? Html.Raw("data-required=\"true\"") : null)></div>
+        }
+        else if (col.Type == "image")
+        {
+            @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Dropzone.cshtml", null, new ViewDataDictionary {
+                { "dz-input-class", inputClass },
+                { "dz-col",         col.Key },
+                { "dz-upload-url",  uploadUrl },
+                { "dz-required",    col.Required ? "true" : "" },
+                { "dz-empty-text",  dzText },
+                { "dz-empty-hint",  dzHint },
+                { "dz-remove-label", dzRemoveLabel }
+            })
+        }
+        else
+        {
+            @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_TextInput.cshtml", null, new ViewDataDictionary {
+                { "fld-class",       inputClass },
+                { "fld-type",        col.Type },
+                { "fld-col",         col.Key },
+                { "fld-required",    col.Required ? "true" : "" },
+                { "fld-maxlength",   col.MaxLength },
+                { "fld-pattern",     col.Pattern },
+                { "fld-pattern-msg", col.PatternMessage },
+                { "fld-placeholder", col.Placeholder ?? col.Label }
+            })
+        }
+    </div>
+}

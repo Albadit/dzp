@@ -1,0 +1,19 @@
+@*
+    Empty grid + sentinel + JSON data island.
+    The actual cards are rendered client-side by `_Script.cshtml` so the
+    initial HTML stays small even for users with hundreds of communities.
+    Reads from PageData: communitiesJson (string — pre-encoded JSON array).
+*@
+@{
+    var communitiesJson = (string)PageData["communitiesJson"];
+}
+
+<div id="dashCommunityGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+
+<div id="dashCommunityEmpty" class="hidden py-12 text-center">
+    <p class="text-sm text-foreground-400">Geen communities gevonden.</p>
+</div>
+
+<div id="dashCommunitySentinel" class="h-8"></div>
+
+<script id="dashCommunityData" type="application/json">@(new System.Web.HtmlString(communitiesJson))</script>

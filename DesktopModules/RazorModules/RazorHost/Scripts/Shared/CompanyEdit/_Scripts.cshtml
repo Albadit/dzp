@@ -1,0 +1,33 @@
+@*
+    Client-side wiring for the company-edit page:
+      - dropzone JS for the banner upload
+      - select.js for the "add member" picker
+      - company-edit.js (the AJAX layer for save / add / remove / toggle)
+      - bootstraps CE_USERS + CE_MEMBER_IDS so the picker filters out
+        users that are already team members.
+
+    Reads from PageData: allUsers (List<Dictionary<string,object>> with
+                         keys UserId, DisplayName),
+                         members (List<Dictionary<string,object>> with key UserId).
+*@
+@{
+    var allUsers = (List<Dictionary<string, object>>)PageData["allUsers"];
+    var members  = (List<Dictionary<string, object>>)PageData["members"];
+
+    var usersForJs = System.Linq.Enumerable.Select(allUsers, u => new {
+        value = ((int)u["UserId"]).ToString(),
+        label = (string)u["DisplayName"]
+    });
+    var memberIds  = System.Linq.Enumerable.Select(members, m => (int)m["UserId"]);
+    var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
+}
+
+<link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/module.css" />
+<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/dropzone.js"></script>
+<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/select.js"></script>
+<script>
+var CE_USERS = @(new HtmlString(jss.Serialize(usersForJs)));
+var CE_MEMBER_IDS = @(new HtmlString(jss.Serialize(memberIds)));
+</script>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/company-edit-init.js"></script>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/company-edit.js"></script>

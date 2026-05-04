@@ -1,0 +1,61 @@
+@*
+    Reusable button. Variants: "primary" (default), "danger", "secondary".
+
+    ViewData:
+      "btn-class"    – extra CSS classes (e.g. "dt-btn-add")
+      "btn-icon"     – lucide icon name
+      "btn-label"    – visible label
+      "btn-title"    – aria-label / tooltip (defaults to label)
+      "btn-variant"  – "primary" | "danger" | "secondary"
+      "btn-mobile"   – "true" to always show label even on mobile
+      "btn-data"     – dictionary of data-* attrs (e.g. data-target=tid)
+      "btn-type"     – "button" (default) | "submit"
+      "btn-extra"    – any extra raw HTML attributes
+*@
+@{
+    var bClass   = ViewData["btn-class"]   as string ?? "";
+    var bIcon    = ViewData["btn-icon"]    as string;
+    var bLabel   = ViewData["btn-label"]   as string ?? "";
+    var bTitle   = ViewData["btn-title"]   as string ?? bLabel;
+    var bVariant = ViewData["btn-variant"] as string ?? "primary";
+    var bMobile  = (ViewData["btn-mobile"] as string) == "true";
+    var bType    = ViewData["btn-type"]    as string ?? "button";
+    var bData    = ViewData["btn-data"]    as System.Collections.Generic.IDictionary<string, string>;
+    var bExtra   = ViewData["btn-extra"]   as string ?? "";
+
+    string colorClasses;
+    switch (bVariant)
+    {
+        case "danger":
+            colorClasses = "bg-danger text-white hover:bg-danger-700 focus-visible:ring-danger/40";
+            break;
+        case "secondary":
+            colorClasses = "bg-content2 text-foreground-700 hover:bg-default-200 focus-visible:ring-primary/40";
+            break;
+        default:
+            colorClasses = "bg-primary text-white hover:bg-primary-700 focus-visible:ring-primary/40";
+            break;
+    }
+
+    var dataAttrs = "";
+    if (bData != null)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var kv in bData) { sb.Append(' ').Append(kv.Key).Append("=\"").Append(System.Web.HttpUtility.HtmlEncode(kv.Value)).Append('"'); }
+        dataAttrs = sb.ToString();
+    }
+}
+<button type="@bType"
+        title="@bTitle"
+        aria-label="@bTitle"
+        class="@bClass shrink-0 inline-flex items-center gap-1.5 text-sm font-medium rounded-lg px-4 py-2 @colorClasses transition focus:outline-none focus-visible:ring-2"
+        @Html.Raw(dataAttrs) @Html.Raw(bExtra)>
+    @if (!string.IsNullOrEmpty(bIcon))
+    {
+        <i data-lucide="@bIcon" class="size-4"></i>
+    }
+    @if (!string.IsNullOrEmpty(bLabel))
+    {
+        <span class="@(bMobile ? "" : "hidden sm:inline")">@bLabel</span>
+    }
+</button>
