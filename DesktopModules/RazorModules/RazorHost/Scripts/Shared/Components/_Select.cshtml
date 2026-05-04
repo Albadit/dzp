@@ -65,11 +65,11 @@
 {
     <details id="@msId" class="js-ms-select group relative inline-block w-full text-sm font-[inherit]">
         <summary class="flex items-center gap-[0.3rem] min-h-10 px-2.5 py-[0.35rem]
-                        bg-white border border-default-300 rounded-lg
+                        bg-content2 rounded-lg
                         cursor-pointer select-none outline-none
-                        transition-[border-color,box-shadow] duration-150
-                        hover:border-default-400
-                        group-open:border-primary-500 group-open:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]
+                        transition-shadow duration-150
+                        hover:bg-primary/5
+                        group-open:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]
                         list-none [&::-webkit-details-marker]:hidden">
             @if (isPlaceholder)
             {
@@ -97,10 +97,22 @@
             </span>
         </summary>
 
-        <div class="absolute z-99999 left-0 right-0 mt-1
-                    bg-white border border-default-200 rounded-xl
+        <div class="absolute z-40 left-0 right-0 mt-1
+                    bg-content1 rounded-lg
                     shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col">
-            <div class="overflow-y-auto max-h-72 py-1">
+            @if (optionsArr.Count >= 8)
+            {
+                <div class="sticky top-0 z-10 bg-content1 px-3 pt-3 pb-2">
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-default-400 pointer-events-none flex items-center">
+                            <i data-lucide="search" class="size-4"></i>
+                        </span>
+                        <input type="text" placeholder="Search…" autocomplete="off"
+                               class="js-ms-search w-full pl-9 pr-3 py-2 text-sm bg-content2 rounded-xl outline-none border border-transparent focus:border-primary-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)] placeholder:text-default-400" />
+                    </div>
+                </div>
+            }
+            <div class="overflow-y-auto max-h-72 py-1 px-1">
                 @if (optionsArr.Count == 0)
                 {
                     <div class="py-3 px-4 text-center text-[0.8125rem] text-default-400">No options</div>
@@ -110,8 +122,8 @@
                     var val   = opt["value"].ToString();
                     var label = opt["label"].ToString();
                     var isSel = selectedSet.Contains(val);
-                    <label class="flex items-center justify-between gap-4 px-4 py-2.5
-                                  cursor-pointer select-none transition-colors
+                    <label class="flex items-center justify-between gap-4 px-3 py-2.5
+                                  cursor-pointer select-none transition-colors rounded-md
                                   has-checked:bg-primary-50
                                   hover:bg-primary-50 has-checked:hover:bg-primary-100">
                         @if (isSel)
@@ -133,8 +145,35 @@
         </div>
     </details>
 }
-@if (HttpContext.Current.Items["_select_bridge_loaded"] == null)
+@if (HttpContext.Current.Items["_blog_select_bridge_loaded"] == null)
 {
-    HttpContext.Current.Items["_select_bridge_loaded"] = true;
-<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/select.js"></script>
+    HttpContext.Current.Items["_blog_select_bridge_loaded"] = true;
+<script src="/DesktopModules/MVC/Dnn.Modules.Blog/Resources/js/select.js"></script>
+<script>
+(function(){
+  if (window.__msDetailsFilter) return; window.__msDetailsFilter = true;
+  document.addEventListener('input', function(e){
+    var inp = e.target;
+    if (!inp || !inp.classList || !inp.classList.contains('js-ms-search')) return;
+    var det = inp.closest('details.js-ms-select'); if (!det) return;
+    var q = (inp.value || '').toLowerCase();
+    det.querySelectorAll('label').forEach(function(lb){
+      var t = (lb.textContent || '').toLowerCase();
+      lb.style.display = (!q || t.indexOf(q) !== -1) ? '' : 'none';
+    });
+  });
+  document.addEventListener('toggle', function(e){
+    var det = e.target;
+    if (!det || !det.classList || !det.classList.contains('js-ms-select')) return;
+    if (det.open) {
+      var inp = det.querySelector('.js-ms-search');
+      if (inp) {
+        inp.value = '';
+        det.querySelectorAll('label').forEach(function(lb){ lb.style.display=''; });
+        setTimeout(function(){ try{ inp.focus(); }catch(_){} }, 0);
+      }
+    }
+  }, true);
+})();
+</script>
 }

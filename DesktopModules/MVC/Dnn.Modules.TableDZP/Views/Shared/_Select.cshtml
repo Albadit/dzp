@@ -100,6 +100,18 @@
         <div class="absolute z-99999 left-0 right-0 mt-1
                     bg-content1 rounded-lg
                     shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col">
+            @if (optionsArr.Count >= 8)
+            {
+                <div class="sticky top-0 z-10 bg-content1 px-3 pt-3 pb-2">
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-default-400 pointer-events-none flex items-center">
+                            <i data-lucide="search" class="size-4"></i>
+                        </span>
+                        <input type="text" placeholder="Search…" autocomplete="off"
+                               class="js-ms-search w-full pl-9 pr-3 py-2 text-sm bg-content2 rounded-xl outline-none border border-transparent focus:border-primary-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)] placeholder:text-default-400" />
+                    </div>
+                </div>
+            }
             <div class="overflow-y-auto max-h-72 py-1 px-1">
                 @if (optionsArr.Count == 0)
                 {
@@ -137,4 +149,31 @@
 {
     HttpContext.Current.Items["_select_bridge_loaded"] = true;
 <script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/select.js"></script>
+<script>
+(function(){
+  if (window.__msDetailsFilter) return; window.__msDetailsFilter = true;
+  document.addEventListener('input', function(e){
+    var inp = e.target;
+    if (!inp || !inp.classList || !inp.classList.contains('js-ms-search')) return;
+    var det = inp.closest('details.js-ms-select'); if (!det) return;
+    var q = (inp.value || '').toLowerCase();
+    det.querySelectorAll('label').forEach(function(lb){
+      var t = (lb.textContent || '').toLowerCase();
+      lb.style.display = (!q || t.indexOf(q) !== -1) ? '' : 'none';
+    });
+  });
+  document.addEventListener('toggle', function(e){
+    var det = e.target;
+    if (!det || !det.classList || !det.classList.contains('js-ms-select')) return;
+    if (det.open) {
+      var inp = det.querySelector('.js-ms-search');
+      if (inp) {
+        inp.value = '';
+        det.querySelectorAll('label').forEach(function(lb){ lb.style.display=''; });
+        setTimeout(function(){ try{ inp.focus(); }catch(_){} }, 0);
+      }
+    }
+  }, true);
+})();
+</script>
 }

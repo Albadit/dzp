@@ -14,15 +14,24 @@ var MultiSelect = (function () {
     i: 'peer sr-only',
     it: 'text-sm font-normal text-default-800 whitespace-nowrap peer-checked:font-medium peer-checked:text-primary-700',
     ck: 'hidden peer-checked:flex shrink-0 items-center text-primary-600 leading-none',
-    em: 'py-3 px-4 text-center text-[0.8125rem] text-default-400'
+    em: 'py-3 px-4 text-center text-[0.8125rem] text-default-400',
+    sw: 'sticky top-0 z-10 bg-white px-3 pt-3 pb-2',
+    swr: 'relative',
+    sxi: 'absolute left-3 top-1/2 -translate-y-1/2 text-default-400 pointer-events-none flex items-center',
+    sx: 'w-full pl-9 pr-3 py-2 text-sm bg-content2 rounded-xl outline-none border border-transparent focus:border-primary-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)] placeholder:text-default-400'
   }; function create(ctr, cfg) {
-    cfg = cfg || {}; var ph = cfg.placeholder || 'Select\u2026', opts = cfg.options || [], sel = cfg.selected || [], sgl = !!cfg.single, chg = cfg.onChange || null; uid++; var nm = 'ns_' + uid, itp = sgl ? 'radio' : 'checkbox';
+    cfg = cfg || {}; var ph = cfg.placeholder || 'Select\u2026', opts = cfg.options || [], sel = cfg.selected || [], sgl = !!cfg.single, chg = cfg.onChange || null; var sth = (typeof cfg.searchThreshold === 'number') ? cfg.searchThreshold : 8; uid++; var nm = 'ns_' + uid, itp = sgl ? 'radio' : 'checkbox';
     var wrap = document.createElement('div'); wrap.className = C.d;
     var sum = document.createElement('div'); sum.className = C.s; sum.tabIndex = 0;
     var txt = document.createElement('span');
     var arr = document.createElement('span'); arr.className = C.a; arr.innerHTML = '<i data-lucide="chevron-up" class="size-4"></i>';
     sum.appendChild(txt); sum.appendChild(arr);
     var dd = document.createElement('div'); dd.style.cssText = 'display:none;position:fixed;z-index:99999;flex-direction:column;'; dd.className = 'bg-white border border-default-200 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col';
+    var sw = document.createElement('div'); sw.className = C.sw;
+    var swr = document.createElement('div'); swr.className = C.swr;
+    var sxi = document.createElement('span'); sxi.className = C.sxi; sxi.innerHTML = '<i data-lucide="search" class="size-4"></i>';
+    var sx = document.createElement('input'); sx.type = 'text'; sx.placeholder = 'Search\u2026'; sx.className = C.sx; sx.autocomplete = 'off';
+    swr.appendChild(sxi); swr.appendChild(sx); sw.appendChild(swr); dd.appendChild(sw);
     var ls = document.createElement('div'); ls.className = C.l; dd.appendChild(ls);
     wrap.appendChild(sum); ctr.innerHTML = ''; ctr.appendChild(wrap); document.body.appendChild(dd);
     var isOpen = false;
@@ -39,12 +48,17 @@ var MultiSelect = (function () {
         lb.appendChild(ip); lb.appendChild(sp); lb.appendChild(ckEl); ls.appendChild(lb);
       }
     }
-    function rn() { ro(); ut(); if (window.lucide) lucide.createIcons(); }
+    function us() { sw.style.display = opts.length >= sth ? '' : 'none'; }
+    function rn() { ro(); ut(); us(); if (window.lucide) lucide.createIcons(); }
     function pos() { var r = sum.getBoundingClientRect(); var g = 4; dd.style.left = r.left + 'px'; dd.style.minWidth = r.width + 'px'; dd.style.visibility = 'hidden'; dd.style.display = 'flex'; var dh = dd.offsetHeight; dd.style.visibility = ''; if (!isOpen) dd.style.display = 'none'; var sb = window.innerHeight - r.bottom - g; var sa = r.top - g; if (sb < dh && sa > sb) { dd.style.top = (r.top - dh - g) + 'px'; } else { dd.style.top = (r.bottom + g) + 'px'; } }
-    function open() { if (isOpen) return; isOpen = true; sum.className = C.sOpen; arr.className = C.aOpen; dd.style.display = 'flex'; pos(); window.addEventListener('resize', onR); window.addEventListener('scroll', onS, true); }
+    function open() { if (isOpen) return; isOpen = true; sum.className = C.sOpen; arr.className = C.aOpen; dd.style.display = 'flex'; sx.value = ''; flt(''); pos(); setTimeout(function () { if (sw.style.display !== 'none') { try { sx.focus(); } catch (e) { } } }, 0); window.addEventListener('resize', onR); window.addEventListener('scroll', onS, true); }
     function close() { if (!isOpen) return; isOpen = false; sum.className = C.s; arr.className = C.a; dd.style.display = 'none'; window.removeEventListener('resize', onR); window.removeEventListener('scroll', onS, true); }
     function onR() { if (isOpen) pos(); }
     function onS(e) { if (isOpen && !dd.contains(e.target)) close(); }
+    function flt(q) { q = (q || '').toLowerCase(); var lbs = ls.querySelectorAll('label'); var any = false; for (var i = 0; i < lbs.length; i++) { var t = (lbs[i].textContent || '').toLowerCase(); var m = !q || t.indexOf(q) !== -1; lbs[i].style.display = m ? '' : 'none'; if (m) any = true; } var em = ls.querySelector('.dt-ms-empty'); if (!any && opts.length) { if (!em) { em = document.createElement('div'); em.className = C.em + ' dt-ms-empty'; em.textContent = 'No matches'; ls.appendChild(em); } em.style.display = ''; } else if (em) { em.style.display = 'none'; } if (isOpen) pos(); }
+    sx.addEventListener('input', function () { flt(sx.value); });
+    sx.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); close(); sum.focus(); } e.stopPropagation(); });
+    sx.addEventListener('click', function (e) { e.stopPropagation(); });
     sum.addEventListener('click', function () { if (isOpen) close(); else open(); });
     sum.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (isOpen) close(); else open(); } if (e.key === 'Escape') close(); });
     ls.addEventListener('change', function (e) { if (e.target.tagName === 'INPUT') { sel = []; var ii = ls.querySelectorAll('input:checked'); for (var i = 0; i < ii.length; i++)sel.push(ii[i].value); ut(); if (isOpen) pos(); if (sgl) close(); if (chg) chg(sel.slice()); } });
