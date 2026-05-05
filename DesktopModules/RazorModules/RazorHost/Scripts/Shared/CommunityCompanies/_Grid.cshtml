@@ -43,12 +43,6 @@
             <!-- GRID VIEW (virtualized — JS appends visible cards in batches) -->
             <div id="companiesGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
-            <!-- LIST VIEW (virtualized — fixed row height, windowed) -->
-            <div id="companiesList" class="hidden relative">
-                <div id="companiesListSpacer" style="position:relative;width:100%;"></div>
-                <div id="companiesListWindow" class="absolute inset-x-0 top-0 flex flex-col gap-2" style="will-change:transform;"></div>
-            </div>
-
             @* Sentinel for async batch rendering of grid view. *@
             <div id="companiesSentinel" class="h-1 w-full"></div>
 

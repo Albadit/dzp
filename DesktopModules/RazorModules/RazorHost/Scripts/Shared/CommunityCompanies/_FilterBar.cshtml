@@ -1,7 +1,6 @@
 @*
-    Search input + count + grid/list view toggle.
+    Search input + count.
     Reads from PageData: companyCount (int).
-    The toggle buttons call window.setView() defined in _Script.cshtml.
 *@
 @{
     var companyCount = (int)PageData["companyCount"];
@@ -18,19 +17,6 @@
                 PageData["extraClass"]  = "flex-1";
             }
             @RenderPage("../Components/_SearchBox.cshtml")
-
-            <div class="flex items-center gap-2">
-                <div class="flex items-center rounded-lg border border-divider bg-background p-0.5">
-                    <button type="button" id="btnGrid" onclick="setView('grid')" title="Rasterweergave"
-                            class="flex items-center justify-center size-8 rounded-md transition bg-primary text-white">
-                        <i data-lucide="layout-grid" class="size-4"></i>
-                    </button>
-                    <button type="button" id="btnList" onclick="setView('list')" title="Lijstweergave"
-                            class="flex items-center justify-center size-8 rounded-md transition text-foreground-400 hover:text-foreground-700">
-                        <i data-lucide="list" class="size-4"></i>
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 </section>

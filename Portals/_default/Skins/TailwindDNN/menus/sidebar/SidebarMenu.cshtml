@@ -182,7 +182,7 @@
     <!-- Header (mobile only) -->
     <div class="h-17.5 flex items-center justify-between px-4 py-3 border-b border-divider lg:hidden shrink-0">
         <a href="@logoHref" class="self-stretch">
-            <img src="@logoUrl" alt="@(ps != null ? ps.PortalName : "")" class="h-full"/>
+            <img src="@logoUrl" alt="@(ps != null ? ps.PortalName : "")" class="h-full w-auto" decoding="async" fetchpriority="high" />
         </a>
         <button type="button" id="sidebar-close" class="p-1 rounded-md hover:bg-default-100 transition-colors" aria-label="Close sidebar">
             <i data-lucide="x" class="size-5 text-foreground-500"></i>

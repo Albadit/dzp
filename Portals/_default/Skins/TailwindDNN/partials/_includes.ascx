@@ -16,8 +16,10 @@
 <!-- DNN Pane & Module Components styling (optional) -->
 <dnn:DnnCssInclude runat="server" FilePath="resources/css/dnn.css" Priority="100" PathNameAlias="SkinPath" />
 
-<!-- Tailwind CSS Browser Runtime: compiles Tailwind classes in the browser from the <style> block below -->
-<dnn:DnnJsInclude runat="server" FilePath="resources/js/tailwind4.js" Priority="100" PathNameAlias="SkinPath" ForceProvider="DnnFormBottomProvider" />
+<!-- Pre-compiled Tailwind CSS (built once via build/build.ps1). Loads in <head> for instant first paint — no FOUC. -->
+<dnn:DnnCssInclude runat="server" FilePath="resources/css/tailwind.css" Priority="1" PathNameAlias="SkinPath" />
+
+<!-- Lucide icons (still needed at runtime to render <i data-lucide="..."> placeholders) -->
 <dnn:DnnJsInclude runat="server" FilePath="resources/js/lucide.min.js" Priority="100" PathNameAlias="SkinPath" ForceProvider="DnnFormBottomProvider" />
 <dnn:DnnJsInclude runat="server" FilePath="resources/js/theme-switcher.js" Priority="101" PathNameAlias="SkinPath" ForceProvider="DnnFormBottomProvider" />
 
@@ -27,7 +29,3 @@
     if (window.lucide) lucide.createIcons();
   });
 </script>
-
-<!-- Tailwind theme config for browser runtime to process -->
-<!--#include file="../resources/css/_theme.html" -->
-<!--#include file="../resources/css/_global.html" -->

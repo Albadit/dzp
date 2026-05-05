@@ -1,9 +1,8 @@
 /*
-    Client-side controller for the Bedrijven page:
+    Client-side controller for the Bedrijven page (grid-only):
       - Parses the JSON island
       - Renders grid in batches via IntersectionObserver
-      - Renders list as a windowed virtual scroller
-      - Handles search + view toggle (persisted in localStorage)
+      - Handles search
 
     Reads window.COMPANIES_SLUG (set by the server-rendered partial).
 */
@@ -11,15 +10,10 @@
     var dataEl  = document.getElementById('companiesData');
     var skel    = document.getElementById('companiesSkeleton');
     var gridEl  = document.getElementById('companiesGrid');
-    var listEl  = document.getElementById('companiesList');
-    var listSp  = document.getElementById('companiesListSpacer');
-    var listWin = document.getElementById('companiesListWindow');
     var sentinel= document.getElementById('companiesSentinel');
     var input   = document.getElementById('companySearch');
     var clearBtn= document.getElementById('companySearchClear');
     var countEl = document.getElementById('companyCount');
-    var btnGrid = document.getElementById('btnGrid');
-    var btnList = document.getElementById('btnList');
     var noRes   = document.getElementById('noResults');
     var slug    = window.COMPANIES_SLUG || '';
 
@@ -29,14 +23,8 @@
     try { ALL = JSON.parse(dataEl.textContent || dataEl.innerText || '[]'); } catch(e) { ALL = []; }
 
     var FILTERED = ALL.slice();
-    var MODE = 'grid';
     var GRID_BATCH = 24;
     var gridRendered = 0;
-    var ROW_H = 64;
-    var BUFFER = 5;
-
-    var activeClass   = 'bg-primary text-white';
-    var inactiveClass = 'text-foreground-400 hover:text-foreground-700';
 
     function escHtml(s) {
         if (s == null) return '';
@@ -56,7 +44,7 @@
 
     function gridCardHtml(c) {
         var addrBlock = c.addr ? ('<div class="flex items-center gap-1.5 text-xs text-foreground-400"><i data-lucide="map-pin" class="size-3 shrink-0"></i><span class="truncate">' + escHtml(c.addr) + '</span></div>') : '';
-        var descBlock = c.desc ? ('<p class="text-sm text-foreground-500 leading-relaxed line-clamp-2">' + escHtml(c.desc) + '</p>') : '';
+        var descBlock = c.desc ? ('<p class="text-sm text-foreground-500 leading-relaxed line-clamp-2 grow">' + escHtml(c.desc) + '</p>') : '';
         var mcLabel   = (c.mc === 1 ? 'medewerker' : 'medewerkers');
         return '<a href="/' + escHtml(slug) + '/companies/' + escHtml(c.slug) + '"' +
             ' class="company-card group flex flex-col gap-3 p-5 rounded-xl border border-divider bg-background hover:border-primary/40 transition">' +
@@ -75,17 +63,6 @@
         '</a>';
     }
 
-    function listRowHtml(c) {
-        var addrBlock = c.addr ? ('<span class="text-xs text-foreground-400 truncate">' + escHtml(c.addr) + '</span>') : '';
-        return '<a href="/' + escHtml(slug) + '/companies/' + escHtml(c.slug) + '"' +
-            ' class="company-card group flex items-center gap-4 px-4 py-3 rounded-xl border border-divider bg-background hover:border-primary/40 transition" style="height:' + (ROW_H - 8) + 'px;">' +
-            avatarHtml(c, 'size-10', 'size-4') +
-            '<div class="flex flex-col gap-0.5 min-w-0 flex-1"><h3 class="text-sm font-semibold text-foreground-900 group-hover:text-primary transition truncate">' + escHtml(c.name) + '</h3>' + addrBlock + '</div>' +
-            '<div class="hidden sm:flex items-center gap-1.5 text-xs text-foreground-400 shrink-0"><i data-lucide="users" class="size-3.5"></i><span>' + c.mc + '</span></div>' +
-            '<i data-lucide="chevron-right" class="size-4 text-foreground-300 group-hover:text-primary shrink-0 transition"></i>' +
-        '</a>';
-    }
-
     var gridIo = null;
     function renderGridBatch() {
         if (gridRendered >= FILTERED.length) return;
@@ -99,52 +76,17 @@
     function resetGrid() {
         gridEl.innerHTML = '';
         gridRendered = 0;
-        if (MODE === 'grid') renderGridBatch();
+        renderGridBatch();
     }
     function ensureGridObserver() {
-        if (gridIo || typeof IntersectionObserver === 'undefined') return;
+        if (gridIo || typeof IntersectionObserver === 'undefined' || !sentinel) return;
         gridIo = new IntersectionObserver(function (entries) {
             for (var i = 0; i < entries.length; i++) {
-                if (entries[i].isIntersecting && MODE === 'grid') renderGridBatch();
+                if (entries[i].isIntersecting) renderGridBatch();
             }
         }, { rootMargin: '400px 0px' });
         gridIo.observe(sentinel);
     }
-
-    var listScrollHandler = null;
-    function renderListWindow() {
-        var total = FILTERED.length;
-        listSp.style.height = (total * ROW_H) + 'px';
-        var rect = listEl.getBoundingClientRect();
-        var scrollTop = Math.max(0, -rect.top);
-        var viewport  = window.innerHeight || document.documentElement.clientHeight;
-        var first = Math.max(0, Math.floor(scrollTop / ROW_H) - BUFFER);
-        var last  = Math.min(total, Math.ceil((scrollTop + viewport) / ROW_H) + BUFFER);
-        var html = '';
-        for (var i = first; i < last; i++) html += listRowHtml(FILTERED[i]);
-        listWin.style.transform = 'translateY(' + (first * ROW_H) + 'px)';
-        listWin.innerHTML = html;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-    function attachListScroll() {
-        if (listScrollHandler) return;
-        listScrollHandler = function () { if (MODE === 'list') renderListWindow(); };
-        window.addEventListener('scroll', listScrollHandler, { passive: true });
-        window.addEventListener('resize', listScrollHandler);
-    }
-
-    function setView(mode) {
-        MODE = (mode === 'list') ? 'list' : 'grid';
-        var isGrid = MODE === 'grid';
-        gridEl.classList.toggle('hidden', !isGrid);
-        listEl.classList.toggle('hidden', isGrid);
-        btnGrid.className = 'flex items-center justify-center size-8 rounded-md transition ' + (isGrid ? activeClass : inactiveClass);
-        btnList.className = 'flex items-center justify-center size-8 rounded-md transition ' + (isGrid ? inactiveClass : activeClass);
-        try { localStorage.setItem('companiesView', MODE); } catch(e) {}
-        if (isGrid) { resetGrid(); ensureGridObserver(); }
-        else        { renderListWindow(); attachListScroll(); }
-    }
-    window.setView = setView;
 
     var searchTimer = null;
     function applyFilter() {
@@ -161,8 +103,7 @@
             noRes.classList.toggle('hidden', FILTERED.length > 0);
             noRes.classList.toggle('flex',   FILTERED.length === 0);
         }
-        if (MODE === 'grid') resetGrid();
-        else                 renderListWindow();
+        resetGrid();
     }
     if (input) {
         input.addEventListener('input', function () {
@@ -179,9 +120,9 @@
 
     function boot() {
         if (skel) skel.parentNode && skel.parentNode.removeChild(skel);
-        var saved = 'grid';
-        try { saved = localStorage.getItem('companiesView') || 'grid'; } catch(e) {}
-        setView(saved);
+        gridEl.classList.remove('hidden');
+        resetGrid();
+        ensureGridObserver();
     }
     if ('requestIdleCallback' in window) {
         requestIdleCallback(boot, { timeout: 200 });

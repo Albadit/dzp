@@ -97,7 +97,7 @@
             </span>
         </summary>
 
-        <div class="absolute z-40 left-0 right-0 mt-1
+        <div class="absolute z-40 top-full left-0 right-0 mt-1
                     bg-content1 rounded-lg
                     shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col">
             @if (optionsArr.Count >= 8)
@@ -122,17 +122,17 @@
                     var val   = opt["value"].ToString();
                     var label = opt["label"].ToString();
                     var isSel = selectedSet.Contains(val);
-                    <label class="flex items-center justify-between gap-4 px-3 py-2.5
+                    <label class="relative flex items-center justify-between gap-4 px-3 py-2.5
                                   cursor-pointer select-none transition-colors rounded-md
                                   has-checked:bg-primary-50
                                   hover:bg-primary-50 has-checked:hover:bg-primary-100">
                         @if (isSel)
                         {
-                            <input type="@inputType" name="@msName" value="@val" checked="checked" class="peer sr-only" />
+                            <input type="@inputType" name="@msName" value="@val" checked="checked" class="peer absolute inset-0 w-full h-full opacity-0 m-0 cursor-pointer" />
                         }
                         else
                         {
-                            <input type="@inputType" name="@msName" value="@val" class="peer sr-only" />
+                            <input type="@inputType" name="@msName" value="@val" class="peer absolute inset-0 w-full h-full opacity-0 m-0 cursor-pointer" />
                         }
                         <span class="text-sm font-normal text-default-800 whitespace-nowrap
                                      peer-checked:font-medium peer-checked:text-primary-700">@label</span>
