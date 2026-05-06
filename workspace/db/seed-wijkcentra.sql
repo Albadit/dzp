@@ -68,6 +68,12 @@ DECLARE @BeheerderRole INT = (
     WHERE RoleName = N'Community beheerder'
 );
 
+DECLARE @LidRole INT = (
+    SELECT TOP 1 RoleID
+    FROM Roles
+    WHERE RoleName = N'Lid'
+);
+
 IF @ModuleId IS NULL
 BEGIN
     RAISERROR('No Dnn.Modules.Blog module instance found. Add the Blog module to a page first.', 16, 1);
@@ -424,6 +430,23 @@ WHERE NOT EXISTS (
     WHERE x.UserId = u.UserId
       AND x.CommunityId = pc.CommunityId
 );
+
+-- Every member ("lid") gets the Lid role on join.
+IF @LidRole IS NOT NULL
+BEGIN
+    INSERT INTO UserCommunityRole (UserCommunityId, RoleId)
+    SELECT uc.Id,
+           @LidRole
+    FROM UserCommunity uc
+    JOIN #PlanCommunities pc ON pc.CommunityId = uc.CommunityId
+    JOIN #PlanUsers pu ON pu.UserId = uc.UserId
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM UserCommunityRole x
+        WHERE x.UserCommunityId = uc.Id
+          AND x.RoleId = @LidRole
+    );
+END;
 
 IF @BeheerderRole IS NOT NULL
 BEGIN

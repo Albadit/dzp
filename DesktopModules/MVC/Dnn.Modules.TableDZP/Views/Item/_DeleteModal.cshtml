@@ -10,7 +10,9 @@
     var tid = ViewData["tid"] as string ?? Model.TableId;
 }
 <!-- Delete confirm modal -->
-<div id="@(tid)-del-modal" class="dt-del-modal hidden fixed inset-0 z-1100 flex items-center justify-center bg-overlay backdrop-blur-sm">
+<div id="@(tid)-del-modal" class="dt-del-modal hidden fixed inset-0 z-1100 flex items-center justify-center bg-overlay backdrop-blur-sm"
+     data-msg-single="@L("DeleteConfirm.Message")"
+     data-msg-bulk="@L("DeleteConfirm.MessageBulk")">
     <div class="bg-background rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
         <form onsubmit="event.preventDefault();this.querySelector('.dt-del-confirm').click();">
             <div class="px-5 py-6 text-center">

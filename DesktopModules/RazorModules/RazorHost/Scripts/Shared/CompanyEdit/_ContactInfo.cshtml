@@ -54,9 +54,11 @@
         @{
             PageData["id"]          = "website";
             PageData["name"]        = "website";
-            PageData["type"]        = "url";
+            // Use type="text" (not "url") so the browser doesn't enforce a
+            // scheme — users can enter "bedrijf.nl" without https://.
+            PageData["type"]        = "text";
             PageData["value"]       = website;
-            PageData["placeholder"] = "https://bedrijf.nl";
+            PageData["placeholder"] = "bedrijf.nl";
         }
         @RenderPage("../Components/_Input.cshtml")
     </div>

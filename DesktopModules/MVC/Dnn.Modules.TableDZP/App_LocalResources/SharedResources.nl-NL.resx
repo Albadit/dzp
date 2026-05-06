@@ -72,6 +72,9 @@
   <data name="DeleteConfirm.Message" xml:space="preserve">
     <value>Dit item wordt definitief verwijderd.</value>
   </data>
+  <data name="DeleteConfirm.MessageBulk" xml:space="preserve">
+    <value>{0} item(s) worden definitief verwijderd.</value>
+  </data>
   <data name="NoItems.Text" xml:space="preserve">
     <value>Geen items gevonden. Gebruik het modulemenu om een nieuw item toe te voegen.</value>
   </data>
@@ -83,6 +86,12 @@
   </data>
   <data name="AddNewItem.Text" xml:space="preserve">
     <value>Nieuw item toevoegen</value>
+  </data>
+  <data name="New.Text" xml:space="preserve">
+    <value>Nieuw</value>
+  </data>
+  <data name="Search.Placeholder" xml:space="preserve">
+    <value>Zoeken…</value>
   </data>
   <data name="DropImage.Text" xml:space="preserve">
     <value>Sleep een afbeelding hier of klik om te uploaden</value>

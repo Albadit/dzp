@@ -26,10 +26,15 @@
 
     @{
         PageData["text"]    = "Annuleren";
-        PageData["variant"] = "ghost";
+        // "ghost" swaps text to white on hover, but Tailwind's JIT can purge
+        // the dynamically-built `hover:text-white` class, leaving the label
+        // invisible against the filled hover background. Use the stable
+        // bordered variant on the default colour instead.
+        PageData["variant"] = "bordered";
+        PageData["color"]   = "default";
         PageData["icon"]    = null;
         PageData["href"]    = "/" + communitySlug + "/companies/" + companySlug;
-        PageData["extraClass"] = "border border-divider";
+        PageData["extraClass"] = null;
     }
     @RenderPage("../Components/_Button.cshtml")
 </div>

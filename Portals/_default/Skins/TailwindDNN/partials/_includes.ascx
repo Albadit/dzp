@@ -1,11 +1,6 @@
 <dnn:META ID="mobileScale" runat="server" Name="viewport" Content="width=device-width, initial-scale=1.0" />
 <dnn:DnnCssExclude runat="server" Name="dnndefault" />
 
-<!-- Anti-FOUC: set theme on <html> before first paint -->
-<script>
-  (function(){var t=localStorage.getItem('theme')||((window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');var h=document.documentElement;h.setAttribute('data-theme',t);h.className=h.className.replace(/\b(light|dark)\b/g,'').trim()+' '+t;})();
-</script>
-
 <!-- Google Fonts: Inter -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,15 +10,14 @@
 <dnn:DnnCssInclude runat="server" FilePath="resources/css/default.css" Priority="2" PathNameAlias="SkinPath" />
 <!-- DNN Pane & Module Components styling (optional) -->
 <dnn:DnnCssInclude runat="server" FilePath="resources/css/dnn.css" Priority="100" PathNameAlias="SkinPath" />
-
-<!-- Pre-compiled Tailwind CSS (built once via build/build.ps1). Loads in <head> for instant first paint — no FOUC. -->
+<!-- Pre-compiled Tailwind CSS Loads in <head> -->
 <dnn:DnnCssInclude runat="server" FilePath="resources/css/tailwind.css" Priority="1" PathNameAlias="SkinPath" />
 
-<!-- Lucide icons (still needed at runtime to render <i data-lucide="..."> placeholders) -->
+<!-- Tailwind CSS Browser Runtime: compiles Tailwind classes in the browser from the <style> block below -->
+<dnn:DnnJsInclude runat="server" FilePath="resources/js/tailwind4.js" Priority="100" PathNameAlias="SkinPath" ForceProvider="DnnFormBottomProvider" />
 <dnn:DnnJsInclude runat="server" FilePath="resources/js/lucide.min.js" Priority="100" PathNameAlias="SkinPath" ForceProvider="DnnFormBottomProvider" />
-<dnn:DnnJsInclude runat="server" FilePath="resources/js/theme-switcher.js" Priority="101" PathNameAlias="SkinPath" ForceProvider="DnnFormBottomProvider" />
 
-<!-- Initialize Lucide icons globally after the DOM is ready -->
+<!-- Initialize Lucide icons. Wait for DOMContentLoaded so the body-bottom lucide.min.js has executed. -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     if (window.lucide) lucide.createIcons();

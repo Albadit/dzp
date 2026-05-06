@@ -53,10 +53,40 @@
         var fd = new FormData();
         fd.append('file', file);
 
+        // DNN's WebAPI returns 401 for non-superuser callers unless the
+        // request carries the ServicesFramework headers. Match the headers
+        // that Dnn.Modules.Blog's upload uses (those work end-to-end for
+        // community beheer / company owner roles).
+        var headers = { 'Accept': 'application/json' };
+        try {
+            // RequestVerificationToken: prefer ServicesFramework, fall back
+            // to the page-level hidden input.
+            var tok = '';
+            if (window.jQuery && typeof jQuery.ServicesFramework === 'function') {
+                var sf = jQuery.ServicesFramework(0);
+                if (sf && typeof sf.getAntiForgeryValue === 'function') {
+                    tok = sf.getAntiForgeryValue() || '';
+                }
+            }
+            if (!tok) {
+                var input = document.querySelector('input[name="__RequestVerificationToken"]')
+                         || document.getElementById('__RequestVerificationToken');
+                if (input && input.value) tok = input.value;
+            }
+            if (tok) headers['RequestVerificationToken'] = tok;
+
+            // ModuleId: try data-module-id on a wrapping element, else 0.
+            var modIdEl = dz.closest('[data-module-id]');
+            headers['ModuleId'] = (modIdEl && modIdEl.getAttribute('data-module-id')) || '0';
+
+            // TabId: DNN exposes it through dnn.getVar('sf_tabId').
+            headers['TabId'] = (window.dnn && dnn.getVar && dnn.getVar('sf_tabId')) || '';
+        } catch (_) { /* best-effort */ }
+
         fetch(url, {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' },
+            headers: headers,
             body: fd
         })
         .then(function (r) {

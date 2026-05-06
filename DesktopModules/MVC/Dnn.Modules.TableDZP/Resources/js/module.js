@@ -2,6 +2,27 @@ function initDataTable(tid) {
   var root = document.getElementById(tid);
   if (!root) return;
 
+  // ── One-time global interceptor: DNN MVC modules render INSIDE a parent
+  // <form>, and the inner <form onsubmit="…"> our modals declare gets
+  // dropped by the HTML5 parser (nested forms aren't allowed). The outer
+  // DNN form would then submit on Enter / button-click and full-page
+  // reload us. Capture submit events at the document level and cancel any
+  // that originated from our table region or modals.
+  if (!window.__dtSubmitGuard) {
+    window.__dtSubmitGuard = true;
+    document.addEventListener('submit', function (e) {
+      var t = e.target;
+      if (!t || !t.querySelector) return;
+      // Anything inside a dt root or one of our modals: block native submit.
+      if (t.closest && (
+            t.closest('[id^="dt-mod-"]') ||
+            t.closest('.dt-modal, .dt-del-modal, .dt-create-modal'))) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+  }
+
   var pageSize = parseInt(root.dataset.pageSize) || 10;
   var currentPage = 1;
   var sortCol = null, sortDir = null;
@@ -109,19 +130,84 @@ function initDataTable(tid) {
   }
 
   function postForm(fields) {
-    var form = document.createElement('form');
-    form.method = 'post';
-    form.style.display = 'none';
-    fields['_dt_id'] = tid;
-    for (var name in fields) {
-      var input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = name;
-      input.value = fields[name];
-      form.appendChild(input);
-    }
-    document.body.appendChild(form);
-    form.submit();
+    // AJAX submit: POST the same URL, swap the #tid region with the fresh
+    // HTML the controller renders. Keeps the page (and DNN chrome) intact.
+    var fd = new FormData();
+    fd.append('_dt_id', tid);
+    for (var name in fields) fd.append(name, fields[name]);
+
+    fetch(window.location.pathname + window.location.search, {
+      method: 'POST',
+      body: fd,
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function (html) {
+      // DNN may wrap the response or return a partial without <html><body>;
+      // wrap the text in a synthetic full document so DOMParser produces a
+      // predictable tree we can query for both #tid and the modal siblings.
+      var doc = new DOMParser().parseFromString(
+        '<!doctype html><html><body>' + html + '</body></html>', 'text/html');
+      var newRoot = doc.getElementById(tid);
+      if (!newRoot) {
+        console.warn('[dt] AJAX response did not contain #' + tid + '; aborting swap (page NOT reloaded). Inspect the response text:', html.slice(0, 500));
+        return;
+      }
+
+      // Close & unlock any open modals before tearing them down.
+      modals.forEach(function (m) { if (m) m.classList.add('hidden'); });
+      unlockScroll();
+
+      // Remove old body-attached modals so the fresh ones below can take over
+      // without ID collisions.
+      ['-modal', '-del-modal', '-create-modal'].forEach(function (suf) {
+        var ex = document.getElementById(tid + suf);
+        if (ex && ex.parentNode === document.body) ex.parentNode.removeChild(ex);
+      });
+
+      // Preserve client-side UI state across the swap so the user doesn't
+      // lose their page-size choice / current page / sort / search after every
+      // edit. We attach the snapshot to the new root's dataset (pageSize) and
+      // window-scope the rest, then re-apply after init.
+      var stateKey = '__dtState_' + tid;
+      window[stateKey] = {
+        currentPage: currentPage,
+        sortCol:     sortCol,
+        sortDir:     sortDir,
+        search:      searchInput ? searchInput.value : ''
+      };
+      newRoot.dataset.pageSize = String(pageSize);
+
+      // The closure-captured root may have been detached (e.g. an outer
+      // DNN form submit slipped through and we got swapped out under us).
+      // Re-resolve to the live element by id and bail safely if it's gone.
+      var liveRoot = document.getElementById(tid) || root;
+      var parent = liveRoot.parentNode;
+      if (!parent) {
+        console.warn('[dt] root #' + tid + ' is detached — skipping swap.');
+        return;
+      }
+      parent.replaceChild(newRoot, liveRoot);
+
+      // Modals are siblings of #tid in the source markup, so they don't come
+      // along with the root we just inserted — pull them out of the parsed
+      // response and re-attach them to <body> for the next init pass.
+      ['-modal', '-del-modal', '-create-modal'].forEach(function (suf) {
+        var fresh = doc.getElementById(tid + suf);
+        if (fresh) document.body.appendChild(document.adoptNode(fresh));
+      });
+
+      initDataTable(tid);
+    })
+    .catch(function (err) {
+      // Surface failures the user would otherwise miss when running over AJAX.
+      // Do NOT auto-reload the page — that would mask the AJAX intent.
+      console.error('[dt] postForm failed (no reload):', err);
+    });
   }
 
   function clearValidation(container, cls) {
@@ -365,8 +451,11 @@ function initDataTable(tid) {
   }
 
   // --- Create modal ---
-  if (addBtn && createModal) {
+  if (addBtn) {
     addBtn.addEventListener('click', function () {
+      var liveCreate = document.getElementById(tid + '-create-modal');
+      if (!liveCreate) { console.warn('[dt] create modal not found:', tid + '-create-modal'); return; }
+      createModal = liveCreate;
       showModal(createModal);
       var first = createModal.querySelector('.dt-create-input');
       if (first) first.focus();
@@ -387,9 +476,15 @@ function initDataTable(tid) {
   }
 
   // --- Edit modal ---
-  document.addEventListener('click', function (e) {
+  // Scoped to root so we don't accumulate document-level handlers across re-inits.
+  root.addEventListener('click', function (e) {
     var btn = e.target.closest('.dt-btn-edit[data-target="' + tid + '"]');
     if (!btn) return;
+    // Re-resolve modal at click-time: after an AJAX swap the closure-captured
+    // reference can point at a detached node, so look it up live.
+    var liveModal = document.getElementById(tid + '-modal');
+    if (!liveModal) { console.warn('[dt] edit modal not found:', tid + '-modal'); return; }
+    modal = liveModal;
     editPk = btn.dataset.pk;
     var row = btn.closest('.dt-row');
     modal.querySelectorAll('.dt-modal-input').forEach(function (inp) {
@@ -417,18 +512,28 @@ function initDataTable(tid) {
   }
 
   // --- Delete modal ---
-  document.addEventListener('click', function (e) {
+  // Scoped to root for the same reason as the edit handler above.
+  function delMsg(modal, count) {
+    var tpl = (count > 1)
+      ? (modal.getAttribute('data-msg-bulk') || '{0} item(s) will be permanently deleted.')
+      : (modal.getAttribute('data-msg-single') || 'This item will be permanently deleted.');
+    return tpl.replace('{0}', count);
+  }
+  root.addEventListener('click', function (e) {
     var btn = e.target.closest('.dt-btn-del[data-target="' + tid + '"]');
     if (!btn) return;
+    var liveDel = document.getElementById(tid + '-del-modal');
+    if (!liveDel) { console.warn('[dt] delete modal not found:', tid + '-del-modal'); return; }
+    delModal = liveDel;
     delMode = 'single'; delPkVal = btn.dataset.pk;
-    delModal.querySelector('.dt-del-msg').textContent = 'This item will be permanently deleted.';
+    delModal.querySelector('.dt-del-msg').textContent = delMsg(delModal, 1);
     showModal(delModal);
   });
   if (bulkBtn) bulkBtn.addEventListener('click', function () {
     var ids = getSelectedIds();
     if (!ids.length) return;
     delMode = 'bulk'; delPkVal = ids.join(',');
-    delModal.querySelector('.dt-del-msg').textContent = ids.length + ' item(s) will be permanently deleted.';
+    delModal.querySelector('.dt-del-msg').textContent = delMsg(delModal, ids.length);
     showModal(delModal);
   });
   if (delModal) {
@@ -458,6 +563,25 @@ function initDataTable(tid) {
       }
     });
   });
+
+  // Restore client-side state captured by postForm before an AJAX swap so the
+  // user keeps their pagination / sort / search choices after a CRUD action.
+  var savedState = window['__dtState_' + tid];
+  if (savedState) {
+    if (savedState.search && searchInput) {
+      searchInput.value = savedState.search;
+      var q = savedState.search.toLowerCase();
+      filtered = allRows.filter(function (r) { return r.textContent.toLowerCase().indexOf(q) >= 0; });
+    }
+    if (savedState.sortCol) {
+      sortCol = savedState.sortCol;
+      sortDir = savedState.sortDir;
+      updateSortIndicators();
+      applySortAndRender();
+    }
+    if (savedState.currentPage) currentPage = savedState.currentPage;
+    delete window['__dtState_' + tid];
+  }
 
   render();
 }

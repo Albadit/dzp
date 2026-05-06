@@ -117,14 +117,35 @@
     var hideDashboard = !isElevated && userComms != null && userComms.Count == 1;
 
     // --- Build role set from CommunityAuth (no extra SQL needed) ---
+    // A user can hold MULTIPLE roles in the same community (e.g. "Community
+    // Beheer" + a company-owner role). The permission checks below must
+    // honour all of them, otherwise tabs granted to one role get hidden
+    // when the user happens to also have another. Build a dedicated set of
+    // the user's community roles and also fold them into freshRoles.
     var freshRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    var communityRoleSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     freshRoles.Add("All Users");
     if (ps != null && ps.UserInfo != null && ps.UserInfo.UserID > 0)
     {
         freshRoles.Add("Registered Users");
-        if (hasCommunity && !string.IsNullOrEmpty(rc.CommunityRoleName))
+        if (hasCommunity && rc != null)
         {
-            freshRoles.Add(rc.CommunityRoleName);
+            if (rc.CommunityRoleNames != null)
+            {
+                foreach (var rn in rc.CommunityRoleNames)
+                {
+                    if (!string.IsNullOrEmpty(rn))
+                    {
+                        communityRoleSet.Add(rn);
+                        freshRoles.Add(rn);
+                    }
+                }
+            }
+            if (communityRoleSet.Count == 0 && !string.IsNullOrEmpty(rc.CommunityRoleName))
+            {
+                communityRoleSet.Add(rc.CommunityRoleName);
+                freshRoles.Add(rc.CommunityRoleName);
+            }
         }
     }
     var logoUrl  = (ps != null && !string.IsNullOrEmpty(ps.LogoFile)) ? ps.HomeDirectory + ps.LogoFile : "";
@@ -270,7 +291,7 @@
                             if (perm.PermissionKey == "VIEW" && perm.AllowAccess)
                             {
                                 if (isCommunityParent
-                                    ? (rc != null && string.Equals(perm.RoleName, rc.CommunityRoleName, StringComparison.OrdinalIgnoreCase))
+                                    ? communityRoleSet.Contains(perm.RoleName)
                                     : freshRoles.Contains(perm.RoleName))
                                 {
                                     hasAllow = true;
@@ -326,7 +347,7 @@
                                 if (perm.PermissionKey == "VIEW" && perm.AllowAccess)
                                 {
                                     if (isCommunityParent
-                                        ? (rc != null && string.Equals(perm.RoleName, rc.CommunityRoleName, StringComparison.OrdinalIgnoreCase))
+                                        ? communityRoleSet.Contains(perm.RoleName)
                                         : freshRoles.Contains(perm.RoleName))
                                     {
                                         chAllow = true;
@@ -440,7 +461,7 @@
                                     if (perm.PermissionKey == "VIEW" && perm.AllowAccess)
                                     {
                                         if (isCommunityPage
-                                            ? (rc != null && string.Equals(perm.RoleName, rc.CommunityRoleName, StringComparison.OrdinalIgnoreCase))
+                                            ? communityRoleSet.Contains(perm.RoleName)
                                             : freshRoles.Contains(perm.RoleName))
                                         {
                                             stAllow = true;

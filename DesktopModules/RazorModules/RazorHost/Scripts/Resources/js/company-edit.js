@@ -58,13 +58,15 @@ var CompanyEdit = (function () {
     for (var i = 0; i < members.length; i++) {
       var m = members[i];
       var isOwner = m.userId === ownerId;
-      var onClass = m.showInTeam ? 'bg-primary' : 'bg-foreground-200';
-      var dotClass = m.showInTeam ? 'translate-x-6' : 'translate-x-1';
+      var btnClass = m.showInTeam
+        ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+        : 'border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3';
+      var iconName = m.showInTeam ? 'eye' : 'eye-off';
       var toggleTitle = m.showInTeam ? 'Verbergen in team' : 'Tonen in team';
       html += '<div class="flex items-center justify-between gap-4 py-3">'
         + '<div class="flex items-center gap-3 min-w-0">'
-        + '<button type="button" data-toggle-user="' + m.userId + '" title="' + toggleTitle + '" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ' + onClass + '">'
-        + '<span class="inline-block size-4 rounded-full bg-white shadow-sm transition-transform ' + dotClass + '"></span>'
+        + '<button type="button" data-toggle-user="' + m.userId + '" title="' + toggleTitle + '" aria-pressed="' + (m.showInTeam ? 'true' : 'false') + '" class="inline-flex items-center justify-center size-9 rounded-lg border transition-colors shrink-0 ' + btnClass + '">'
+        + '<i data-lucide="' + iconName + '" class="size-4"></i>'
         + '</button>'
         + '<div class="size-10 rounded-full overflow-hidden border-2 border-divider shrink-0">'
         + '<img src="/DnnImageHandler.ashx?mode=profilepic&userId=' + m.userId + '&w=80&h=80" alt="' + escHtml(m.displayName) + '" class="w-full h-full object-cover rounded-full" />'
@@ -93,17 +95,26 @@ var CompanyEdit = (function () {
   }
 
   /* ── Toggle team visibility ── */
+  function setEyeButtonState(btn, on) {
+    var onClasses    = ['border-primary/30', 'bg-primary/10', 'text-primary', 'hover:bg-primary/20'];
+    var offClasses   = ['border-divider', 'bg-content2', 'text-foreground-400', 'hover:text-foreground-700', 'hover:bg-content3'];
+    var addClasses   = on ? onClasses  : offClasses;
+    var removeClasses= on ? offClasses : onClasses;
+    for (var i = 0; i < removeClasses.length; i++) btn.classList.remove(removeClasses[i]);
+    for (var j = 0; j < addClasses.length; j++)    btn.classList.add(addClasses[j]);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.setAttribute('title', on ? 'Verbergen in team' : 'Tonen in team');
+    // Lucide replaces <i data-lucide=...> with an <svg>, so the original
+    // <i> may no longer exist. Reset the button's inner markup with a fresh
+    // <i> and let lucide.createIcons() render the new icon.
+    btn.innerHTML = '<i data-lucide="' + (on ? 'eye' : 'eye-off') + '" class="size-4"></i>';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
   function toggleTeam(userId, btn) {
     /* Optimistic UI: flip toggle immediately */
-    var isOn = btn.classList.contains('bg-primary');
-    var dot = btn.querySelector('span');
-    if (isOn) {
-      btn.classList.remove('bg-primary'); btn.classList.add('bg-foreground-200');
-      if (dot) { dot.classList.remove('translate-x-6'); dot.classList.add('translate-x-1'); }
-    } else {
-      btn.classList.remove('bg-foreground-200'); btn.classList.add('bg-primary');
-      if (dot) { dot.classList.remove('translate-x-1'); dot.classList.add('translate-x-6'); }
-    }
+    var wasOn = btn.getAttribute('aria-pressed') === 'true';
+    setEyeButtonState(btn, !wasOn);
     /* Find member name from the row */
     var row = btn.closest('.py-3');
     var name = row ? row.querySelector('.text-foreground-900') : null;
@@ -127,13 +138,7 @@ var CompanyEdit = (function () {
       })
       .catch(function () {
         /* Revert on error */
-        if (isOn) {
-          btn.classList.add('bg-primary'); btn.classList.remove('bg-foreground-200');
-          if (dot) { dot.classList.add('translate-x-6'); dot.classList.remove('translate-x-1'); }
-        } else {
-          btn.classList.add('bg-foreground-200'); btn.classList.remove('bg-primary');
-          if (dot) { dot.classList.add('translate-x-1'); dot.classList.remove('translate-x-6'); }
-        }
+        setEyeButtonState(btn, wasOn);
         showToast('Er ging iets mis.', false);
       });
   }
