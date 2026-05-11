@@ -1,0 +1,44 @@
+@*
+    Shared checkbox component. Styled to match the TableDZP module checkboxes
+    (custom appearance with rounded corners, primary fill when checked, white
+    checkmark, hover/focus states).
+
+    Params (via PageData):
+      id          (string, optional)
+      name        (string, optional)
+      value       (string, optional) - submitted value when checked (default "1")
+      checked     (bool,   optional)
+      disabled    (bool,   optional)
+      label       (string, optional) - visible text after the checkbox
+      labelClass  (string, optional) - extra classes on the label (default sets text size + foreground color)
+      required    (bool,   optional)
+      extraClass  (string, optional) - extra classes on the input itself
+      attrs       (string, optional) - extra raw attributes on the input
+*@
+@{
+    var cbId        = PageData["id"]         as string;
+    var cbName      = PageData["name"]       as string;
+    var cbValue     = PageData["value"]      as string ?? "1";
+    var cbLabel     = PageData["label"]      as string ?? "";
+    var cbLblClass  = PageData["labelClass"] as string ?? "text-sm text-foreground-700";
+    var cbExtra     = PageData["extraClass"] as string ?? "";
+    var cbAttrs     = PageData["attrs"]      as string ?? "";
+    var cbChecked   = PageData["checked"]  != null && (bool)PageData["checked"];
+    var cbDisabled  = PageData["disabled"] != null && (bool)PageData["disabled"];
+    var cbRequired  = PageData["required"] != null && (bool)PageData["required"];
+    var cbInputCls  = "dt-check-row " + cbExtra;
+}
+<label class="inline-flex items-center gap-2 cursor-pointer @(cbDisabled ? "opacity-60 cursor-not-allowed" : "")"@(string.IsNullOrEmpty(cbId) ? null : new System.Web.HtmlString(" for=\"" + System.Web.HttpUtility.HtmlAttributeEncode(cbId) + "\""))>
+    <input type="checkbox"
+           class="@cbInputCls"
+           @(string.IsNullOrEmpty(cbId)   ? null : new System.Web.HtmlString("id=\""    + System.Web.HttpUtility.HtmlAttributeEncode(cbId)    + "\""))
+           @(string.IsNullOrEmpty(cbName) ? null : new System.Web.HtmlString("name=\""  + System.Web.HttpUtility.HtmlAttributeEncode(cbName)  + "\""))
+           @(string.IsNullOrEmpty(cbValue)? null : new System.Web.HtmlString("value=\"" + System.Web.HttpUtility.HtmlAttributeEncode(cbValue) + "\""))
+           @(cbChecked  ? new System.Web.HtmlString("checked")  : null)
+           @(cbDisabled ? new System.Web.HtmlString("disabled") : null)
+           @(cbRequired ? new System.Web.HtmlString("required") : null)
+           @(string.IsNullOrEmpty(cbAttrs) ? null : new System.Web.HtmlString(cbAttrs)) />
+    @if (!string.IsNullOrEmpty(cbLabel)) {
+        <span class="@cbLblClass">@cbLabel</span>
+    }
+</label>

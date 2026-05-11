@@ -67,7 +67,7 @@
                 <div class="dt-row contents group" data-pk="@pkVal">
                     @if (config.AllowBulkDelete)
                     {
-                        <div class="px-3 py-3 border-t border-content2 flex items-center group-hover:bg-default-50/50 transition-colors">
+                        <div class="px-3 py-3 border-t border-divider flex items-center group-hover:bg-default-50/50 transition-colors">
                             <input type="checkbox" class="dt-check-row size-4 rounded text-primary focus:ring-primary cursor-pointer" value="@pkVal" data-target="@tid" />
                         </div>
                     }
@@ -76,7 +76,7 @@
                         var cellVal = row.ContainsKey(col.Key) ? (row[col.Key] != null ? row[col.Key].ToString() : "") : "";
                         var needsRaw = (col.Type == "select" || col.Type == "multiselect" || col.Type == "image");
                         var dataRawAttr = needsRaw ? Html.Raw(" data-raw=\"" + Html.Encode(cellVal) + "\"") : null;
-                        <div class="px-4 py-3 border-t border-content2 flex items-center group-hover:bg-default-50/50 transition-colors whitespace-nowrap" data-col="@col.Key"@dataRawAttr>
+                        <div class="px-4 py-3 border-t border-divider flex items-center group-hover:bg-default-50/50 transition-colors whitespace-nowrap" data-col="@col.Key"@dataRawAttr>
                             @if (col.Type == "select" && lookupMap != null && lookupMap.ContainsKey(col.Key))
                             {
                                 string matchLabel;
@@ -114,7 +114,7 @@
                     }
                     @if (config.AllowEdit || config.AllowDelete)
                     {
-                        <div class="px-4 py-3 border-t border-content2 flex items-center justify-end group-hover:bg-default-50/50 transition-colors">
+                        <div class="px-4 py-3 border-t border-divider flex items-center justify-end group-hover:bg-default-50/50 transition-colors">
                             <div class="inline-flex items-center gap-1">
                                 @if (config.AllowEdit)
                                 {

@@ -58,7 +58,7 @@
 
                 <div class="at-field">
                     <div><label for="QueryBulkDelete">Query Bulk Delete</label></div>
-                    @Html.TextAreaFor(m => m.QueryBulkDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id IN ({ids})", @class = "edit-code-area" })
+                    @Html.TextAreaFor(m => m.QueryBulkDelete, new { rows = 2, placeholder = "DELETE FROM MyTable WHERE Id IN ({ids})  -- or use {idValues} inside VALUES ((),()) AS x(Id)", @class = "edit-code-area" })
                 </div>
             </div>
 

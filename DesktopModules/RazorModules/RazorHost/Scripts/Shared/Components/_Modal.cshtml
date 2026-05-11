@@ -1,0 +1,37 @@
+@*
+    Shared modal markup. Drop this on any page once; control it from JS
+    via window.DZModal.confirm({...}).
+
+    Single global instance lives in the DOM and is reused for every call.
+    Hidden by default; toggled by adding/removing the "hidden" utility.
+
+    Params (via PageData): none. The modal is generic; content is injected
+    by the JS helper.
+*@
+<div id="dz-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4"
+     role="dialog" aria-modal="true" aria-labelledby="dz-modal-title">
+    <div data-dz-modal-backdrop
+         class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+    <div class="relative bg-content1 rounded-xl border border-divider shadow-xl w-full max-w-md flex flex-col gap-4 p-5 sm:p-6">
+        <div class="flex items-start gap-3">
+            <div data-dz-modal-icon-wrap
+                 class="size-10 rounded-lg inline-flex items-center justify-center shrink-0 border border-danger-200 bg-danger-50 text-danger-700">
+                <i data-dz-modal-icon data-lucide="alert-triangle" class="size-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <h3 id="dz-modal-title" data-dz-modal-title class="text-base font-semibold text-foreground-900">Bevestigen</h3>
+                <p data-dz-modal-message class="mt-1 text-sm text-foreground-600">Weet je het zeker?</p>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+            <button type="button" data-dz-modal-cancel
+                    class="inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border border-divider text-sm font-medium text-foreground-700 hover:bg-content2 transition">
+                <span data-dz-modal-cancel-label>Annuleren</span>
+            </button>
+            <button type="button" data-dz-modal-confirm
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-danger text-white text-sm font-semibold hover:bg-danger/90 transition">
+                <span data-dz-modal-confirm-label>Verwijderen</span>
+            </button>
+        </div>
+    </div>
+</div>

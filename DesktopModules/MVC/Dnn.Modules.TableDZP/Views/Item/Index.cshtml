@@ -104,7 +104,7 @@
     // which registers route name "TableService" under module folder
     // "Dnn.Modules.TableDZP".
     var appBase   = (Request.ApplicationPath ?? "").TrimEnd('/');
-    var uploadUrl = appBase + "/DesktopModules/Dnn.Modules.TableDZP/API/TableService/Table/UploadImage";
+    var uploadUrl = appBase + "/DesktopModules/Dnn.Modules.TableDZP/API/TableService/UploadImage";
 
     var alertMsg  = !string.IsNullOrEmpty(Model.SuccessMsg) ? Model.SuccessMsg : Model.ErrorMsg;
     var isSuccess = !string.IsNullOrEmpty(Model.SuccessMsg);
@@ -124,7 +124,7 @@
 <link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/module.css" />
 @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Select.cshtml")
 
-<div id="@tid" class="w-full max-w-7xl mx-auto flex flex-col gap-4 py-6" data-page-size="10" data-total="@Model.TotalRows">
+<div id="@tid" class="w-full max-w-7xl mx-auto flex flex-col gap-4 py-6" data-page-size="10" data-total="@Model.TotalRows" data-module-id="@Dnn.ModuleContext.ModuleId" data-tab-id="@Dnn.ModuleContext.TabId">
 
     @if (!string.IsNullOrEmpty(config.Title))
     {
@@ -134,7 +134,7 @@
     @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Shared/_Alert.cshtml", null, new ViewDataDictionary {
         { "alert-message", alertMsg },
         { "alert-success", isSuccess ? "true" : "" },
-        { "alert-dismiss", isSuccess ? "4000"  : "" }
+        { "alert-dismiss", "5000" }
     })
 
     @Html.Partial("~/DesktopModules/MVC/Dnn.Modules.TableDZP/Views/Item/_Toolbar.cshtml",    Model, sharedVD)

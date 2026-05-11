@@ -1,3 +1,13 @@
+@{
+    // Inject DNN ServicesFramework JS + anti-forgery token so WebAPI POSTs
+    // (e.g. TableServiceController.UploadImage) succeed. Without this,
+    // unauthenticated/unverified service calls get redirected and the
+    // browser converts the POST → GET, producing the WebAPI error
+    // "The requested resource does not support http method 'GET'."
+    DotNetNuke.Framework.JavaScriptLibraries.JavaScript.RequestRegistration(
+        DotNetNuke.Framework.JavaScriptLibraries.CommonJs.jQuery);
+    DotNetNuke.Framework.ServicesFramework.Instance.RequestAjaxAntiForgerySupport();
+}
 <section id="mvcContainer-@Dnn.ActiveModule.ModuleID">
     @RenderBody()
 </section>

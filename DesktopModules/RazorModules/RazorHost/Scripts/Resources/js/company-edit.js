@@ -2,24 +2,19 @@ var CompanyEdit = (function () {
   'use strict';
 
   var pageUrl = location.pathname + location.search;
-  var toast = null;
-  var toastTimer = null;
-  var toastFadeTimer = null;
   var addUserSelected = [];
   var memberIdSet = {};
 
-  /* ── Toast notification ── */
+  /* ── Toast notification (delegates to the shared window.DZToast) ── */
   function showToast(msg, ok) {
-    if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
-    if (toastFadeTimer) { clearTimeout(toastFadeTimer); toastFadeTimer = null; }
-    if (toast) { toast.remove(); toast = null; }
-    toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-opacity duration-300 max-w-[350px] '
-      + (ok ? 'bg-success-50 border border-success-200 text-success-800' : 'bg-danger-50 border border-danger-200 text-danger-800');
-    toast.innerHTML = '<i data-lucide="' + (ok ? 'check-circle-2' : 'alert-circle') + '" class="size-4 shrink-0"></i><span>' + escHtml(msg) + '</span>';
-    document.body.appendChild(toast);
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-    toastTimer = setTimeout(function () { if (toast) { toast.style.opacity = '0'; toastFadeTimer = setTimeout(function () { if (toast) { toast.remove(); toast = null; } }, 300); } }, 3000);
+    if (window.DZToast && typeof window.DZToast.show === 'function') {
+      window.DZToast.show(msg, ok);
+      return;
+    }
+    // Fallback (script not loaded): silent alert so we don't lose the message.
+    if (!ok) {
+      try { console.warn('toast:', msg); } catch (e) { /* ignore */ }
+    }
   }
 
   function escHtml(s) {

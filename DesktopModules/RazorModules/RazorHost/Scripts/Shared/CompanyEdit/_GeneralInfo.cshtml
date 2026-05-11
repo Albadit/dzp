@@ -1,15 +1,13 @@
 @*
     "Algemene informatie" section: company name, about, banner image upload.
-    The banner uses the shared dropzone JS from the TableDZP module.
+    The banner uses the shared dropzone component (which itself wires up to
+    the TableDZP module's dropzone.js).
     Reads from PageData: companyName, about, bannerImage.
 *@
 @{
     var companyName     = (string)PageData["companyName"];
     var about           = (string)PageData["about"];
     var bannerImage     = (string)PageData["bannerImage"];
-    var appBaseEdit     = (Request.ApplicationPath ?? "").TrimEnd('/');
-    var bannerUploadUrl = appBaseEdit + "/DesktopModules/Dnn.Modules.TableDZP/API/TableService/Table/UploadImage";
-    var hasBanner       = !string.IsNullOrEmpty(bannerImage);
 }
 
 <div class="flex flex-col gap-4 bg-content1 rounded-xl border border-divider p-5 sm:p-6">
@@ -40,26 +38,12 @@
     </div>
 
     <div class="flex flex-col gap-1.5">
-        <label class="text-sm font-medium text-foreground-700">Banner afbeelding</label>
-        <div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content2 cursor-pointer transition"
-             tabindex="0" role="button"
-             data-upload-url="@bannerUploadUrl">
-            <input type="hidden" name="banner" id="banner" value="@bannerImage" class="dt-dz-value" />
-            <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
-            <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none @(hasBanner ? "hidden" : "")">
-                <i data-lucide="image-up" class="size-8"></i>
-                <span>Sleep een afbeelding hierheen of klik om te uploaden</span>
-                <span class="text-xs text-foreground-400">PNG, JPG, GIF of WebP &middot; max 10 MB</span>
-            </div>
-            <div class="dt-dz-preview relative w-full @(hasBanner ? "" : "hidden")">
-                <img class="dt-dz-preview-img w-full max-h-48 object-contain rounded-md" alt="" @(hasBanner ? new System.Web.HtmlString("src=\"" + System.Web.HttpUtility.HtmlAttributeEncode(bannerImage) + "\"") : null) />
-                <button type="button" class="dt-dz-remove absolute top-2 right-2 inline-flex items-center justify-center size-8 rounded-full bg-content1 border border-divider shadow hover:bg-danger-50 hover:text-danger transition" aria-label="Afbeelding verwijderen">
-                    <i data-lucide="x" class="size-4"></i>
-                </button>
-            </div>
-            <div class="dt-dz-progress hidden absolute inset-0 flex items-center justify-center bg-overlay/40 rounded-lg text-sm text-foreground-700">
-                <i data-lucide="loader-2" class="size-5 animate-spin"></i>
-            </div>
-        </div>
+        <label for="banner" class="text-sm font-medium text-foreground-700">Banner afbeelding</label>
+        @{
+            PageData["id"]    = "banner";
+            PageData["name"]  = "banner";
+            PageData["value"] = bannerImage;
+        }
+        @RenderPage("../Components/_Dropzone.cshtml")
     </div>
 </div>

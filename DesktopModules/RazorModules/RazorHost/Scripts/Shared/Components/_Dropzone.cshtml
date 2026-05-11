@@ -10,63 +10,76 @@
       uploadUrl   (string, optional) - upload endpoint
                                        (default: TableDZP UploadImage handler)
       required    (bool,   optional)
-      emptyText   (string, optional) - main drop label (default: NL "Sleep een afbeelding hierheen of klik om te uploaden")
+      emptyText   (string, optional) - main drop label (default NL)
       emptyHint   (string, optional) - hint line under the main label
-                                       (default: "PNG, JPG, GIF of WebP · max 10 MB")
+                                       (default derived from resolved max size)
       removeLabel (string, optional) - aria-label for the remove × button
       maxBytes    (long,   optional) - explicit cap; if omitted, uses the
-                                       lowest of DNN Host.MaxUploadSize,
-                                       httpRuntime.maxRequestLength and
-                                       requestLimits.maxAllowedContentLength.
+                                       lowest of DNN Host.MaxUploadSize and
+                                       httpRuntime.maxRequestLength.
       extraClass  (string, optional) - extra Tailwind classes on the dropzone
 *@
-@functions {
-    static long ResolveMaxBytes() {
-        long limit = long.MaxValue;
-        try {
-            // DNN Host setting (bytes)
-            var hostMax = DotNetNuke.Entities.Host.Host.MaxUploadSize;
-            if (hostMax > 0 && hostMax < limit) { limit = hostMax; }
-        } catch { /* DNN context not available */ }
-        try {
-            // httpRuntime.maxRequestLength (KB)
-            var section = (System.Web.Configuration.HttpRuntimeSection)
-                System.Web.Configuration.WebConfigurationManager.GetSection("system.web/httpRuntime");
-            if (section != null && section.MaxRequestLength > 0) {
-                long bytes = (long)section.MaxRequestLength * 1024L;
-                if (bytes < limit) { limit = bytes; }
-            }
-        } catch { }
-        if (limit == long.MaxValue) { limit = 10L * 1024L * 1024L; }
-        return limit;
-    }
-
-    static string FormatMb(long bytes) {
-        double mb = bytes / 1024.0 / 1024.0;
-        return mb >= 10 ? string.Format("{0:0} MB", mb) : string.Format("{0:0.#} MB", mb);
-    }
-}
 @{
-    var dzName       = PageData["name"]        as string ?? "image";
-    var dzId         = PageData["id"]          as string ?? dzName;
-    var dzValue      = PageData["value"]       as string ?? "";
+    var dzName       = PageData["name"]        as string;
+    if (string.IsNullOrEmpty(dzName)) { dzName = "image"; }
+    var dzId         = PageData["id"]          as string;
+    if (string.IsNullOrEmpty(dzId)) { dzId = dzName; }
+    var dzValue      = PageData["value"]       as string;
+    if (dzValue == null) { dzValue = ""; }
     var dzUploadUrl  = PageData["uploadUrl"]   as string;
     var dzRequired   = PageData["required"] != null && (bool)PageData["required"];
-    var dzEmptyText  = PageData["emptyText"]   as string ?? "Sleep een afbeelding hierheen of klik om te uploaden";
-    var dzRemoveLbl  = PageData["removeLabel"] as string ?? "Afbeelding verwijderen";
-    var dzMaxBytes   = PageData["maxBytes"] != null ? (long)PageData["maxBytes"] : ResolveMaxBytes();
-    var dzEmptyHint  = PageData["emptyHint"]   as string ?? ("PNG, JPG, GIF of WebP · max " + FormatMb(dzMaxBytes));
-    var dzExtra      = PageData["extraClass"]  as string ?? "";
+    var dzEmptyText  = PageData["emptyText"]   as string;
+    if (string.IsNullOrEmpty(dzEmptyText)) { dzEmptyText = "Sleep een afbeelding hierheen of klik om te uploaden"; }
+    var dzRemoveLbl  = PageData["removeLabel"] as string;
+    if (string.IsNullOrEmpty(dzRemoveLbl)) { dzRemoveLbl = "Afbeelding verwijderen"; }
+    var dzExtra      = PageData["extraClass"]  as string;
+    if (dzExtra == null) { dzExtra = ""; }
+
+    /* Resolve max upload size from DNN Host setting + web.config httpRuntime */
+    long dzMaxBytes;
+    if (PageData["maxBytes"] != null) {
+        dzMaxBytes = System.Convert.ToInt64(PageData["maxBytes"]);
+    } else {
+        long dzLimit = long.MaxValue;
+        try {
+            long hostMax = DotNetNuke.Common.Utilities.Config.GetMaxUploadSize();
+            if (hostMax > 0 && hostMax < dzLimit) { dzLimit = hostMax; }
+        }
+        catch (System.Exception) { }
+        try {
+            System.Web.Configuration.HttpRuntimeSection dzSection =
+                (System.Web.Configuration.HttpRuntimeSection)System.Web.Configuration.WebConfigurationManager.GetSection("system.web/httpRuntime");
+            if (dzSection != null && dzSection.MaxRequestLength > 0) {
+                long dzBytes = (long)dzSection.MaxRequestLength * 1024L;
+                if (dzBytes < dzLimit) { dzLimit = dzBytes; }
+            }
+        }
+        catch (System.Exception) { }
+        if (dzLimit == long.MaxValue) { dzLimit = 10L * 1024L * 1024L; }
+        dzMaxBytes = dzLimit;
+    }
+
+    double dzMb = dzMaxBytes / 1024.0 / 1024.0;
+    string dzMaxLabel;
+    if (dzMb >= 10) {
+        dzMaxLabel = string.Format("{0:0} MB", dzMb);
+    } else {
+        dzMaxLabel = string.Format("{0:0.#} MB", dzMb);
+    }
+
+    var dzEmptyHint  = PageData["emptyHint"]   as string;
+    if (dzEmptyHint == null) { dzEmptyHint = "PNG, JPG, GIF of WebP · max " + dzMaxLabel; }
 
     if (string.IsNullOrEmpty(dzUploadUrl)) {
         var appBase = (Request.ApplicationPath ?? "").TrimEnd('/');
-        dzUploadUrl = appBase + "/DesktopModules/Dnn.Modules.TableDZP/API/TableService/UploadImage";
+        dzUploadUrl = appBase + "/DesktopModules/CommunityAuth/API/Upload/UploadImage";
     }
 
     var dzHas = !string.IsNullOrEmpty(dzValue);
 }
 <div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content2 cursor-pointer transition @dzExtra"
      tabindex="0" role="button"
+     title="Maximale uploadgrootte: @dzMaxLabel"
      data-upload-url="@dzUploadUrl"
      data-max-bytes="@dzMaxBytes">
     <input type="hidden" name="@dzName" id="@dzId" value="@dzValue" class="dt-dz-value" @(dzRequired ? new System.Web.HtmlString("required=\"required\"") : new System.Web.HtmlString("")) />

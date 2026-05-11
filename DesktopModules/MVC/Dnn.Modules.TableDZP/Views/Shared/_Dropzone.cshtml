@@ -18,19 +18,32 @@
     var dzEmptyText  = ViewData["dz-empty-text"]  as string ?? "Drop an image here";
     var dzEmptyHint  = ViewData["dz-empty-hint"]  as string ?? "";
     var dzRemoveLbl  = ViewData["dz-remove-label"] as string ?? "Remove";
+    long dzMaxBytes;
+    try { dzMaxBytes = DotNetNuke.Common.Utilities.Config.GetMaxUploadSize(); }
+    catch { dzMaxBytes = 10L * 1024 * 1024; }
+    // Render the size in MB (rounded down, min 1) so the hint always
+    // reflects the actual host-configured upload limit.
+    var dzMaxMb = System.Math.Max(1L, dzMaxBytes / (1024L * 1024L));
+    var dzSizeText = string.Format(", max {0} MB", dzMaxMb);
+    var dzEmptyHintFull = string.IsNullOrEmpty(dzEmptyHint)
+        ? dzSizeText.TrimStart(',', ' ')
+        : dzEmptyHint + dzSizeText;
 }
 <div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content2 cursor-pointer transition"
      tabindex="0" role="button"
      data-upload-url="@dzUploadUrl"
-     data-col="@dzCol">
+     data-col="@dzCol"
+     data-module-id="@Dnn.ModuleContext.ModuleId"
+     data-tab-id="@Dnn.ModuleContext.TabId"
+     data-max-bytes="@dzMaxBytes">
     <input type="hidden" class="dt-dz-value @dzInputClass" data-col="@dzCol" value="" @(dzRequired ? Html.Raw("required") : null) />
     <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
     <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none">
         <i data-lucide="image-up" class="size-8"></i>
         <span>@dzEmptyText</span>
-        @if (!string.IsNullOrEmpty(dzEmptyHint))
+        @if (!string.IsNullOrEmpty(dzEmptyHintFull))
         {
-            <span class="text-xs text-foreground-400">@dzEmptyHint</span>
+            <span class="text-xs text-foreground-400">@dzEmptyHintFull</span>
         }
     </div>
     <div class="dt-dz-preview hidden relative w-full">

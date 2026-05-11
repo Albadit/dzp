@@ -97,7 +97,7 @@
     <value>Drop an image here or click to upload</value>
   </data>
   <data name="DropImage.Hint" xml:space="preserve">
-    <value>PNG / JPG / GIF / WEBP, max 10 MB</value>
+    <value>PNG / JPG / GIF / WEBP</value>
   </data>
   <data name="RemoveImage.Text" xml:space="preserve">
     <value>Remove image</value>

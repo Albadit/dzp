@@ -1,1 +1,0 @@
-﻿<%@ Control Language="C#" AutoEventWireup="true" CodeBehind="QuickEdit.ascx.cs" Inherits="ToSic.Sxc.Dnn.DnnWebForms.Skins.QuickEdit" %>
