@@ -175,15 +175,48 @@
         return row;
     }
 
-    /* ── AJAX form submit ── */
-    function onFormSubmit(e) {
-        var form = e.target;
-        if (!(form && form.tagName === 'FORM' && form.hasAttribute('data-ajax'))) return;
-        e.preventDefault();
+    /* ── AJAX form submit ──
+       NOTE: DNN wraps the whole page in a single <form id="Form">, and the
+       browser's HTML5 parser strips any nested <form> elements (their content
+       is promoted into the parent, attributes lost). That means our
+       <form data-ajax> wrappers do not survive in the DOM. To submit
+       reliably we listen for clicks on submit buttons INSIDE our marker
+       containers ([data-add-cat-form], [data-add-btn-form], [data-ajax])
+       and synthesize the AJAX POST from the inputs in that container.
+       We also catch the bubble-up "submit" event on DNN's outer form so
+       pressing Enter in one of our inputs does not accidentally post the
+       whole DNN page. */
 
-        var fd = new FormData(form);
-        var btn = form.querySelector('button[type="submit"]');
+    function findAjaxContainer(el) {
+        // Direct AJAX container (when <form data-ajax> survives, e.g. existing
+        // button-row <div data-ajax="btn-save"> rendered by JS).
+        var c = el.closest('[data-ajax]');
+        if (c) return c;
+        // Fallback: marker divs around stripped <form> content.
+        return el.closest('[data-add-cat-form], [data-add-btn-form], [data-edit-cat-form], [data-edit-btn-form]');
+    }
+
+    function submitContainer(container, btn) {
+        if (!container) return;
+        var fd = new FormData();
+        var inputs = container.querySelectorAll('input[name], select[name], textarea[name]');
+        for (var i = 0; i < inputs.length; i++) {
+            var ip = inputs[i];
+            if (ip.type === 'checkbox' || ip.type === 'radio') {
+                if (ip.checked) fd.append(ip.name, ip.value);
+            } else if (ip.type === 'file') {
+                if (ip.files) {
+                    for (var k = 0; k < ip.files.length; k++) fd.append(ip.name, ip.files[k]);
+                }
+            } else {
+                fd.append(ip.name, ip.value);
+            }
+        }
+        if (!btn) btn = container.querySelector('button[type="submit"]');
         if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
+
+        // 'form' alias: rest of the code reads .querySelector / .closest / .reset / classList on it.
+        var form = container;
 
         ajaxPost(pageUrl, fd).then(function (res) {
             if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
@@ -194,7 +227,14 @@
                     if (hCat && hCat.value === '0') { hCat.value = String(d.id); }
                     if (form.hasAttribute('data-add-cat-form')) {
                         form.classList.add('hidden');
-                        form.reset();
+                        // Reset inputs manually (no <form> to call .reset() on).
+                        var resetInputs = form.querySelectorAll('input, textarea, select');
+                        for (var r = 0; r < resetInputs.length; r++) {
+                            var ri = resetInputs[r];
+                            if (ri.name === 'catId') ri.value = '0';
+                            else if (ri.name === 'formAction') { /* keep */ }
+                            else if (ri.type !== 'hidden') ri.value = ri.defaultValue || '';
+                        }
                         toast(d.msg || 'Categorie aangemaakt.', 'success');
                         setTimeout(function () { window.location.reload(); }, 700);
                         return;
@@ -203,11 +243,6 @@
                     var hBtn = form.querySelector('input[name="btnId"]');
                     if (hBtn && hBtn.value === '0') { hBtn.value = String(d.id); }
                     if (form.hasAttribute('data-add-btn-form')) {
-                        // Inline-insert the new button row into the sortable list
-                        // (right above the "+ Knop toevoegen" trigger) instead
-                        // of reloading the page. The trigger + add-form stay
-                        // in place — the inline form is reset and stays open
-                        // so the user can keep adding more buttons.
                         var wrap   = form.closest('[data-add-btn-wrap]');
                         var catEl  = wrap && wrap.previousElementSibling;
                         while (catEl && !(catEl.getAttribute && catEl.getAttribute('data-sortable') === 'btn')) {
@@ -216,7 +251,6 @@
                         var listEl = catEl;
                         var catId  = form.querySelector('input[name="catId"]') ? form.querySelector('input[name="catId"]').value : '0';
                         if (listEl) {
-                            // Strip the "no buttons yet" placeholder, if present.
                             var ph = listEl.parentElement && listEl.parentElement.querySelector('p.italic');
                             if (ph) ph.remove();
 
@@ -224,18 +258,22 @@
                             var icon    = (form.querySelector('input[name="icon"]')  || {}).value || '';
                             var url     = (form.querySelector('input[name="url"]')   || {}).value || '';
                             var visCb   = form.querySelector('input[name="isVisible"]');
-                            var visible = !!(visCb && visCb.checked);
+                            var visible = !!(visCb && (visCb.type === 'checkbox' ? visCb.checked : visCb.value === '1'));
 
                             var row = renderButtonRow(d.id, catId, label, icon, url, visible);
                             listEl.appendChild(row);
-                            // Re-init sortable for new node if it wasn't bound yet (it should already be).
                             initSortables(listEl.parentElement || document);
                             initIcons();
                         }
-
-                        form.reset();
-                        // Re-tick "isVisible" (forms reset to default-checked=true on initial render,
-                        // but reset() will return to the rendered defaultChecked value).
+                        // Reset visible fields manually.
+                        var bResetInputs = form.querySelectorAll('input, textarea, select');
+                        for (var br = 0; br < bResetInputs.length; br++) {
+                            var bri = bResetInputs[br];
+                            if (bri.name === 'btnId') bri.value = '0';
+                            else if (bri.name === 'catId' || bri.name === 'formAction') { /* keep */ }
+                            else if (bri.name === 'isVisible') bri.value = '1';
+                            else if (bri.type !== 'hidden') bri.value = bri.defaultValue || '';
+                        }
                         toast(d.msg || 'Knop toegevoegd.', 'success');
                         return;
                     }
@@ -248,6 +286,39 @@
             if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
             toast('Netwerkfout: ' + (err && err.message ? err.message : ''), 'error');
         });
+    }
+
+    function onFormSubmit(e) {
+        // Real <form data-ajax> elements (rare — most are stripped by the parser).
+        var form = e.target;
+        if (form && form.tagName === 'FORM' && form.hasAttribute('data-ajax')) {
+            e.preventDefault();
+            submitContainer(form, form.querySelector('button[type="submit"]'));
+            return;
+        }
+        // DNN's outer form: if a submit click came from one of our inputs/buttons
+        // inside an AJAX container, block the page-wide POST.
+        if (form && form.tagName === 'FORM' && form.id === 'Form') {
+            var active = document.activeElement;
+            var container = active && findAjaxContainer(active);
+            if (container) {
+                e.preventDefault();
+                submitContainer(container, container.querySelector('button[type="submit"]'));
+            }
+        }
+    }
+
+    function onSubmitButtonClick(e) {
+        var btn = e.target.closest && e.target.closest('button[type="submit"]');
+        if (!btn) return;
+        var container = findAjaxContainer(btn);
+        if (!container) return;
+        // If the container IS an actual <form data-ajax>, the native submit event
+        // will fire — let it. Otherwise, the <form> was stripped, so we must
+        // handle the click ourselves.
+        if (container.tagName === 'FORM') return;
+        e.preventDefault();
+        submitContainer(container, btn);
     }
 
     /* ── Click handler: inline-add toggles + AJAX delete ── */
@@ -377,6 +448,7 @@
         initSortables(document);
 
         document.addEventListener('submit', onFormSubmit, true);
+        document.addEventListener('click', onSubmitButtonClick, true);
         document.addEventListener('click', onClick, false);
 
         // <details> 'toggle' events do not bubble; capture phase.

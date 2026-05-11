@@ -365,7 +365,8 @@
     @if (!isManager) {
         @RenderPage("Shared/CompanyEdit/_AccessDenied.cshtml")
     } else {
-        <section class="flex flex-col gap-6 w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <section class="flex flex-col gap-6 w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
+                 data-module-id="@Dnn.Module.ModuleID" data-tab-id="@Dnn.Tab.TabID">
             @RenderPage("Shared/CompanyEdit/_FormHeader.cshtml")
             @RenderPage("Shared/CompanyEdit/_SaveAlerts.cshtml")
 
