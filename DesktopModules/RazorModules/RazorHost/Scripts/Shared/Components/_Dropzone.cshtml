@@ -1,0 +1,94 @@
+@*
+    Reusable image-upload dropzone component.
+    Mirrors the TableDZP dropzone markup contract so that dropzone.js
+    (loaded from the TableDZP module) can wire it up automatically.
+
+    Params (via PageData):
+      name        (string, required) - hidden input name (also id if no `id` given)
+      id          (string, optional) - hidden input id (defaults to `name`)
+      value       (string, optional) - existing image URL to preview
+      uploadUrl   (string, optional) - upload endpoint
+                                       (default: TableDZP UploadImage handler)
+      required    (bool,   optional)
+      emptyText   (string, optional) - main drop label (default: NL "Sleep een afbeelding hierheen of klik om te uploaden")
+      emptyHint   (string, optional) - hint line under the main label
+                                       (default: "PNG, JPG, GIF of WebP · max 10 MB")
+      removeLabel (string, optional) - aria-label for the remove × button
+      maxBytes    (long,   optional) - explicit cap; if omitted, uses the
+                                       lowest of DNN Host.MaxUploadSize,
+                                       httpRuntime.maxRequestLength and
+                                       requestLimits.maxAllowedContentLength.
+      extraClass  (string, optional) - extra Tailwind classes on the dropzone
+*@
+@functions {
+    static long ResolveMaxBytes() {
+        long limit = long.MaxValue;
+        try {
+            // DNN Host setting (bytes)
+            var hostMax = DotNetNuke.Entities.Host.Host.MaxUploadSize;
+            if (hostMax > 0 && hostMax < limit) { limit = hostMax; }
+        } catch { /* DNN context not available */ }
+        try {
+            // httpRuntime.maxRequestLength (KB)
+            var section = (System.Web.Configuration.HttpRuntimeSection)
+                System.Web.Configuration.WebConfigurationManager.GetSection("system.web/httpRuntime");
+            if (section != null && section.MaxRequestLength > 0) {
+                long bytes = (long)section.MaxRequestLength * 1024L;
+                if (bytes < limit) { limit = bytes; }
+            }
+        } catch { }
+        if (limit == long.MaxValue) { limit = 10L * 1024L * 1024L; }
+        return limit;
+    }
+
+    static string FormatMb(long bytes) {
+        double mb = bytes / 1024.0 / 1024.0;
+        return mb >= 10 ? string.Format("{0:0} MB", mb) : string.Format("{0:0.#} MB", mb);
+    }
+}
+@{
+    var dzName       = PageData["name"]        as string ?? "image";
+    var dzId         = PageData["id"]          as string ?? dzName;
+    var dzValue      = PageData["value"]       as string ?? "";
+    var dzUploadUrl  = PageData["uploadUrl"]   as string;
+    var dzRequired   = PageData["required"] != null && (bool)PageData["required"];
+    var dzEmptyText  = PageData["emptyText"]   as string ?? "Sleep een afbeelding hierheen of klik om te uploaden";
+    var dzRemoveLbl  = PageData["removeLabel"] as string ?? "Afbeelding verwijderen";
+    var dzMaxBytes   = PageData["maxBytes"] != null ? (long)PageData["maxBytes"] : ResolveMaxBytes();
+    var dzEmptyHint  = PageData["emptyHint"]   as string ?? ("PNG, JPG, GIF of WebP · max " + FormatMb(dzMaxBytes));
+    var dzExtra      = PageData["extraClass"]  as string ?? "";
+
+    if (string.IsNullOrEmpty(dzUploadUrl)) {
+        var appBase = (Request.ApplicationPath ?? "").TrimEnd('/');
+        dzUploadUrl = appBase + "/DesktopModules/Dnn.Modules.TableDZP/API/TableService/UploadImage";
+    }
+
+    var dzHas = !string.IsNullOrEmpty(dzValue);
+}
+<div class="dt-dropzone relative flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-divider hover:border-primary/60 bg-content2 cursor-pointer transition @dzExtra"
+     tabindex="0" role="button"
+     data-upload-url="@dzUploadUrl"
+     data-max-bytes="@dzMaxBytes">
+    <input type="hidden" name="@dzName" id="@dzId" value="@dzValue" class="dt-dz-value" @(dzRequired ? new System.Web.HtmlString("required=\"required\"") : new System.Web.HtmlString("")) />
+    <input type="file" class="dt-dz-input sr-only" accept="image/png,image/jpeg,image/gif,image/webp" />
+
+    <div class="dt-dz-empty flex flex-col items-center gap-1 text-foreground-500 text-sm pointer-events-none select-none @(dzHas ? "hidden" : "")">
+        <i data-lucide="image-up" class="size-8"></i>
+        <span>@dzEmptyText</span>
+        @if (!string.IsNullOrEmpty(dzEmptyHint)) {
+            <span class="text-xs text-foreground-400">@dzEmptyHint</span>
+        }
+    </div>
+
+    <div class="dt-dz-preview relative w-full @(dzHas ? "" : "hidden")">
+        <img class="dt-dz-preview-img w-full max-h-48 object-contain rounded-md" alt=""
+             @(dzHas ? new System.Web.HtmlString("src=\"" + System.Web.HttpUtility.HtmlAttributeEncode(dzValue) + "\"") : null) />
+        <button type="button" class="dt-dz-remove absolute top-2 right-2 inline-flex items-center justify-center size-8 rounded-full bg-content1 border border-divider shadow hover:bg-danger-50 hover:text-danger transition" aria-label="@dzRemoveLbl">
+            <i data-lucide="x" class="size-4"></i>
+        </button>
+    </div>
+
+    <div class="dt-dz-progress hidden absolute inset-0 flex items-center justify-center bg-overlay/40 rounded-lg text-sm text-foreground-700">
+        <i data-lucide="loader-2" class="size-5 animate-spin"></i>
+    </div>
+</div>

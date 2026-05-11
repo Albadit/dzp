@@ -1,0 +1,220 @@
+@using DZP.CommunityAuth
+@using DotNetNuke.Entities.Portals
+@using System.Web
+@using System.Data.SqlClient
+@using System.Configuration
+@{
+    var rc = CommunityAuth.Current;
+    var communityName = rc != null ? rc.CommunityName : "Community";
+    var communitySlug = rc != null ? rc.CommunitySlug : "";
+    var communityId   = rc != null ? rc.CommunityId   : 0;
+
+    var user            = Dnn.User;
+    var isSuperUser     = user != null && user.IsSuperUser;
+    var adminRoleName   = PortalSettings.Current != null ? PortalSettings.Current.AdministratorRoleName : "Administrators";
+    var isAdministrator = user != null && !string.IsNullOrEmpty(adminRoleName) && user.IsInRole(adminRoleName);
+    var isCommunityMgr  = user != null && user.IsInRole("Community beheerder");
+    var canEdit         = isSuperUser || isAdministrator || isCommunityMgr;
+
+    /* ── DB-backed categories (with hardcoded fallback below) ── */
+    var dbCategories = new List<Dictionary<string, object>>();
+    var dbButtonsByCat = new Dictionary<int, List<Dictionary<string, object>>>();
+
+    if (communityId > 0) {
+        var cs = ConfigurationManager.ConnectionStrings["SiteSqlServer"];
+        if (cs != null && !string.IsNullOrEmpty(cs.ConnectionString)) {
+            try {
+                using (var conn = new SqlConnection(cs.ConnectionString)) {
+                    conn.Open();
+                    using (var cmd = new SqlCommand(
+                        "SELECT Id, Title, Description, Icon, ImageUrl FROM CommunityDiscoverCategory WHERE CommunityId=@cid AND IsVisible=1 ORDER BY SortOrder, Id", conn)) {
+                        cmd.Parameters.AddWithValue("@cid", communityId);
+                        using (var r = cmd.ExecuteReader()) {
+                            while (r.Read()) {
+                                dbCategories.Add(new Dictionary<string, object> {
+                                    { "Id",          r.GetInt32(0) },
+                                    { "Title",       r.GetString(1) },
+                                    { "Description", r.IsDBNull(2) ? "" : r.GetString(2) },
+                                    { "Icon",        r.IsDBNull(3) ? "" : r.GetString(3) },
+                                    { "ImageUrl",    r.IsDBNull(4) ? "" : r.GetString(4) }
+                                });
+                            }
+                        }
+                    }
+                    if (dbCategories.Count > 0) {
+                        using (var cmd = new SqlCommand(
+                            "SELECT b.Id, b.CommunityDiscoverCategoryId, b.Label, b.Icon, b.Url FROM CommunityDiscoverButton b INNER JOIN CommunityDiscoverCategory c ON c.Id = b.CommunityDiscoverCategoryId WHERE c.CommunityId=@cid AND b.IsVisible=1 ORDER BY b.SortOrder, b.Id", conn)) {
+                            cmd.Parameters.AddWithValue("@cid", communityId);
+                            using (var r = cmd.ExecuteReader()) {
+                                while (r.Read()) {
+                                    var catId = r.GetInt32(1);
+                                    if (!dbButtonsByCat.ContainsKey(catId)) {
+                                        dbButtonsByCat[catId] = new List<Dictionary<string, object>>();
+                                    }
+                                    dbButtonsByCat[catId].Add(new Dictionary<string, object> {
+                                        { "Label", r.GetString(2) },
+                                        { "Icon",  r.IsDBNull(3) ? "" : r.GetString(3) },
+                                        { "Url",   r.GetString(4) }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch { /* table may not exist yet → fall back below */ }
+        }
+    }
+
+    /* ── Hardcoded fallback when DB has no rows yet ── */
+    var categories = new[] {
+        new {
+            Title = "VISIT " + communityName,
+            Desc = "Toeristische informatie en activiteiten in " + communityName + ".",
+            Icon = "map-pin",
+            Links = new[] {
+                new { Label = "Wandelroutes", Url = "/" + communitySlug + "/visit/wandelroutes" },
+                new { Label = "Fietsroutes",  Url = "/" + communitySlug + "/visit/fietsroutes" },
+                new { Label = "Evenementen",  Url = "/" + communitySlug + "/visit/evenementen" },
+                new { Label = "Overnachten",  Url = "/" + communitySlug + "/visit/overnachten" },
+            }
+        },
+        new {
+            Title = "Cadeaubon " + communityName,
+            Desc = "De lokale cadeaubon die je bij deelnemende winkels kunt besteden.",
+            Icon = "gift",
+            Links = new[] {
+                new { Label = "Koop een bon",         Url = "/" + communitySlug + "/cadeaubon/kopen" },
+                new { Label = "Deelnemende winkels",  Url = "/" + communitySlug + "/cadeaubon/winkels" },
+                new { Label = "Saldo checken",        Url = "/" + communitySlug + "/cadeaubon/saldo" },
+            }
+        },
+        new {
+            Title = "Gemeente " + communityName,
+            Desc = "Gemeentelijke informatie, vergunningen en lokale regelgeving.",
+            Icon = "landmark",
+            Links = new[] {
+                new { Label = "Vergunningen",    Url = "/" + communitySlug + "/gemeente/vergunningen" },
+                new { Label = "Bestemmingsplan", Url = "/" + communitySlug + "/gemeente/bestemmingsplan" },
+                new { Label = "Contact",         Url = "/" + communitySlug + "/gemeente/contact" },
+            }
+        },
+        new {
+            Title = "Ondernemend " + communityName,
+            Desc = "Netwerk en ondersteuning voor lokale ondernemers.",
+            Icon = "briefcase",
+            Links = new[] {
+                new { Label = "Netwerkevents",     Url = "/" + communitySlug + "/ondernemend/events" },
+                new { Label = "Subsidies",         Url = "/" + communitySlug + "/ondernemend/subsidies" },
+                new { Label = "Bedrijvenregister", Url = "/" + communitySlug + "/ondernemend/bedrijven" },
+            }
+        },
+        new {
+            Title = "Duurzaamheid",
+            Desc = "Initiatieven en projecten rondom verduurzaming in het gebied.",
+            Icon = "leaf",
+            Links = new[] {
+                new { Label = "Energiebesparing", Url = "/" + communitySlug + "/duurzaamheid/energie" },
+                new { Label = "Subsidies",         Url = "/" + communitySlug + "/duurzaamheid/subsidies" },
+                new { Label = "Groene projecten",  Url = "/" + communitySlug + "/duurzaamheid/projecten" },
+            }
+        },
+        new {
+            Title = "Ondernemersplein",
+            Desc = "Praktische informatie en hulp bij het runnen van je bedrijf.",
+            Icon = "store",
+            Links = new[] {
+                new { Label = "Starten",      Url = "/" + communitySlug + "/ondernemersplein/starten" },
+                new { Label = "Financiering", Url = "/" + communitySlug + "/ondernemersplein/financiering" },
+                new { Label = "Wetgeving",    Url = "/" + communitySlug + "/ondernemersplein/wetgeving" },
+            }
+        },
+    };
+}
+
+
+
+<section class="w-full max-w-7xl m-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="flex flex-col gap-2 min-w-0">
+        <h1 class="text-2xl font-bold text-foreground-900">Ondekt</h1>
+        <p class="text-sm text-foreground-500">Handige links en tools voor je community.</p>
+      </div>
+      @if (canEdit) {
+        <a href="/@communitySlug/discover/edit"
+           class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-divider bg-background text-sm font-medium text-foreground-700 hover:border-primary hover:text-primary transition shrink-0">
+          <i data-lucide="pencil" class="size-4"></i>
+          <span>Beheer</span>
+        </a>
+      }
+    </div>
+
+    <!-- Category cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
+      @if (dbCategories.Count > 0) {
+        foreach (var cat in dbCategories) {
+          var catId    = (int)cat["Id"];
+          var title    = (string)cat["Title"];
+          var desc     = (string)cat["Description"];
+          var icon     = (string)cat["Icon"];
+          var imageUrl = (string)cat["ImageUrl"];
+          var btns     = dbButtonsByCat.ContainsKey(catId) ? dbButtonsByCat[catId] : new List<Dictionary<string, object>>();
+          <div class="flex flex-col gap-4 p-5 rounded-lg border border-divider bg-background hover:border-primary/30 transition">
+            <div class="flex items-center gap-3">
+              <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 overflow-hidden shrink-0">
+                @if (!string.IsNullOrEmpty(imageUrl)) {
+                  <img src="@imageUrl" alt="" class="w-full h-full object-cover" />
+                } else if (!string.IsNullOrEmpty(icon)) {
+                  <i data-lucide="@icon" class="size-5 text-primary"></i>
+                } else {
+                  <span class="text-sm font-bold text-primary">@(title.Length > 0 ? title.Substring(0, 1).ToUpper() : "?")</span>
+                }
+              </div>
+              <h2 class="text-sm font-bold text-foreground-900 min-w-0 flex-1 truncate">@title</h2>
+            </div>
+            @if (!string.IsNullOrEmpty(desc)) {
+              <p class="text-xs text-foreground-500 leading-relaxed grow">@desc</p>
+            }
+            <div class="flex flex-col gap-2">
+              @foreach (var b in btns) {
+                var bLabel = (string)b["Label"];
+                var bIcon  = (string)b["Icon"];
+                var bUrl   = (string)b["Url"];
+                <a href="@bUrl" class="flex items-center justify-between px-3 py-2 rounded-lg bg-content2 text-sm text-foreground-700 hover:text-primary hover:bg-primary/5 transition">
+                  <span class="flex items-center gap-2 min-w-0">
+                    @if (!string.IsNullOrEmpty(bIcon)) {
+                      <i data-lucide="@bIcon" class="size-4 shrink-0"></i>
+                    }
+                    <span class="truncate">@bLabel</span>
+                  </span>
+                  <i data-lucide="chevron-right" class="size-3.5 text-foreground-300 shrink-0"></i>
+                </a>
+              }
+            </div>
+          </div>
+        }
+      } else {
+        foreach (var cat in categories) {
+          <div class="flex flex-col gap-4 p-5 rounded-lg border border-divider bg-background hover:border-primary/30 transition">
+            <div class="flex items-center gap-3">
+              <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10">
+                <i data-lucide="@cat.Icon" class="size-5 text-primary"></i>
+              </div>
+              <h2 class="text-sm font-bold text-foreground-900">@cat.Title</h2>
+            </div>
+            <p class="text-xs text-foreground-500 leading-relaxed grow">@cat.Desc</p>
+            <div class="flex flex-col gap-2">
+              @foreach (var link in cat.Links) {
+                <a href="@link.Url" class="flex items-center justify-between px-3 py-2 rounded-lg bg-content2 text-sm text-foreground-700 hover:text-primary hover:bg-primary/5 transition">
+                  @link.Label
+                  <i data-lucide="chevron-right" class="size-3.5 text-foreground-300"></i>
+                </a>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+</section>
+
+

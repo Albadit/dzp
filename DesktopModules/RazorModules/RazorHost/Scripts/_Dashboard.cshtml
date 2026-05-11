@@ -103,7 +103,7 @@
     PageData["communitiesJson"] = communitiesJson;
 }
 
-<section class="w-full flex flex-col">
+<section class="w-full max-w-full min-w-0 flex flex-col overflow-x-hidden">
     @RenderPage("Shared/Dashboard/_Header.cshtml")
 
     @if (communities.Count == 0) {

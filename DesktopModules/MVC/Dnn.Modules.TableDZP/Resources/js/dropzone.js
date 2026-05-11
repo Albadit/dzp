@@ -16,7 +16,17 @@
 (function (global) {
     'use strict';
 
-    var MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+    var DEFAULT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB fallback
+
+    function maxBytesFor(dz) {
+        var raw = dz && dz.getAttribute && dz.getAttribute('data-max-bytes');
+        var n = raw ? parseInt(raw, 10) : 0;
+        return (isFinite(n) && n > 0) ? n : DEFAULT_MAX_BYTES;
+    }
+
+    function fmtMb(bytes) {
+        return (bytes / (1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 ? 0 : 1) + ' MB';
+    }
 
     function setValue(dz, url) {
         var hidden  = dz.querySelector('.dt-dz-value');
@@ -41,8 +51,9 @@
 
     function uploadFile(dz, file) {
         if (!file || !file.type || file.type.indexOf('image/') !== 0) return;
-        if (file.size > MAX_BYTES) {
-            alert('File too large (max 10 MB).');
+        var maxBytes = maxBytesFor(dz);
+        if (file.size > maxBytes) {
+            alert('Bestand te groot (max ' + fmtMb(maxBytes) + ').');
             return;
         }
         var url = dz.getAttribute('data-upload-url');

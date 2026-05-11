@@ -37,12 +37,12 @@
             : '<div class="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-bold text-lg">' + letter + '</div>';
 
         return ''
-          + '<a href="/' + slug + '/home" class="group block rounded-lg bg-background border border-divider p-3 hover:border-primary transition">'
-          +   '<div class="flex items-center gap-3">'
-          +     '<div class="size-16 rounded-md overflow-hidden shrink-0">' + avatar + '</div>'
-          +     '<div class="min-w-0">'
-          +       '<h2 class="text-lg font-semibold text-foreground-700 group-hover:text-primary transition truncate">' + name + '</h2>'
-          +       '<p class="text-sm text-foreground-400 font-mono truncate">/' + slug + '</p>'
+          + '<a href="/' + slug + '/home" class="group block w-full min-w-0 rounded-lg bg-background border border-divider p-3 hover:border-primary transition overflow-hidden">'
+          +   '<div class="flex items-center gap-3 min-w-0">'
+          +     '<div class="size-12 sm:size-16 rounded-md overflow-hidden shrink-0">' + avatar + '</div>'
+          +     '<div class="min-w-0 flex-1">'
+          +       '<h2 class="text-base sm:text-lg font-semibold text-foreground-700 group-hover:text-primary transition truncate">' + name + '</h2>'
+          +       '<p class="text-xs sm:text-sm text-foreground-400 font-mono truncate">/' + slug + '</p>'
           +     '</div>'
           +     '<i data-lucide="chevron-right" class="size-5 text-foreground-300 group-hover:text-primary group-hover:translate-x-0.5 ml-auto shrink-0 transition"></i>'
           +   '</div>'
