@@ -43,7 +43,8 @@
             kind  = kind,
             msg   = msg ?? ""
         }));
-        Response.SuppressContent = false;
+        Response.Flush();
+        Response.SuppressContent = true;
         Context.ApplicationInstance.CompleteRequest();
     };
     var isAjax = string.Equals(Request.Headers["X-Requested-With"], "fetch", StringComparison.OrdinalIgnoreCase)
@@ -543,21 +544,21 @@
                                     @RenderPage("Shared/Components/_Input.cshtml")
                                 </div>
 
-                                <div class="w-full sm:w-auto flex items-center justify-end gap-2">
+                                <div class="w-full sm:w-auto flex items-center gap-2 sm:justify-end">
                                     <input type="hidden" name="isVisible" value="@(bVisible ? "1" : "0")" data-vis-input />
                                     <button type="button" data-vis-toggle
                                             aria-pressed="@(bVisible ? "true" : "false")"
                                             title="@(bVisible ? "Verbergen" : "Tonen")"
-                                            class="shrink-0 inline-flex items-center justify-center size-9 rounded-lg border transition-colors @(bVisible ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20" : "border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3")">
+                                            class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors @(bVisible ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20" : "border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3")">
                                         <i data-lucide="@(bVisible ? "eye" : "eye-off")" class="size-4"></i>
                                     </button>
                                     <button type="submit" title="Opslaan"
-                                            class="inline-flex items-center justify-center size-9 rounded-lg bg-primary text-white hover:bg-primary/90 transition">
+                                            class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg bg-primary text-white hover:bg-primary/90 transition">
                                         <i data-lucide="save" class="size-4"></i>
                                     </button>
                                     <button type="button" data-ajax-delete="btn" data-btn-id="@bId"
                                             title="Verwijderen"
-                                            class="inline-flex items-center justify-center size-9 rounded-lg border border-divider text-foreground-700 hover:bg-content2 hover:border-danger/40 hover:text-danger-700 transition">
+                                            class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-divider text-foreground-700 hover:bg-content2 hover:border-danger/40 hover:text-danger-700 transition">
                                         <i data-lucide="trash-2" class="size-4"></i>
                                     </button>
                                 </div>
@@ -607,16 +608,16 @@
                                 @RenderPage("Shared/Components/_Input.cshtml")
                             </div>
 
-                            <div class="w-full sm:w-auto flex items-center justify-end gap-2">
+                            <div class="w-full sm:w-auto flex items-center gap-2 sm:justify-end">
                                 <input type="hidden" name="isVisible" value="1" data-vis-input />
                                 <button type="button" data-vis-toggle
                                         aria-pressed="true"
                                         title="Verbergen"
-                                        class="shrink-0 inline-flex items-center justify-center size-9 rounded-lg border transition-colors border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">
+                                        class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">
                                     <i data-lucide="eye" class="size-4"></i>
                                 </button>
                                 <button type="submit"
-                                        class="shrink-0 inline-flex items-center justify-center gap-1 px-3 h-9 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">
+                                        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 px-3 h-9 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">
                                     <i data-lucide="plus" class="size-4"></i>
                                     <span>Toev.</span>
                                 </button>
