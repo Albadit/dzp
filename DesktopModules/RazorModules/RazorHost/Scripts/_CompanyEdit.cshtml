@@ -280,6 +280,13 @@
                 }
             }
             }
+            // Match _MembersList.cshtml: owner first, then everyone else in
+            // the same alphabetical order the SQL returned. Without this, the
+            // AJAX-rendered list reorders after add/remove because client-side
+            // renderMembers() does not re-apply the owner-first sort.
+            ajaxMembers = ajaxMembers
+                .OrderByDescending(m => (int)m["userId"] == ownerId)
+                .ToList();
             var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
             Response.Clear();
             Response.ContentType = "application/json";

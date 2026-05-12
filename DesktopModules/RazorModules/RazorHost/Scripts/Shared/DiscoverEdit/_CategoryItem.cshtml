@@ -104,7 +104,8 @@
                     <span class="text-sm font-medium text-foreground-700">Zichtbaar op de Ondekt-pagina</span>
                 </div>
 
-                <div class="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-end gap-3 pt-2 border-t border-divider">
+                <hr class="border-divider m-0" />
+                <div class="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-end gap-3">
                     <button type="button" data-ajax-delete="cat" data-cat-id="@catId"
                             class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-danger/40 bg-danger/10 text-danger-700 text-sm font-medium hover:bg-danger/20 transition">
                         <span>Verwijderen</span>
@@ -117,13 +118,15 @@
                 </div>
             </div>
         <!-- Buttons section -->
-        <div class="border-t border-divider bg-content2/30 p-5 sm:p-6">
-            <details open class="group flex flex-col gap-4">
-                <summary class="cursor-pointer flex items-center justify-between gap-2 list-none">
+        <hr class="border-divider m-0" />
+        <div class="bg-content2/30">
+            <details class="group">
+                <summary class="cursor-pointer flex items-center justify-between gap-2 list-none py-4">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-foreground-500">Knoppen <span class="text-foreground-400 normal-case font-medium">(@btns.Count)</span></h3>
                     <i data-lucide="chevron-down" class="size-4 text-foreground-400 group-open:rotate-180"></i>
                 </summary>
 
+                <div class="flex flex-col gap-4">
                 <div class="flex flex-col gap-3"
                      data-sortable="btn"
                      data-cat-id="@catId"
@@ -192,7 +195,7 @@
                             </button>
                             <button type="button" data-ajax-delete="btn" data-btn-id="@bId"
                                     title="Verwijderen"
-                                    class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-danger/40 bg-danger/10 text-danger-700 hover:bg-danger/20 transition">
+                                    class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-danger bg-danger text-white hover:bg-danger/90 transition">
                                 <i data-lucide="trash-2" class="size-4"></i>
                             </button>
                         </div>
@@ -205,12 +208,11 @@
                  list above. The category-level "Opslaan" persists every row
                  (existing + freshly added) in one POST, so no per-row save UI
                  is needed. -->
-            <div data-add-btn-wrap="@catId">
-                <button type="button" data-add-btn-trigger="@catId"
-                        class="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-divider text-sm font-medium text-primary hover:border-primary hover:bg-primary/5 transition">
-                    <i data-lucide="plus" class="size-4"></i>
-                    <span>Knop toevoegen</span>
-                </button>
+            <button type="button" data-add-btn-trigger="@catId" data-add-btn-wrap="@catId"
+                    class="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-divider text-sm font-medium text-primary hover:border-primary hover:bg-primary/5 transition">
+                <i data-lucide="plus" class="size-4"></i>
+                <span>Knop toevoegen</span>
+            </button>
             </div>
             </details>
         </div>
