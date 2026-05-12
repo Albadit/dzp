@@ -1,0 +1,22 @@
+@*
+    Discovery edit – styles + scripts.
+    Pulled out of _DiscoverEdit.cshtml so the main file stays slim.
+*@
+<style>
+    .dt-sort-ghost   { opacity: .4; }
+    .dt-sort-chosen  { box-shadow: 0 0 0 2px var(--color-primary, #2563eb); }
+    .dt-sort-saving  { opacity: .85; }
+    .dt-sort-saved   { box-shadow: inset 0 0 0 2px rgba(16,185,129,.5); }
+    .dt-sort-error   { box-shadow: inset 0 0 0 2px rgba(239,68,68,.6); }
+</style>
+
+<!-- Scripts: dropzone (from TableDZP module) + SortableJS + page wiring -->
+<link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/module.css" />
+<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/dropzone.js"></script>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/sortable.min.js"></script>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/toast.js"></script>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/modal.js"></script>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/icon-picker.js?v=8"></script>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/discover-edit.js"></script>
+
+@RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_Modal.cshtml")

@@ -1,4 +1,4 @@
-@using DZP.CommunityAuth
+﻿@using DZP.CommunityAuth
 @using DotNetNuke.Entities.Portals
 @using System.Web
 @using System.Data.SqlClient
@@ -50,7 +50,27 @@
     var isAjax = string.Equals(Request.Headers["X-Requested-With"], "fetch", StringComparison.OrdinalIgnoreCase)
               || Request["ajax"] == "1";
 
-    /* ── POST handling ── */
+    // Helper: accept user-friendly URLs like "www.youtube.com" or "youtube.com"
+    // and turn them into a real absolute URL (https://...) so the rendered
+    // <a href> on the public page actually navigates off-site instead of
+    // being treated as a relative path.
+    Func<string, string> normalizeUrl = (raw) => {
+        if (string.IsNullOrWhiteSpace(raw)) return "";
+        var s = raw.Trim();
+        // Leave site-relative paths, anchors, and known schemes untouched.
+        if (s.StartsWith("/") || s.StartsWith("#") || s.StartsWith("?")) return s;
+        if (s.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
+         || s.StartsWith("tel:",    StringComparison.OrdinalIgnoreCase)
+         || s.StartsWith("sms:",    StringComparison.OrdinalIgnoreCase)
+         || s.StartsWith("javascript:", StringComparison.OrdinalIgnoreCase)) return s;
+        // Already has a scheme like http://, https://, ftp://, etc.
+        var schemeIdx = s.IndexOf("://", StringComparison.Ordinal);
+        if (schemeIdx > 0 && schemeIdx <= 10) return s;
+        // Bare host (with or without leading "www.") → assume https.
+        return "https://" + s.TrimStart('/');
+    };
+
+    /* â”€â”€ POST handling â”€â”€ */
     if (IsPost && canEdit && communityId > 0 && !string.IsNullOrEmpty(connStr)) {
         var action = (Request["formAction"] ?? "").Trim();
         try {
@@ -59,7 +79,6 @@
                 var title       = (Request["title"] ?? "").Trim();
                 var description = (Request["description"] ?? "").Trim();
                 var icon        = (Request["icon"] ?? "").Trim();
-                var imageUrl    = (Request["imageUrl"] ?? "").Trim();
                 var isVisible   = Request["isVisible"] == "1" || Request["isVisible"] == "on" || Request["isVisible"] == "true";
 
                 if (string.IsNullOrEmpty(title)) {
@@ -71,11 +90,10 @@
                         conn.Open();
                         if (catId > 0) {
                             using (var cmd = new SqlCommand(
-                                "UPDATE CommunityDiscoverCategory SET Title=@t, Description=@d, Icon=@i, ImageUrl=@u, IsVisible=@v WHERE Id=@id AND CommunityId=@cid", conn)) {
+                                "UPDATE CommunityDiscoverCategory SET Title=@t, Description=@d, Icon=@i, IsVisible=@v WHERE Id=@id AND CommunityId=@cid", conn)) {
                                 cmd.Parameters.AddWithValue("@t",   title);
                                 cmd.Parameters.AddWithValue("@d",   (object)description ?? DBNull.Value);
                                 cmd.Parameters.AddWithValue("@i",   string.IsNullOrEmpty(icon)     ? (object)DBNull.Value : icon);
-                                cmd.Parameters.AddWithValue("@u",   string.IsNullOrEmpty(imageUrl) ? (object)DBNull.Value : imageUrl);
                                 cmd.Parameters.AddWithValue("@v",   isVisible);
                                 cmd.Parameters.AddWithValue("@id",  catId);
                                 cmd.Parameters.AddWithValue("@cid", communityId);
@@ -91,12 +109,11 @@
                                 if (o != null && o != DBNull.Value) { nextSort = Convert.ToInt32(o); }
                             }
                             using (var cmd = new SqlCommand(
-                                "INSERT INTO CommunityDiscoverCategory (CommunityId, Title, Description, Icon, ImageUrl, IsVisible, SortOrder) OUTPUT inserted.Id VALUES (@cid, @t, @d, @i, @u, @v, @s)", conn)) {
+                                "INSERT INTO CommunityDiscoverCategory (CommunityId, Title, Description, Icon, IsVisible, SortOrder) OUTPUT inserted.Id VALUES (@cid, @t, @d, @i, @v, @s)", conn)) {
                                 cmd.Parameters.AddWithValue("@cid", communityId);
                                 cmd.Parameters.AddWithValue("@t",   title);
                                 cmd.Parameters.AddWithValue("@d",   (object)description ?? DBNull.Value);
                                 cmd.Parameters.AddWithValue("@i",   string.IsNullOrEmpty(icon)     ? (object)DBNull.Value : icon);
-                                cmd.Parameters.AddWithValue("@u",   string.IsNullOrEmpty(imageUrl) ? (object)DBNull.Value : imageUrl);
                                 cmd.Parameters.AddWithValue("@v",   isVisible);
                                 cmd.Parameters.AddWithValue("@s",   nextSort);
                                 var o = cmd.ExecuteScalar();
@@ -150,7 +167,7 @@
                 var catId     = 0; int.TryParse(Request["catId"], out catId);
                 var label     = (Request["label"] ?? "").Trim();
                 var icon      = (Request["icon"]  ?? "").Trim();
-                var url       = (Request["url"]   ?? "").Trim();
+                var url       = normalizeUrl(Request["url"] ?? "");
                 var isVisible = Request["isVisible"] == "1" || Request["isVisible"] == "on" || Request["isVisible"] == "true";
 
                 if (catId <= 0 || string.IsNullOrEmpty(label) || string.IsNullOrEmpty(url)) {
@@ -263,7 +280,7 @@
         }
     }
 
-    /* ── Load categories + buttons ── */
+    /* â”€â”€ Load categories + buttons â”€â”€ */
     var categories   = new List<Dictionary<string, object>>();
     var buttonsByCat = new Dictionary<int, List<Dictionary<string, object>>>();
 
@@ -272,7 +289,7 @@
             using (var conn = new SqlConnection(connStr)) {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT Id, Title, Description, Icon, ImageUrl, IsVisible, SortOrder FROM CommunityDiscoverCategory WHERE CommunityId=@cid ORDER BY SortOrder, Id", conn)) {
+                    "SELECT Id, Title, Description, Icon, IsVisible, SortOrder FROM CommunityDiscoverCategory WHERE CommunityId=@cid ORDER BY SortOrder, Id", conn)) {
                     cmd.Parameters.AddWithValue("@cid", communityId);
                     using (var r = cmd.ExecuteReader()) {
                         while (r.Read()) {
@@ -281,9 +298,8 @@
                                 { "Title",       r.GetString(1) },
                                 { "Description", r.IsDBNull(2) ? "" : r.GetString(2) },
                                 { "Icon",        r.IsDBNull(3) ? "" : r.GetString(3) },
-                                { "ImageUrl",    r.IsDBNull(4) ? "" : r.GetString(4) },
-                                { "IsVisible",   r.GetBoolean(5) },
-                                { "SortOrder",   r.GetInt32(6) }
+                                { "IsVisible",   r.GetBoolean(4) },
+                                { "SortOrder",   r.GetInt32(5) }
                             });
                         }
                     }
@@ -314,428 +330,46 @@
             saveError = string.IsNullOrEmpty(saveError) ? "Laden mislukt: " + ex.Message : saveError;
         }
     }
+
+    /* ── Publish to PageData (so the partials below can read it) ── */
+    PageData["communityName"] = communityName;
+    PageData["communitySlug"] = communitySlug;
+    PageData["saveMsg"]       = saveMsg;
+    PageData["saveError"]     = saveError;
+    PageData["requestUrl"]    = Request.RawUrl;
 }
 
-<section class="w-full max-w-5xl m-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6"
+<section class="w-full max-w-5xl m-auto flex flex-col gap-6"
          data-module-id="@Dnn.Module.ModuleID" data-tab-id="@Dnn.Tab.TabID">
 
-    <!-- Header -->
-    <div class="flex flex-wrap items-start justify-between gap-3">
-        <div class="flex flex-col gap-1 min-w-0">
-            <h1 class="text-3xl font-bold text-foreground-900">Ondekt beheren</h1>
-            <p class="text-sm text-foreground-500">Beheer de Ondekt-categorieën en knoppen voor <strong>@communityName</strong>.</p>
-        </div>
-        @if (!string.IsNullOrEmpty(communitySlug)) {
-            <a href="/@communitySlug/discover"
-               class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-divider bg-background text-sm font-medium text-foreground-700 hover:border-primary hover:text-primary transition shrink-0">
-                <i data-lucide="eye" class="size-4"></i>
-                <span>Bekijk Ondekt</span>
-            </a>
-        }
-    </div>
+    @RenderPage("Shared/DiscoverEdit/_FormHeader.cshtml")
 
     @if (!canEdit) {
-        <div class="p-4 rounded-xl border border-warning/30 bg-warning/5 text-sm text-foreground-700">
-            Je hebt geen rechten om deze pagina te bewerken.
-        </div>
-        return;
+        @RenderPage("Shared/DiscoverEdit/_AccessDenied.cshtml")
+    } else if (communityId <= 0) {
+        @RenderPage("Shared/DiscoverEdit/_NoCommunity.cshtml")
+    } else {
+        @RenderPage("Shared/DiscoverEdit/_SaveAlerts.cshtml")
+
+        if (categories.Count > 0) {
+            @(new System.Web.HtmlString("<div class=\"flex flex-col gap-4\" data-sortable=\"cat\" data-reorder-url=\"" + System.Web.HttpUtility.HtmlAttributeEncode(Request.RawUrl) + "\">"))
+
+            foreach (var cat in categories) {
+                var catId = (int)cat["Id"];
+                var btns  = buttonsByCat.ContainsKey(catId) ? buttonsByCat[catId] : new List<Dictionary<string, object>>();
+                PageData["cat"]  = cat;
+                PageData["btns"] = btns;
+                @RenderPage("Shared/DiscoverEdit/_CategoryItem.cshtml")
+            }
+
+            @(new System.Web.HtmlString("</div>"))
+        }
+
+        @RenderPage("Shared/DiscoverEdit/_AddCategoryForm.cshtml")
     }
-    @if (communityId <= 0) {
-        <div class="p-4 rounded-xl border border-warning/30 bg-warning/5 text-sm text-foreground-700">
-            Geen community geselecteerd.
-        </div>
-        return;
-    }
-
-    @if (!string.IsNullOrEmpty(saveMsg)) {
-        <div class="p-3 rounded-xl border border-success-200 bg-success-50 text-sm font-medium text-success-800 flex items-center gap-2">
-            <i data-lucide="check-circle-2" class="size-4"></i><span>@saveMsg</span>
-        </div>
-    }
-    @if (!string.IsNullOrEmpty(saveError)) {
-        <div class="p-3 rounded-xl border border-danger-200 bg-danger-50 text-sm font-medium text-danger-800 flex items-center gap-2">
-            <i data-lucide="alert-circle" class="size-4"></i><span>@saveError</span>
-        </div>
-    }
-
-    <!-- Floating toast region for AJAX feedback -->
-    <div id="de-toast-region" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-    <!-- Existing categories -->
-    @if (categories.Count > 0) {
-        @(new System.Web.HtmlString("<div class=\"flex flex-col gap-4\" data-sortable=\"cat\" data-reorder-url=\"" + System.Web.HttpUtility.HtmlAttributeEncode(Request.RawUrl) + "\">"))
-    }
-
-    @foreach (var cat in categories) {
-        var catId      = (int)cat["Id"];
-        var catTitle   = (string)cat["Title"];
-        var catDesc    = (string)cat["Description"];
-        var catIcon    = (string)cat["Icon"];
-        var catImage   = (string)cat["ImageUrl"];
-        var catVisible = (bool)cat["IsVisible"];
-        var btns       = buttonsByCat.ContainsKey(catId) ? buttonsByCat[catId] : new List<Dictionary<string, object>>();
-
-        <div class="dt-sort-item bg-content1 rounded-xl border border-divider overflow-hidden" data-id="@catId">
-            <details>
-                <summary class="cursor-pointer flex items-center gap-3 p-5 sm:p-6 hover:bg-content2/50 transition">
-                    <span class="dt-sort-handle shrink-0 inline-flex items-center justify-center size-8 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-content2 cursor-grab active:cursor-grabbing"
-                          title="Sleep om te verplaatsen"
-                          onclick="event.preventDefault(); event.stopPropagation();">
-                        <i data-lucide="grip-vertical" class="size-4"></i>
-                    </span>
-                    <div class="size-10 rounded-lg flex items-center justify-center bg-primary/10 shrink-0 overflow-hidden">
-                        @if (!string.IsNullOrEmpty(catImage)) {
-                            <img src="@catImage" alt="" class="w-full h-full object-cover" />
-                        } else if (!string.IsNullOrEmpty(catIcon)) {
-                            <i data-lucide="@catIcon" class="size-5 text-primary"></i>
-                        } else {
-                            <span class="text-sm font-bold text-primary">@(catTitle.Length > 0 ? catTitle.Substring(0, 1).ToUpper() : "?")</span>
-                        }
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h2 class="text-base font-semibold text-foreground-900 truncate">@catTitle</h2>
-                        <p class="text-xs text-foreground-500 truncate">@btns.Count knop@(btns.Count == 1 ? "" : "pen")</p>
-                    </div>
-                    @if (!catVisible) {
-                        <span class="shrink-0 text-xs px-2 py-1 rounded-full bg-warning/10 text-warning-700 font-medium">verborgen</span>
-                    }
-                    <i data-lucide="chevron-down" class="size-5 text-foreground-400 shrink-0"></i>
-                </summary>
-
-                <!-- Category edit form -->
-                <div class="p-5 sm:p-6 flex flex-col gap-4">
-                    <form method="post" data-ajax="cat-save" class="contents">
-                        <input type="hidden" name="formAction" value="cat-save" />
-                        <input type="hidden" name="catId" value="@catId" />
-
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-sm font-medium text-foreground-700">Titel <span class="text-danger">*</span></label>
-                            @{
-                                PageData["id"]       = "catTitle_" + catId;
-                                PageData["name"]     = "title";
-                                PageData["value"]    = catTitle;
-                                PageData["required"] = true;
-                            }
-                            @RenderPage("Shared/Components/_Input.cshtml")
-                        </div>
-
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-sm font-medium text-foreground-700">Beschrijving</label>
-                            @{
-                                PageData["id"]    = "catDesc_" + catId;
-                                PageData["name"]  = "description";
-                                PageData["value"] = catDesc;
-                                PageData["rows"]  = 3;
-                            }
-                            @RenderPage("Shared/Components/_Textarea.cshtml")
-                        </div>
-
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-sm font-medium text-foreground-700">Lucide icon</label>
-                            @{
-                                PageData["id"]          = "catIcon_" + catId;
-                                PageData["name"]        = "icon";
-                                PageData["value"]       = catIcon;
-                                PageData["placeholder"] = "bijv. map-pin";
-                            }
-                            @RenderPage("Shared/Components/_Input.cshtml")
-                        </div>
-
-                        <div class="flex flex-col gap-1.5">
-                            <label class="text-sm font-medium text-foreground-700">Afbeelding (alternatief voor icon)</label>
-                            @{
-                                PageData["id"]    = "catImage_" + catId;
-                                PageData["name"]  = "imageUrl";
-                                PageData["value"] = catImage;
-                            }
-                            @RenderPage("Shared/Components/_Dropzone.cshtml")
-                        </div>
-
-                        <div class="flex items-center gap-4">
-                            <input type="hidden" name="isVisible" value="@(catVisible ? "1" : "0")" data-vis-input />
-                            <button type="button" data-vis-toggle
-                                    aria-pressed="@(catVisible ? "true" : "false")"
-                                    title="@(catVisible ? "Verbergen op de Ondekt-pagina" : "Tonen op de Ondekt-pagina")"
-                                    class="inline-flex items-center justify-center size-9 rounded-lg border transition-colors shrink-0 @(catVisible ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20" : "border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3")">
-                                <i data-lucide="@(catVisible ? "eye" : "eye-off")" class="size-4"></i>
-                            </button>
-                            <span class="text-sm font-medium text-foreground-700">Zichtbaar op de Ondekt-pagina</span>
-                        </div>
-
-                        <div class="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-end gap-3 pt-2 border-t border-divider">
-                            <button type="button" data-ajax-delete="cat" data-cat-id="@catId"
-                                    class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-divider text-sm font-medium text-foreground-700 hover:bg-content2 hover:border-danger/40 hover:text-danger-700 transition">
-                                <span>Verwijderen</span>
-                            </button>
-                            <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">
-                                <i data-lucide="save" class="size-4"></i>
-                                <span>Opslaan</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Buttons section -->
-                <div class="border-t border-divider bg-content2/30 p-5 sm:p-6">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-foreground-500 mb-3">Knoppen</h3>
-
-                    @if (btns.Count == 0) {
-                        <p class="text-sm text-foreground-400 italic mb-4">Nog geen knoppen in deze categorie.</p>
-                    }
-
-                    <div class="flex flex-col gap-3"
-                         data-sortable="btn"
-                         data-cat-id="@catId"
-                         data-reorder-url="@Request.RawUrl">
-                        @foreach (var b in btns) {
-                            var bId      = (int)b["Id"];
-                            var bLabel   = (string)b["Label"];
-                            var bIcon    = (string)b["Icon"];
-                            var bUrl     = (string)b["Url"];
-                            var bVisible = (bool)b["IsVisible"];
-                            <form method="post" data-ajax="btn-save" class="dt-sort-item bg-content1 rounded-lg border border-divider p-4 flex flex-wrap items-end gap-3" data-id="@bId">
-                                <input type="hidden" name="formAction" value="btn-save" />
-                                <input type="hidden" name="catId"      value="@catId" />
-                                <input type="hidden" name="btnId"      value="@bId" />
-
-                                <span class="dt-sort-handle hidden sm:inline-flex items-center justify-center size-9 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-content2 cursor-grab active:cursor-grabbing shrink-0"
-                                      title="Sleep om te verplaatsen">
-                                    <i data-lucide="grip-vertical" class="size-4"></i>
-                                </span>
-
-                                <div class="w-full sm:w-auto sm:flex-1 sm:min-w-[10rem] flex flex-col gap-1.5">
-                                    <label class="text-xs font-medium text-foreground-500">Label *</label>
-                                    @{
-                                        PageData["id"]       = "btnLabel_" + bId;
-                                        PageData["name"]     = "label";
-                                        PageData["value"]    = bLabel;
-                                        PageData["required"] = true;
-                                    }
-                                    @RenderPage("Shared/Components/_Input.cshtml")
-                                </div>
-
-                                <div class="w-full sm:w-auto sm:basis-32 sm:shrink-0 flex flex-col gap-1.5">
-                                    <label class="text-xs font-medium text-foreground-500">Icon</label>
-                                    @{
-                                        PageData["id"]          = "btnIcon_" + bId;
-                                        PageData["name"]        = "icon";
-                                        PageData["value"]       = bIcon;
-                                        PageData["placeholder"] = "chevron-right";
-                                    }
-                                    @RenderPage("Shared/Components/_Input.cshtml")
-                                </div>
-
-                                <div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">
-                                    <label class="text-xs font-medium text-foreground-500">URL *</label>
-                                    @{
-                                        PageData["id"]       = "btnUrl_" + bId;
-                                        PageData["name"]     = "url";
-                                        PageData["type"]     = "text";
-                                        PageData["value"]    = bUrl;
-                                        PageData["required"] = true;
-                                    }
-                                    @RenderPage("Shared/Components/_Input.cshtml")
-                                </div>
-
-                                <div class="w-full sm:w-auto flex items-center gap-2 sm:justify-end">
-                                    <input type="hidden" name="isVisible" value="@(bVisible ? "1" : "0")" data-vis-input />
-                                    <button type="button" data-vis-toggle
-                                            aria-pressed="@(bVisible ? "true" : "false")"
-                                            title="@(bVisible ? "Verbergen" : "Tonen")"
-                                            class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors @(bVisible ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20" : "border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3")">
-                                        <i data-lucide="@(bVisible ? "eye" : "eye-off")" class="size-4"></i>
-                                    </button>
-                                    <button type="submit" title="Opslaan"
-                                            class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg bg-primary text-white hover:bg-primary/90 transition">
-                                        <i data-lucide="save" class="size-4"></i>
-                                    </button>
-                                    <button type="button" data-ajax-delete="btn" data-btn-id="@bId"
-                                            title="Verwijderen"
-                                            class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-divider text-foreground-700 hover:bg-content2 hover:border-danger/40 hover:text-danger-700 transition">
-                                        <i data-lucide="trash-2" class="size-4"></i>
-                                    </button>
-                                </div>
-                            </form>
-                        }
-                    </div>
-
-                    <!-- Add new button (inline form appears ABOVE the trigger so '+' stays anchored to the bottom of the list) -->
-                    <div class="mt-4" data-add-btn-wrap="@catId">
-                        <form method="post" data-ajax="btn-save">
-                        <div data-add-btn-form="@catId" class="hidden mb-3 bg-content1 rounded-lg border border-divider p-4">
-                            <input type="hidden" name="formAction" value="btn-save" />
-                            <input type="hidden" name="catId"      value="@catId" />
-                            <input type="hidden" name="btnId"      value="0" />
-                            <div class="flex flex-wrap items-end gap-3">
-
-                            <div class="w-full sm:w-auto sm:flex-1 sm:min-w-[10rem] flex flex-col gap-1.5">
-                                <label class="text-xs font-medium text-foreground-500">Label *</label>
-                                @{
-                                    PageData["id"]       = "newBtnLabel_" + catId;
-                                    PageData["name"]     = "label";
-                                    PageData["value"]    = "";
-                                    PageData["required"] = true;
-                                }
-                                @RenderPage("Shared/Components/_Input.cshtml")
-                            </div>
-
-                            <div class="w-full sm:w-auto sm:basis-32 sm:shrink-0 flex flex-col gap-1.5">
-                                <label class="text-xs font-medium text-foreground-500">Icon</label>
-                                @{
-                                    PageData["id"]          = "newBtnIcon_" + catId;
-                                    PageData["name"]        = "icon";
-                                    PageData["value"]       = "";
-                                    PageData["placeholder"] = "chevron-right";
-                                }
-                                @RenderPage("Shared/Components/_Input.cshtml")
-                            </div>
-
-                            <div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">
-                                <label class="text-xs font-medium text-foreground-500">URL *</label>
-                                @{
-                                    PageData["id"]          = "newBtnUrl_" + catId;
-                                    PageData["name"]        = "url";
-                                    PageData["type"]        = "text";
-                                    PageData["value"]       = "";
-                                    PageData["placeholder"] = "/" + communitySlug + "/...";
-                                    PageData["required"]    = true;
-                                }
-                                @RenderPage("Shared/Components/_Input.cshtml")
-                            </div>
-
-                            <div class="w-full sm:w-auto flex items-center gap-2 sm:justify-end">
-                                <input type="hidden" name="isVisible" value="1" data-vis-input />
-                                <button type="button" data-vis-toggle
-                                        aria-pressed="true"
-                                        title="Verbergen"
-                                        class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">
-                                    <i data-lucide="eye" class="size-4"></i>
-                                </button>
-                                <button type="submit"
-                                        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 px-3 h-9 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">
-                                    <i data-lucide="plus" class="size-4"></i>
-                                    <span>Toev.</span>
-                                </button>
-                            </div>
-                            </div>
-                        </div>
-                        </form>
-                        <button type="button" data-add-btn-trigger="@catId"
-                                class="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-divider text-sm font-medium text-primary hover:border-primary hover:bg-primary/5 transition">
-                            <i data-lucide="plus" class="size-4"></i>
-                            <span>Knop toevoegen</span>
-                        </button>
-                    </div>
-                </div>
-            </details>
-        </div>
-    }
-
-    @if (categories.Count > 0) {
-        @(new System.Web.HtmlString("</div>"))
-    }
-
-    <!-- Add new category (form opens when '+' is clicked) -->
-    <!-- NOTE: hidden + data-add-cat-form live on the INNER div because the
-         browser's HTML5 parser strips any <form> nested inside DNN's outer
-         <form id="Form">. The <form> tag is kept so a non-AJAX fallback POST
-         still works, but all attributes/state must live on the inner div. -->
-    <div data-add-cat-wrap>
-        <form method="post" data-ajax="cat-save">
-        <div data-add-cat-form class="hidden mb-3 bg-content1 rounded-xl border border-divider p-5 sm:p-6 space-y-4">
-            <input type="hidden" name="formAction" value="cat-save" />
-            <input type="hidden" name="catId" value="0" />
-
-            <div class="flex flex-col gap-1.5">
-                <label for="newCatTitle" class="text-sm font-medium text-foreground-700">Titel <span class="text-danger">*</span></label>
-                @{
-                    PageData["id"]       = "newCatTitle";
-                    PageData["name"]     = "title";
-                    PageData["value"]    = "";
-                    PageData["required"] = true;
-                }
-                @RenderPage("Shared/Components/_Input.cshtml")
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label for="newCatDesc" class="text-sm font-medium text-foreground-700">Beschrijving</label>
-                @{
-                    PageData["id"]    = "newCatDesc";
-                    PageData["name"]  = "description";
-                    PageData["value"] = "";
-                    PageData["rows"]  = 3;
-                }
-                @RenderPage("Shared/Components/_Textarea.cshtml")
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label for="newCatIcon" class="text-sm font-medium text-foreground-700">Lucide icon</label>
-                @{
-                    PageData["id"]          = "newCatIcon";
-                    PageData["name"]        = "icon";
-                    PageData["value"]       = "";
-                    PageData["placeholder"] = "bijv. map-pin";
-                }
-                @RenderPage("Shared/Components/_Input.cshtml")
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-medium text-foreground-700">Afbeelding (alternatief voor icon)</label>
-                @{
-                    PageData["name"]  = "imageUrl";
-                    PageData["id"]    = "newCatImage";
-                    PageData["value"] = "";
-                }
-                @RenderPage("Shared/Components/_Dropzone.cshtml")
-            </div>
-
-            <div class="flex items-center gap-4">
-                <input type="hidden" name="isVisible" value="1" data-vis-input />
-                <button type="button" data-vis-toggle
-                        aria-pressed="true"
-                        title="Verbergen op de Ondekt-pagina"
-                        class="inline-flex items-center justify-center size-9 rounded-lg border transition-colors shrink-0 border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">
-                    <i data-lucide="eye" class="size-4"></i>
-                </button>
-                <span class="text-sm font-medium text-foreground-700">Zichtbaar op de Ondekt-pagina</span>
-            </div>
-
-            <div class="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-end gap-2 pt-2 border-t border-divider">
-                <button type="button" data-add-cat-cancel
-                        class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-divider text-sm font-medium text-foreground-700 hover:bg-content2 transition">
-                    <span>Annuleren</span>
-                </button>
-                <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">
-                    <i data-lucide="plus" class="size-4"></i>
-                    <span>Categorie toevoegen</span>
-                </button>
-            </div>
-        </div>
-        </form>
-        <button type="button" data-add-cat-trigger
-                class="w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-dashed border-primary/40 text-sm font-semibold text-primary hover:border-primary hover:bg-primary/5 transition">
-            <i data-lucide="plus" class="size-4"></i>
-            <span>Categorie toevoegen</span>
-        </button>
-    </div>
 </section>
 
-<style>
-    .dt-sort-ghost   { opacity: .4; }
-    .dt-sort-chosen  { box-shadow: 0 0 0 2px var(--color-primary, #2563eb); }
-    .dt-sort-saving  { opacity: .85; }
-    .dt-sort-saved   { box-shadow: inset 0 0 0 2px rgba(16,185,129,.5); }
-    .dt-sort-error   { box-shadow: inset 0 0 0 2px rgba(239,68,68,.6); }
-</style>
-
-<!-- Scripts: dropzone (from TableDZP module) + SortableJS + page wiring -->
-<link rel="stylesheet" href="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/css/module.css" />
-<script src="/DesktopModules/MVC/Dnn.Modules.TableDZP/Resources/js/dropzone.js"></script>
-<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/sortable.min.js"></script>
-<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/toast.js"></script>
-<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/modal.js"></script>
-<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/discover-edit.js"></script>
-
-@RenderPage("Shared/Components/_Modal.cshtml")
+@if (canEdit && communityId > 0) {
+    @RenderPage("Shared/DiscoverEdit/_Scripts.cshtml")
+}
 

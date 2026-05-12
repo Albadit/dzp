@@ -16,6 +16,21 @@
     var isCommunityMgr  = user != null && user.IsInRole("Community beheerder");
     var canEdit         = isSuperUser || isAdministrator || isCommunityMgr;
 
+    // Defensive URL normalisation for legacy rows that may have been saved
+    // without a scheme (e.g. "www.youtube.com"): browsers would otherwise
+    // treat those as relative paths.
+    Func<string, string> normalizeUrl = (raw) => {
+        if (string.IsNullOrWhiteSpace(raw)) return "";
+        var s = raw.Trim();
+        if (s.StartsWith("/") || s.StartsWith("#") || s.StartsWith("?")) return s;
+        if (s.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
+         || s.StartsWith("tel:",    StringComparison.OrdinalIgnoreCase)
+         || s.StartsWith("sms:",    StringComparison.OrdinalIgnoreCase)) return s;
+        var schemeIdx = s.IndexOf("://", StringComparison.Ordinal);
+        if (schemeIdx > 0 && schemeIdx <= 10) return s;
+        return "https://" + s.TrimStart('/');
+    };
+
     /* ── DB-backed categories (with hardcoded fallback below) ── */
     var dbCategories = new List<Dictionary<string, object>>();
     var dbButtonsByCat = new Dictionary<int, List<Dictionary<string, object>>>();
@@ -27,7 +42,7 @@
                 using (var conn = new SqlConnection(cs.ConnectionString)) {
                     conn.Open();
                     using (var cmd = new SqlCommand(
-                        "SELECT Id, Title, Description, Icon, ImageUrl FROM CommunityDiscoverCategory WHERE CommunityId=@cid AND IsVisible=1 ORDER BY SortOrder, Id", conn)) {
+                        "SELECT Id, Title, Description, Icon FROM CommunityDiscoverCategory WHERE CommunityId=@cid AND IsVisible=1 ORDER BY SortOrder, Id", conn)) {
                         cmd.Parameters.AddWithValue("@cid", communityId);
                         using (var r = cmd.ExecuteReader()) {
                             while (r.Read()) {
@@ -35,8 +50,7 @@
                                     { "Id",          r.GetInt32(0) },
                                     { "Title",       r.GetString(1) },
                                     { "Description", r.IsDBNull(2) ? "" : r.GetString(2) },
-                                    { "Icon",        r.IsDBNull(3) ? "" : r.GetString(3) },
-                                    { "ImageUrl",    r.IsDBNull(4) ? "" : r.GetString(4) }
+                                    { "Icon",        r.IsDBNull(3) ? "" : r.GetString(3) }
                                 });
                             }
                         }
@@ -133,7 +147,7 @@
 
 
 
-<section class="w-full max-w-7xl m-auto px-4 sm:px-6 lg:px-8 py-8">
+<section class="w-full max-w-7xl m-auto">
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="flex flex-col gap-2 min-w-0">
@@ -157,14 +171,11 @@
           var title    = (string)cat["Title"];
           var desc     = (string)cat["Description"];
           var icon     = (string)cat["Icon"];
-          var imageUrl = (string)cat["ImageUrl"];
           var btns     = dbButtonsByCat.ContainsKey(catId) ? dbButtonsByCat[catId] : new List<Dictionary<string, object>>();
           <div class="flex flex-col gap-4 p-5 rounded-lg border border-divider bg-background hover:border-primary/30 transition">
             <div class="flex items-center gap-3">
               <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 overflow-hidden shrink-0">
-                @if (!string.IsNullOrEmpty(imageUrl)) {
-                  <img src="@imageUrl" alt="" class="w-full h-full object-cover" />
-                } else if (!string.IsNullOrEmpty(icon)) {
+                @if (!string.IsNullOrEmpty(icon)) {
                   <i data-lucide="@icon" class="size-5 text-primary"></i>
                 } else {
                   <span class="text-sm font-bold text-primary">@(title.Length > 0 ? title.Substring(0, 1).ToUpper() : "?")</span>
@@ -179,7 +190,7 @@
               @foreach (var b in btns) {
                 var bLabel = (string)b["Label"];
                 var bIcon  = (string)b["Icon"];
-                var bUrl   = (string)b["Url"];
+                var bUrl   = normalizeUrl((string)b["Url"]);
                 <a href="@bUrl" class="flex items-center justify-between px-3 py-2 rounded-lg bg-content2 text-sm text-foreground-700 hover:text-primary hover:bg-primary/5 transition">
                   <span class="flex items-center gap-2 min-w-0">
                     @if (!string.IsNullOrEmpty(bIcon)) {

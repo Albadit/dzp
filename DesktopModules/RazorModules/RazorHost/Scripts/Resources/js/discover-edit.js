@@ -148,7 +148,7 @@
             + '</div>'
             + '<div class="w-full sm:w-auto sm:basis-32 sm:shrink-0 flex flex-col gap-1.5">'
             +   '<label class="text-xs font-medium text-foreground-500">Icon</label>'
-            +   '<input id="btnIcon_' + esc(bId) + '" name="icon" type="text" value="' + esc(icon) + '" placeholder="chevron-right" '
+            +   '<input id="btnIcon_' + esc(bId) + '" name="icon" type="text" value="' + esc(icon) + '" placeholder="chevron-right" data-icon-picker '
             +   'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
             + '</div>'
             + '<div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">'

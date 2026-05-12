@@ -9,16 +9,14 @@
     var groupImages   = (Dictionary<int, string>)PageData["groupImages"];
 }
 
-<section class="w-full">
-    <div class="w-full px-4 sm:px-6 lg:px-8 flex flex-col gap-3 sm:gap-4 py-4 sm:py-6">
-        <div class="flex items-center justify-between">
-            <h2 class="text-base font-semibold text-foreground-900">Groepen</h2>
-            <a href="/@communitySlug/manage/groups" class="text-sm font-medium text-foreground-500 hover:text-primary transition flex items-center gap-1">
-                Ga naar <i data-lucide="arrow-right" class="size-3.5"></i>
-            </a>
-        </div>
+<section class="w-full flex flex-col gap-4 sm:gap-6">
+    <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-foreground-900">Groepen</h2>
+        <a href="/@communitySlug/manage/groups" class="text-sm font-medium text-foreground-500 hover:text-primary transition flex items-center gap-1">
+            Ga naar <i data-lucide="arrow-right" class="size-3.5"></i>
+        </a>
     </div>
-    <div class="w-full px-4 sm:px-6 lg:px-8">
+    <div class="w-full">
         <div class="js-groups-strip flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
             @if (displayGroups.Count == 0) {
                 <div class="flex flex-col items-center gap-3 py-8 text-center w-full">

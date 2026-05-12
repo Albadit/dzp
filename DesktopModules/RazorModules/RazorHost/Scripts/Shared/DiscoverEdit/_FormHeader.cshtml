@@ -1,0 +1,21 @@
+@*
+    Discovery edit – page header.
+    Reads from PageData: communityName, communitySlug.
+*@
+@{
+    var communityName = (PageData["communityName"] as string) ?? "";
+    var communitySlug = (PageData["communitySlug"] as string) ?? "";
+}
+<div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="flex flex-col gap-1 min-w-0">
+        <h1 class="text-3xl font-bold text-foreground-900">Ondekt beheren</h1>
+        <p class="text-sm text-foreground-500">Beheer de Ondekt-categorieën en knoppen voor <strong>@communityName</strong>.</p>
+    </div>
+    @if (!string.IsNullOrEmpty(communitySlug)) {
+        <a href="/@communitySlug/discover"
+           class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-divider bg-background text-sm font-medium text-foreground-700 hover:border-primary hover:text-primary transition shrink-0">
+            <i data-lucide="eye" class="size-4"></i>
+            <span>Bekijk Ondekt</span>
+        </a>
+    }
+</div>
