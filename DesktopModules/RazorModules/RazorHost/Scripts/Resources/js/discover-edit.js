@@ -124,14 +124,15 @@
     }
 
     // Build a button row matching the server-rendered template in
-    // _DiscoverEdit.cshtml so we can append a new row in-place after a
+    // _CategoryItem.cshtml so we can append a new row in-place after a
     // successful AJAX add (no full page reload).
     function renderButtonRow(bId, catId, label, icon, url, visible) {
-        var row = document.createElement('form');
-        row.method = 'post';
-        row.setAttribute('data-ajax', 'btn-save');
-        row.className = 'dt-sort-item bg-content1 rounded-lg border border-divider p-4 flex flex-wrap items-end gap-3';
+        var row = document.createElement('div');
+        row.setAttribute('data-edit-btn-form', '');
+        row.setAttribute('data-btn-id', String(bId));
+        row.setAttribute('data-cat-id', String(catId));
         row.setAttribute('data-id', String(bId));
+        row.className = 'dt-sort-item bg-content1 rounded-lg border border-divider p-4 flex flex-wrap items-end gap-3';
         var onCls  = 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20';
         var offCls = 'border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3';
         row.innerHTML =
@@ -173,6 +174,142 @@
             +   '</button>'
             + '</div>';
         return row;
+    }
+
+    // Build a category card matching the server template in
+    // Shared/DiscoverEdit/_CategoryItem.cshtml so a freshly-added category
+    // appears in-place after AJAX save (no full page reload).
+    function renderCategoryCard(catId, title, desc, icon, visible) {
+        var card = document.createElement('div');
+        card.className = 'dt-sort-item bg-content1 rounded-xl border border-divider overflow-hidden';
+        card.setAttribute('data-id', String(catId));
+        var initial = title && title.length > 0 ? title.charAt(0).toUpperCase() : '?';
+        var visBtnCls = visible
+            ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+            : 'border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3';
+        card.innerHTML =
+              '<details>'
+            +   '<summary class="cursor-pointer flex items-center gap-3 p-5 sm:p-6 hover:bg-content2/50 transition">'
+            +     '<span class="dt-sort-handle shrink-0 inline-flex items-center justify-center size-8 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-content2 cursor-grab active:cursor-grabbing" title="Sleep om te verplaatsen" onclick="event.preventDefault(); event.stopPropagation();">'
+            +       '<i data-lucide="grip-vertical" class="size-4"></i>'
+            +     '</span>'
+            +     '<div class="size-10 rounded-lg flex items-center justify-center bg-primary/10 shrink-0 overflow-hidden">'
+            +       (icon
+                        ? '<i data-lucide="' + esc(icon) + '" class="size-5 text-primary"></i>'
+                        : '<span class="text-sm font-bold text-primary">' + esc(initial) + '</span>')
+            +     '</div>'
+            +     '<div class="flex-1 min-w-0">'
+            +       '<h2 class="text-base font-semibold text-foreground-900 truncate">' + esc(title) + '</h2>'
+            +       '<p class="text-xs text-foreground-500 truncate">0 knoppen</p>'
+            +     '</div>'
+            +     (visible ? '' : '<span class="shrink-0 text-xs px-2 py-1 rounded-full bg-warning/10 text-warning-700 font-medium">verborgen</span>')
+            +     '<i data-lucide="chevron-down" class="size-5 text-foreground-400 shrink-0"></i>'
+            +   '</summary>'
+            +   '<div class="p-5 sm:p-6 flex flex-col gap-4">'
+            +     '<div data-edit-cat-form data-cat-id="' + esc(catId) + '" class="contents">'
+            +       '<input type="hidden" name="formAction" value="cat-save" />'
+            +       '<input type="hidden" name="catId" value="' + esc(catId) + '" />'
+            +       '<div class="flex flex-col gap-1.5">'
+            +         '<label class="text-sm font-medium text-foreground-700">Titel <span class="text-danger">*</span></label>'
+            +         '<input id="catTitle_' + esc(catId) + '" name="title" type="text" value="' + esc(title) + '" required '
+            +         'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
+            +       '</div>'
+            +       '<div class="flex flex-col gap-1.5">'
+            +         '<label class="text-sm font-medium text-foreground-700">Beschrijving</label>'
+            +         '<textarea id="catDesc_' + esc(catId) + '" name="description" rows="3" '
+            +         'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition">' + esc(desc) + '</textarea>'
+            +       '</div>'
+            +       '<div class="flex flex-col gap-1.5">'
+            +         '<label class="text-sm font-medium text-foreground-700">Lucide icon</label>'
+            +         '<input id="catIcon_' + esc(catId) + '" name="icon" type="text" value="' + esc(icon) + '" placeholder="bijv. map-pin" data-icon-picker '
+            +         'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
+            +       '</div>'
+            +       '<div class="flex items-center gap-4">'
+            +         '<input type="hidden" name="isVisible" value="' + (visible ? '1' : '0') + '" data-vis-input />'
+            +         '<button type="button" data-vis-toggle aria-pressed="' + (visible ? 'true' : 'false') + '" '
+            +         'title="' + (visible ? 'Verbergen op de Ondekt-pagina' : 'Tonen op de Ondekt-pagina') + '" '
+            +         'class="inline-flex items-center justify-center size-9 rounded-lg border transition-colors shrink-0 ' + visBtnCls + '">'
+            +           '<i data-lucide="' + (visible ? 'eye' : 'eye-off') + '" class="size-4"></i>'
+            +         '</button>'
+            +         '<span class="text-sm font-medium text-foreground-700">Zichtbaar op de Ondekt-pagina</span>'
+            +       '</div>'
+            +       '<div class="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-end gap-3 pt-2 border-t border-divider">'
+            +         '<button type="button" data-ajax-delete="cat" data-cat-id="' + esc(catId) + '" '
+            +         'class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-divider text-sm font-medium text-foreground-700 hover:bg-content2 hover:border-danger/40 hover:text-danger-700 transition">'
+            +           '<span>Verwijderen</span>'
+            +         '</button>'
+            +         '<button type="submit" '
+            +         'class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">'
+            +           '<i data-lucide="save" class="size-4"></i><span>Opslaan</span>'
+            +         '</button>'
+            +       '</div>'
+            +     '</div>'
+            +   '</div>'
+            +   '<div class="border-t border-divider bg-content2/30 p-5 sm:p-6">'
+            +     '<h3 class="text-xs font-bold uppercase tracking-wider text-foreground-500 mb-3">Knoppen</h3>'
+            +     '<p class="text-sm text-foreground-400 italic mb-4">Nog geen knoppen in deze categorie.</p>'
+            +     '<div class="flex flex-col gap-3" data-sortable="btn" data-cat-id="' + esc(catId) + '" data-reorder-url="' + esc(pageUrl) + '"></div>'
+            +     '<div class="mt-4" data-add-btn-wrap="' + esc(catId) + '">'
+            +       '<div data-add-btn-form="' + esc(catId) + '" class="hidden mb-3 bg-content1 rounded-lg border border-divider p-4">'
+            +         '<input type="hidden" name="formAction" value="btn-save" />'
+            +         '<input type="hidden" name="catId" value="' + esc(catId) + '" />'
+            +         '<input type="hidden" name="btnId" value="0" />'
+            +         '<div class="flex flex-wrap items-end gap-3">'
+            +           '<div class="w-full sm:w-auto sm:flex-1 sm:min-w-[10rem] flex flex-col gap-1.5">'
+            +             '<label class="text-xs font-medium text-foreground-500">Label *</label>'
+            +             '<input id="newBtnLabel_' + esc(catId) + '" name="label" type="text" value="" required '
+            +             'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
+            +           '</div>'
+            +           '<div class="w-full sm:w-auto sm:basis-32 sm:shrink-0 flex flex-col gap-1.5">'
+            +             '<label class="text-xs font-medium text-foreground-500">Icon</label>'
+            +             '<input id="newBtnIcon_' + esc(catId) + '" name="icon" type="text" value="" placeholder="chevron-right" data-icon-picker '
+            +             'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
+            +           '</div>'
+            +           '<div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">'
+            +             '<label class="text-xs font-medium text-foreground-500">URL *</label>'
+            +             '<input id="newBtnUrl_' + esc(catId) + '" name="url" type="text" value="" required '
+            +             'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
+            +           '</div>'
+            +           '<div class="w-full sm:w-auto flex items-center gap-2 sm:justify-end">'
+            +             '<input type="hidden" name="isVisible" value="1" data-vis-input />'
+            +             '<button type="button" data-vis-toggle aria-pressed="true" title="Verbergen" '
+            +             'class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">'
+            +               '<i data-lucide="eye" class="size-4"></i>'
+            +             '</button>'
+            +             '<button type="submit" '
+            +             'class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 px-3 h-9 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">'
+            +               '<i data-lucide="plus" class="size-4"></i><span>Toev.</span>'
+            +             '</button>'
+            +           '</div>'
+            +         '</div>'
+            +       '</div>'
+            +       '<button type="button" data-add-btn-trigger="' + esc(catId) + '" '
+            +       'class="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-divider text-sm font-medium text-primary hover:border-primary hover:bg-primary/5 transition">'
+            +         '<i data-lucide="plus" class="size-4"></i><span>Knop toevoegen</span>'
+            +       '</button>'
+            +     '</div>'
+            +   '</div>'
+            + '</details>';
+        return card;
+    }
+
+    function insertCategoryCard(catId, title, desc, icon, visible) {
+        // Find the categories list (container with data-sortable="cat").
+        var list = document.querySelector('[data-sortable="cat"]');
+        if (!list) {
+            // No categories yet — create the list right before the add-cat wrap.
+            var addWrap = document.querySelector('[data-add-cat-wrap]');
+            if (!addWrap || !addWrap.parentElement) { return; }
+            list = document.createElement('div');
+            list.className = 'flex flex-col gap-4';
+            list.setAttribute('data-sortable', 'cat');
+            list.setAttribute('data-reorder-url', pageUrl);
+            addWrap.parentElement.insertBefore(list, addWrap);
+        }
+        var card = renderCategoryCard(catId, title, desc, icon, visible);
+        list.appendChild(card);
+        initSortables(list.parentElement || document);
+        initIcons();
     }
 
     /* ── AJAX form submit ──
@@ -228,15 +365,36 @@
                     if (form.hasAttribute('data-add-cat-form')) {
                         form.classList.add('hidden');
                         // Reset inputs manually (no <form> to call .reset() on).
+                        var newTitle = '';
+                        var newDesc  = '';
+                        var newIcon  = '';
+                        var newVis   = true;
                         var resetInputs = form.querySelectorAll('input, textarea, select');
                         for (var r = 0; r < resetInputs.length; r++) {
                             var ri = resetInputs[r];
-                            if (ri.name === 'catId') ri.value = '0';
-                            else if (ri.name === 'formAction') { /* keep */ }
-                            else if (ri.type !== 'hidden') ri.value = ri.defaultValue || '';
+                            if (ri.name === 'title')       { newTitle = ri.value; }
+                            else if (ri.name === 'description') { newDesc = ri.value; }
+                            else if (ri.name === 'icon')        { newIcon = ri.value; }
+                            else if (ri.name === 'isVisible')   { newVis  = ri.value === '1'; }
                         }
+                        for (var r2 = 0; r2 < resetInputs.length; r2++) {
+                            var ri2 = resetInputs[r2];
+                            if (ri2.name === 'catId') ri2.value = '0';
+                            else if (ri2.name === 'formAction') { /* keep */ }
+                            else if (ri2.name === 'isVisible')  { ri2.value = '1'; }
+                            else if (ri2.type !== 'hidden') ri2.value = ri2.defaultValue || '';
+                        }
+                        // Reset the visibility eye button to default (visible).
+                        var addVisBtn = form.querySelector('[data-vis-toggle]');
+                        if (addVisBtn) {
+                            addVisBtn.setAttribute('aria-pressed', 'true');
+                            addVisBtn.setAttribute('title', 'Verbergen op de Ondekt-pagina');
+                            addVisBtn.className = 'inline-flex items-center justify-center size-9 rounded-lg border transition-colors shrink-0 border-primary/30 bg-primary/10 text-primary hover:bg-primary/20';
+                            addVisBtn.innerHTML = '<i data-lucide="eye" class="size-4"></i>';
+                        }
+                        // Insert the new category card into the list (no reload).
+                        insertCategoryCard(d.id, newTitle, newDesc, newIcon, newVis);
                         toast(d.msg || 'Categorie aangemaakt.', 'success');
-                        setTimeout(function () { window.location.reload(); }, 700);
                         return;
                     }
                 } else if (d.kind === 'btn' && d.id) {
@@ -276,6 +434,28 @@
                         }
                         toast(d.msg || 'Knop toegevoegd.', 'success');
                         return;
+                    }
+                }
+                // Existing-row edit: refresh on-screen labels so saved
+                // values are reflected without a full page reload.
+                if (d.kind === 'cat' && form.hasAttribute('data-edit-cat-form')) {
+                    var card = form.closest('.dt-sort-item');
+                    if (card) {
+                        var newT = (form.querySelector('input[name="title"]') || {}).value || '';
+                        var h2 = card.querySelector('summary h2');
+                        if (h2) h2.textContent = newT;
+                        var visI = form.querySelector('input[name="isVisible"]');
+                        var isVis = !!(visI && visI.value === '1');
+                        var hiddenBadge = card.querySelector('summary .bg-warning\\/10');
+                        if (!isVis && !hiddenBadge) {
+                            var chevron = card.querySelector('summary > i[data-lucide="chevron-down"]');
+                            var badge = document.createElement('span');
+                            badge.className = 'shrink-0 text-xs px-2 py-1 rounded-full bg-warning/10 text-warning-700 font-medium';
+                            badge.textContent = 'verborgen';
+                            if (chevron) chevron.parentNode.insertBefore(badge, chevron);
+                        } else if (isVis && hiddenBadge) {
+                            hiddenBadge.remove();
+                        }
                     }
                 }
                 toast(d.msg || 'Opgeslagen.', 'success');
@@ -408,7 +588,7 @@
                 var d = res.data || {};
                 if (res.ok && d.ok) {
                     var row = kind === 'btn'
-                        ? delBtn.closest('form.dt-sort-item')
+                        ? delBtn.closest('[data-edit-btn-form]') || delBtn.closest('.dt-sort-item')
                         : delBtn.closest('.dt-sort-item');
                     if (row) {
                         row.style.transition = 'opacity .25s';
