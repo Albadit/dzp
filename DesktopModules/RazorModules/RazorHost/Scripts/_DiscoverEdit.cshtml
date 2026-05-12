@@ -32,16 +32,18 @@
     var saveError = "";
 
     // Helper: JSON response for AJAX requests, then short-circuit the page.
+    var insertsMap = new Dictionary<string, int>();
     Action<int, string, int, string> jsonOut = (status, msg, newId, kind) => {
         Response.Clear();
         Response.StatusCode  = status;
         Response.ContentType = "application/json";
         var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
         Response.Write(jss.Serialize(new {
-            ok    = (status >= 200 && status < 300),
-            id    = newId,
-            kind  = kind,
-            msg   = msg ?? ""
+            ok      = (status >= 200 && status < 300),
+            id      = newId,
+            kind    = kind,
+            msg     = msg ?? "",
+            inserts = insertsMap
         }));
         Response.Flush();
         Response.SuppressContent = true;
@@ -50,24 +52,30 @@
     var isAjax = string.Equals(Request.Headers["X-Requested-With"], "fetch", StringComparison.OrdinalIgnoreCase)
               || Request["ajax"] == "1";
 
-    // Helper: accept user-friendly URLs like "www.youtube.com" or "youtube.com"
-    // and turn them into a real absolute URL (https://...) so the rendered
-    // <a href> on the public page actually navigates off-site instead of
-    // being treated as a relative path.
+    // Accept user-friendly URLs like "www.youtube.com" or "youtube.com" and
+    // turn them into a real absolute URL (https://...).
     Func<string, string> normalizeUrl = (raw) => {
         if (string.IsNullOrWhiteSpace(raw)) return "";
         var s = raw.Trim();
-        // Leave site-relative paths, anchors, and known schemes untouched.
         if (s.StartsWith("/") || s.StartsWith("#") || s.StartsWith("?")) return s;
-        if (s.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
-         || s.StartsWith("tel:",    StringComparison.OrdinalIgnoreCase)
-         || s.StartsWith("sms:",    StringComparison.OrdinalIgnoreCase)
+        if (s.StartsWith("mailto:",     StringComparison.OrdinalIgnoreCase)
+         || s.StartsWith("tel:",        StringComparison.OrdinalIgnoreCase)
+         || s.StartsWith("sms:",        StringComparison.OrdinalIgnoreCase)
          || s.StartsWith("javascript:", StringComparison.OrdinalIgnoreCase)) return s;
-        // Already has a scheme like http://, https://, ftp://, etc.
         var schemeIdx = s.IndexOf("://", StringComparison.Ordinal);
         if (schemeIdx > 0 && schemeIdx <= 10) return s;
-        // Bare host (with or without leading "www.") → assume https.
         return "https://" + s.TrimStart('/');
+    };
+
+    // SELECT ISNULL(MAX(SortOrder), -1) + 1 helper. Caller owns the open conn.
+    // Table/column names are hard-coded literals at every call site.
+    Func<SqlConnection, string, string, object, int> nextSortOrder = (conn, table, whereCol, whereVal) => {
+        var sql = "SELECT ISNULL(MAX(SortOrder), -1) + 1 FROM " + table + " WHERE " + whereCol + "=@v";
+        using (var cmd = new SqlCommand(sql, conn)) {
+            cmd.Parameters.AddWithValue("@v", whereVal ?? DBNull.Value);
+            var o = cmd.ExecuteScalar();
+            return (o == null || o == DBNull.Value) ? 0 : Convert.ToInt32(o);
+        }
     };
 
     /* â”€â”€ POST handling â”€â”€ */
@@ -102,12 +110,7 @@
                             saveMsg = "Categorie bijgewerkt.";
                         } else {
                             // new categories go to the end
-                            var nextSort = 0;
-                            using (var s = new SqlCommand("SELECT ISNULL(MAX(SortOrder), -1) + 1 FROM CommunityDiscoverCategory WHERE CommunityId=@cid", conn)) {
-                                s.Parameters.AddWithValue("@cid", communityId);
-                                var o = s.ExecuteScalar();
-                                if (o != null && o != DBNull.Value) { nextSort = Convert.ToInt32(o); }
-                            }
+                            var nextSort = nextSortOrder(conn, "CommunityDiscoverCategory", "CommunityId", communityId);
                             using (var cmd = new SqlCommand(
                                 "INSERT INTO CommunityDiscoverCategory (CommunityId, Title, Description, Icon, IsVisible, SortOrder) OUTPUT inserted.Id VALUES (@cid, @t, @d, @i, @v, @s)", conn)) {
                                 cmd.Parameters.AddWithValue("@cid", communityId);
@@ -120,6 +123,78 @@
                                 if (o != null && o != DBNull.Value) { newCatId = Convert.ToInt32(o); }
                             }
                             saveMsg = "Categorie aangemaakt.";
+                        }
+
+                        // ── If the client posted a JSON list of buttons,
+                        //    update each one in this category in one go.
+                        //    Per-row save buttons no longer exist; the
+                        //    category "Opslaan" persists everything.
+                        var btnsJson = Request["btnsJson"];
+                        if (!string.IsNullOrEmpty(btnsJson) && newCatId > 0) {
+                            try {
+                                var jss = new System.Web.Script.Serialization.JavaScriptSerializer();
+                                var rawList = jss.Deserialize<List<Dictionary<string, object>>>(btnsJson);
+                                if (rawList != null) {
+                                    // Compute next sort order for any inserts.
+                                    var nextBtnSort = nextSortOrder(conn, "CommunityDiscoverButton", "CommunityDiscoverCategoryId", newCatId);
+                                    foreach (var item in rawList) {
+                                        if (item == null) { continue; }
+                                        var bId = 0;
+                                        object oId; if (item.TryGetValue("id", out oId) && oId != null) { int.TryParse(Convert.ToString(oId), out bId); }
+                                        object oTemp; item.TryGetValue("tempId", out oTemp);
+                                        var tempId = oTemp as string ?? "";
+                                        object oLabel, oIcon, oUrl, oVis;
+                                        item.TryGetValue("label",     out oLabel);
+                                        item.TryGetValue("icon",      out oIcon);
+                                        item.TryGetValue("url",       out oUrl);
+                                        item.TryGetValue("isVisible", out oVis);
+                                        var bLabel  = (oLabel as string ?? "").Trim();
+                                        var bIcon   = (oIcon  as string ?? "").Trim();
+                                        var bUrl    = normalizeUrl(oUrl as string ?? "");
+                                        var bVis    = oVis is bool ? (bool)oVis : (Convert.ToString(oVis) == "1" || Convert.ToString(oVis) == "true");
+                                        if (string.IsNullOrEmpty(bLabel) || string.IsNullOrEmpty(bUrl)) { continue; }
+                                        if (bId > 0) {
+                                            using (var cmd = new SqlCommand(
+                                                "UPDATE b SET b.Label=@l, b.Icon=@i, b.Url=@u, b.IsVisible=@v "
+                                              + "FROM CommunityDiscoverButton b "
+                                              + "INNER JOIN CommunityDiscoverCategory c ON c.Id = b.CommunityDiscoverCategoryId "
+                                              + "WHERE b.Id=@id AND b.CommunityDiscoverCategoryId=@cat AND c.CommunityId=@cid", conn)) {
+                                                cmd.Parameters.AddWithValue("@l",   bLabel);
+                                                cmd.Parameters.AddWithValue("@i",   string.IsNullOrEmpty(bIcon) ? (object)DBNull.Value : bIcon);
+                                                cmd.Parameters.AddWithValue("@u",   bUrl);
+                                                cmd.Parameters.AddWithValue("@v",   bVis);
+                                                cmd.Parameters.AddWithValue("@id",  bId);
+                                                cmd.Parameters.AddWithValue("@cat", newCatId);
+                                                cmd.Parameters.AddWithValue("@cid", communityId);
+                                                cmd.ExecuteNonQuery();
+                                            }
+                                        } else {
+                                            // INSERT a freshly added row. Map the JS-side tempId
+                                            // back to the new DB id so the client can stamp it.
+                                            var insertedId = 0;
+                                            using (var cmd = new SqlCommand(
+                                                "INSERT INTO CommunityDiscoverButton (CommunityDiscoverCategoryId, Label, Icon, Url, IsVisible, SortOrder) "
+                                              + "OUTPUT inserted.Id "
+                                              + "VALUES (@cat, @l, @i, @u, @v, @s)", conn)) {
+                                                cmd.Parameters.AddWithValue("@cat", newCatId);
+                                                cmd.Parameters.AddWithValue("@l",   bLabel);
+                                                cmd.Parameters.AddWithValue("@i",   string.IsNullOrEmpty(bIcon) ? (object)DBNull.Value : bIcon);
+                                                cmd.Parameters.AddWithValue("@u",   bUrl);
+                                                cmd.Parameters.AddWithValue("@v",   bVis);
+                                                cmd.Parameters.AddWithValue("@s",   nextBtnSort++);
+                                                var o2 = cmd.ExecuteScalar();
+                                                if (o2 != null && o2 != DBNull.Value) { insertedId = Convert.ToInt32(o2); }
+                                            }
+                                            if (insertedId > 0 && !string.IsNullOrEmpty(tempId)) {
+                                                insertsMap[tempId] = insertedId;
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (Exception bex) {
+                                // Surface as a soft warning; cat itself was saved.
+                                saveMsg = (saveMsg ?? "") + " (Knoppen niet bijgewerkt: " + bex.Message + ")";
+                            }
                         }
                     }
                     if (isAjax) { jsonOut(200, saveMsg, newCatId, "cat"); return; }
@@ -199,12 +274,7 @@
                             }
                             saveMsg = "Knop bijgewerkt.";
                         } else {
-                            var nextSort = 0;
-                            using (var s = new SqlCommand("SELECT ISNULL(MAX(SortOrder), -1) + 1 FROM CommunityDiscoverButton WHERE CommunityDiscoverCategoryId=@cat", conn)) {
-                                s.Parameters.AddWithValue("@cat", catId);
-                                var o = s.ExecuteScalar();
-                                if (o != null && o != DBNull.Value) { nextSort = Convert.ToInt32(o); }
-                            }
+                            var nextSort = nextSortOrder(conn, "CommunityDiscoverButton", "CommunityDiscoverCategoryId", catId);
                             using (var cmd = new SqlCommand(
                                 "INSERT INTO CommunityDiscoverButton (CommunityDiscoverCategoryId, Label, Icon, Url, IsVisible, SortOrder) OUTPUT inserted.Id VALUES (@cat, @l, @i, @u, @v, @s)", conn)) {
                                 cmd.Parameters.AddWithValue("@cat", catId);

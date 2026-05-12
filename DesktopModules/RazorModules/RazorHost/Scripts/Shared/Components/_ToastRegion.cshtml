@@ -1,0 +1,7 @@
+@*
+    Shared toast region. DZToast (Resources/js/toast.js) owns its own
+    floating element, but we keep this partial so pages can opt into a
+    consistent placement and so the data-* hook is one canonical place.
+    Renders nothing visible: DZToast appends its own DOM to document.body.
+*@
+<div data-dz-toast-region hidden></div>

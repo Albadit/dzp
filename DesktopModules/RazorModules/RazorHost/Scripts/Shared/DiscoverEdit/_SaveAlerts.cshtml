@@ -1,21 +1,11 @@
 @*
-    Discovery edit – server-side save success / error banners + AJAX toast region.
+    Discovery edit – save success/error banners + AJAX toast region.
+    Delegates to shared Components partials so styling stays in one place.
     Reads from PageData: saveMsg, saveError.
 *@
 @{
-    var saveMsg   = (PageData["saveMsg"]   as string) ?? "";
-    var saveError = (PageData["saveError"] as string) ?? "";
+    PageData["success"] = (PageData["saveMsg"]   as string) ?? "";
+    PageData["error"]   = (PageData["saveError"] as string) ?? "";
 }
-@if (!string.IsNullOrEmpty(saveMsg)) {
-    <div class="p-3 rounded-xl border border-success-200 bg-success-50 text-sm font-medium text-success-800 flex items-center gap-2">
-        <i data-lucide="check-circle-2" class="size-4"></i><span>@saveMsg</span>
-    </div>
-}
-@if (!string.IsNullOrEmpty(saveError)) {
-    <div class="p-3 rounded-xl border border-danger-200 bg-danger-50 text-sm font-medium text-danger-800 flex items-center gap-2">
-        <i data-lucide="alert-circle" class="size-4"></i><span>@saveError</span>
-    </div>
-}
-
-<!-- Floating toast region for AJAX feedback -->
-<div id="de-toast-region" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+@RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_SaveAlert.cshtml")
+@RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_ToastRegion.cshtml")

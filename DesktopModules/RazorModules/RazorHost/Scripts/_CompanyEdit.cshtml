@@ -88,7 +88,9 @@
         }
 
         /* ── POST handling ── */
-        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+        var isAjax = string.Equals(Request.Headers["X-Requested-With"], "fetch", StringComparison.OrdinalIgnoreCase)
+                  || Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                  || Request["ajax"] == "1";
         if (IsPost && isManager) {
             var action = (Request["formAction"] ?? "").Trim();
 

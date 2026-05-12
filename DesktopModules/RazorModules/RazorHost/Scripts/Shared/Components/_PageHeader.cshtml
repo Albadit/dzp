@@ -1,0 +1,31 @@
+@*
+    Shared "page heading + side action link" used at the top of edit pages.
+    PageData:
+      title       (string, required) — main H1 text
+      subtitle    (string, optional)  — secondary description shown below the title
+      actionHref  (string, optional)  — href for the side action link
+      actionLabel (string, optional)  — label text
+      actionIcon  (string, optional)  — lucide icon name (default "eye")
+*@
+@{
+    var title       = (PageData["title"]       as string) ?? "";
+    var subtitle    = (PageData["subtitle"]    as string) ?? "";
+    var actionHref  = (PageData["actionHref"]  as string) ?? "";
+    var actionLabel = (PageData["actionLabel"] as string) ?? "";
+    var actionIcon  = (PageData["actionIcon"]  as string) ?? "eye";
+}
+<div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="flex flex-col gap-1 min-w-0">
+        <h1 class="text-3xl font-bold text-foreground-900">@title</h1>
+        @if (!string.IsNullOrEmpty(subtitle)) {
+            <p class="text-sm text-foreground-500">@(new System.Web.HtmlString(subtitle))</p>
+        }
+    </div>
+    @if (!string.IsNullOrEmpty(actionHref) && !string.IsNullOrEmpty(actionLabel)) {
+        <a href="@actionHref"
+           class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-divider bg-background text-sm font-medium text-foreground-700 hover:border-primary hover:text-primary transition shrink-0">
+            <i data-lucide="@actionIcon" class="size-4"></i>
+            <span>@actionLabel</span>
+        </a>
+    }
+</div>

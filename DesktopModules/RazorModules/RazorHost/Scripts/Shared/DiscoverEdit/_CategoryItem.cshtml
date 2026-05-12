@@ -27,7 +27,7 @@
 }
 
 <div class="dt-sort-item bg-content1 rounded-xl border border-divider overflow-hidden" data-id="@catId">
-    <details>
+    <details class="group">
         <summary class="cursor-pointer flex items-center gap-3 p-5 sm:p-6 hover:bg-content2/50 transition">
             <span class="dt-sort-handle shrink-0 inline-flex items-center justify-center size-8 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-content2 cursor-grab active:cursor-grabbing"
                   title="Sleep om te verplaatsen"
@@ -48,7 +48,7 @@
             @if (!catVisible) {
                 <span class="shrink-0 text-xs px-2 py-1 rounded-full bg-warning/10 text-warning-700 font-medium">verborgen</span>
             }
-            <i data-lucide="chevron-down" class="size-5 text-foreground-400 shrink-0"></i>
+            <i data-lucide="chevron-down" class="size-5 text-foreground-400 shrink-0 group-open:rotate-180"></i>
         </summary>
 
         <!-- Category edit form -->
@@ -81,7 +81,7 @@
                 </div>
 
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-sm font-medium text-foreground-700">Lucide icon</label>
+                    <label class="text-sm font-medium text-foreground-700">Icon</label>
                     @{
                         PageData["id"]          = "catIcon_" + catId;
                         PageData["name"]        = "icon";
@@ -90,7 +90,7 @@
                         PageData["attrs"]       = "data-icon-picker";
                     }
                     @RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_Input.cshtml")
-                    @{ PageData["attrs"] = null; }
+                    @{ PageData["attrs"] = null; PageData["placeholder"] = null; }
                 </div>
 
                 <div class="flex items-center gap-4">
@@ -106,7 +106,7 @@
 
                 <div class="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-end gap-3 pt-2 border-t border-divider">
                     <button type="button" data-ajax-delete="cat" data-cat-id="@catId"
-                            class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-divider text-sm font-medium text-foreground-700 hover:bg-content2 hover:border-danger/40 hover:text-danger-700 transition">
+                            class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-danger/40 bg-danger/10 text-danger-700 text-sm font-medium hover:bg-danger/20 transition">
                         <span>Verwijderen</span>
                     </button>
                     <button type="submit"
@@ -118,16 +118,16 @@
             </div>
         <!-- Buttons section -->
         <div class="border-t border-divider bg-content2/30 p-5 sm:p-6">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground-500 mb-3">Knoppen</h3>
+            <details open class="group flex flex-col gap-4">
+                <summary class="cursor-pointer flex items-center justify-between gap-2 list-none">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-foreground-500">Knoppen <span class="text-foreground-400 normal-case font-medium">(@btns.Count)</span></h3>
+                    <i data-lucide="chevron-down" class="size-4 text-foreground-400 group-open:rotate-180"></i>
+                </summary>
 
-            @if (btns.Count == 0) {
-                <p class="text-sm text-foreground-400 italic mb-4">Nog geen knoppen in deze categorie.</p>
-            }
-
-            <div class="flex flex-col gap-3"
-                 data-sortable="btn"
-                 data-cat-id="@catId"
-                 data-reorder-url="@requestUrl">
+                <div class="flex flex-col gap-3"
+                     data-sortable="btn"
+                     data-cat-id="@catId"
+                     data-reorder-url="@requestUrl">
                 @foreach (var b in btns) {
                     var bId      = (int)   b["Id"];
                     var bLabel   = (string)b["Label"];
@@ -147,7 +147,7 @@
                         </span>
 
                         <div class="w-full sm:w-auto sm:flex-1 sm:min-w-40 flex flex-col gap-1.5">
-                            <label class="text-xs font-medium text-foreground-500">Label *</label>
+                            <label class="text-xs font-medium text-foreground-500">Label <span class="text-danger">*</span></label>
                             @{
                                 PageData["id"]       = "btnLabel_" + bId;
                                 PageData["name"]     = "label";
@@ -167,11 +167,11 @@
                                 PageData["attrs"]       = "data-icon-picker";
                             }
                             @RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_Input.cshtml")
-                            @{ PageData["attrs"] = null; }
+                            @{ PageData["attrs"] = null; PageData["placeholder"] = null; }
                         </div>
 
                         <div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">
-                            <label class="text-xs font-medium text-foreground-500">URL *</label>
+                            <label class="text-xs font-medium text-foreground-500">URL <span class="text-danger">*</span></label>
                             @{
                                 PageData["id"]       = "btnUrl_" + bId;
                                 PageData["name"]     = "url";
@@ -190,13 +190,9 @@
                                     class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors @(bVisible ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20" : "border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3")">
                                 <i data-lucide="@(bVisible ? "eye" : "eye-off")" class="size-4"></i>
                             </button>
-                            <button type="submit" title="Opslaan"
-                                    class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg bg-primary text-white hover:bg-primary/90 transition">
-                                <i data-lucide="save" class="size-4"></i>
-                            </button>
                             <button type="button" data-ajax-delete="btn" data-btn-id="@bId"
                                     title="Verwijderen"
-                                    class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-divider text-foreground-700 hover:bg-content2 hover:border-danger/40 hover:text-danger-700 transition">
+                                    class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-danger/40 bg-danger/10 text-danger-700 hover:bg-danger/20 transition">
                                 <i data-lucide="trash-2" class="size-4"></i>
                             </button>
                         </div>
@@ -205,75 +201,18 @@
                 }
             </div>
 
-            <!-- Add new button (inline form appears ABOVE the trigger so '+' stays anchored to the bottom of the list) -->
-            <div class="mt-4" data-add-btn-wrap="@catId">
-                <form method="post" data-ajax="btn-save">
-                <div data-add-btn-form="@catId" class="hidden mb-3 bg-content1 rounded-lg border border-divider p-4">
-                    <input type="hidden" name="formAction" value="btn-save" />
-                    <input type="hidden" name="catId"      value="@catId" />
-                    <input type="hidden" name="btnId"      value="0" />
-                    <div class="flex flex-wrap items-end gap-3">
-
-                    <div class="w-full sm:w-auto sm:flex-1 sm:min-w-[10rem] flex flex-col gap-1.5">
-                        <label class="text-xs font-medium text-foreground-500">Label *</label>
-                        @{
-                            PageData["id"]       = "newBtnLabel_" + catId;
-                            PageData["name"]     = "label";
-                            PageData["value"]    = "";
-                            PageData["required"] = true;
-                        }
-                        @RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_Input.cshtml")
-                    </div>
-
-                    <div class="w-full sm:w-auto sm:basis-32 sm:shrink-0 flex flex-col gap-1.5">
-                        <label class="text-xs font-medium text-foreground-500">Icon</label>
-                        @{
-                            PageData["id"]          = "newBtnIcon_" + catId;
-                            PageData["name"]        = "icon";
-                            PageData["value"]       = "";
-                            PageData["placeholder"] = "chevron-right";
-                            PageData["attrs"]       = "data-icon-picker";
-                        }
-                        @RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_Input.cshtml")
-                        @{ PageData["attrs"] = null; }
-                    </div>
-
-                    <div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">
-                        <label class="text-xs font-medium text-foreground-500">URL *</label>
-                        @{
-                            PageData["id"]          = "newBtnUrl_" + catId;
-                            PageData["name"]        = "url";
-                            PageData["type"]        = "text";
-                            PageData["value"]       = "";
-                            PageData["placeholder"] = "/" + commSlug + "/... of www.voorbeeld.nl";
-                            PageData["required"]    = true;
-                        }
-                        @RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_Input.cshtml")
-                    </div>
-
-                    <div class="w-full sm:w-auto flex items-center gap-2 sm:justify-end">
-                        <input type="hidden" name="isVisible" value="1" data-vis-input />
-                        <button type="button" data-vis-toggle
-                                aria-pressed="true"
-                                title="Verbergen"
-                                class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">
-                            <i data-lucide="eye" class="size-4"></i>
-                        </button>
-                        <button type="submit"
-                                class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 px-3 h-9 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">
-                            <i data-lucide="plus" class="size-4"></i>
-                            <span>Toev.</span>
-                        </button>
-                    </div>
-                    </div>
-                </div>
-                </form>
+            <!-- Add new button: just appends an empty draggable row to the
+                 list above. The category-level "Opslaan" persists every row
+                 (existing + freshly added) in one POST, so no per-row save UI
+                 is needed. -->
+            <div data-add-btn-wrap="@catId">
                 <button type="button" data-add-btn-trigger="@catId"
                         class="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-divider text-sm font-medium text-primary hover:border-primary hover:bg-primary/5 transition">
                     <i data-lucide="plus" class="size-4"></i>
                     <span>Knop toevoegen</span>
                 </button>
             </div>
+            </details>
         </div>
     </details>
 </div>

@@ -7,9 +7,9 @@
     must live on the inner <div>, not the <form>, so they survive parsing.
     The <form> tag is preserved so a non-AJAX fallback POST still works.
 *@
-<div data-add-cat-wrap>
+<div data-add-cat-wrap class="flex flex-col gap-3">
     <form method="post" data-ajax="cat-save">
-    <div data-add-cat-form class="hidden mb-3 bg-content1 rounded-xl border border-divider p-5 sm:p-6 space-y-4">
+    <div data-add-cat-form class="hidden bg-content1 rounded-xl border border-divider p-5 sm:p-6 flex flex-col gap-4">
         <input type="hidden" name="formAction" value="cat-save" />
         <input type="hidden" name="catId" value="0" />
 
@@ -36,7 +36,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-            <label for="newCatIcon" class="text-sm font-medium text-foreground-700">Lucide icon</label>
+            <label for="newCatIcon" class="text-sm font-medium text-foreground-700">Icon</label>
             @{
                 PageData["id"]          = "newCatIcon";
                 PageData["name"]        = "icon";

@@ -1,5 +1,6 @@
 @*
-    Success / error banners shown after a save POST.
+    Company edit – save success/error banners + AJAX toast region.
+    Delegates to shared Components partials.
     Reads from PageData: saveSuccess (bool), saveError (string),
                          communitySlug, companySlug.
 *@
@@ -8,23 +9,12 @@
     var saveError     = (string)PageData["saveError"];
     var communitySlug = (string)PageData["communitySlug"];
     var companySlug   = (string)PageData["companySlug"];
-}
 
-@if (saveSuccess) {
-    <div class="flex items-center gap-3 p-4 rounded-xl border border-success-200 bg-success-50">
-        <i data-lucide="check-circle-2" class="size-5 text-success shrink-0"></i>
-        <div class="flex flex-col gap-0.5">
-            <span class="text-sm font-medium text-success-800">Opgeslagen!</span>
-            <span class="text-xs text-success-800">De bedrijfsgegevens zijn bijgewerkt.
-                <a href="/@communitySlug/companies/@companySlug" class="underline font-medium">Bekijk bedrijfspagina</a>
-            </span>
-        </div>
-    </div>
+    PageData["success"]     = saveSuccess ? "Opgeslagen!" : "";
+    PageData["successHtml"] = saveSuccess
+        ? "De bedrijfsgegevens zijn bijgewerkt. <a href=\"/" + communitySlug + "/companies/" + companySlug + "\" class=\"underline font-medium\">Bekijk bedrijfspagina</a>"
+        : "";
+    PageData["error"]       = saveError ?? "";
 }
-
-@if (!string.IsNullOrEmpty(saveError)) {
-    <div class="flex items-center gap-3 p-4 rounded-xl border border-danger-200 bg-danger-50">
-        <i data-lucide="alert-circle" class="size-5 text-danger shrink-0"></i>
-        <span class="text-sm text-danger-800">@saveError</span>
-    </div>
-}
+@RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_SaveAlert.cshtml")
+@RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_ToastRegion.cshtml")

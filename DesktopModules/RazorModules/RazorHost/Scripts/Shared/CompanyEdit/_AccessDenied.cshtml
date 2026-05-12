@@ -1,26 +1,14 @@
 @*
-    "Geen toegang" panel shown when the current user is not allowed to edit
-    the company (i.e. not owner / admin / superuser).
+    Company edit – "Geen toegang" hero panel.
+    Delegates to shared Components/_AccessDenied partial.
     Reads from PageData: communitySlug, companySlug.
 *@
 @{
     var communitySlug = (string)PageData["communitySlug"];
     var companySlug   = (string)PageData["companySlug"];
+    PageData["compact"]   = false;
+    PageData["message"]   = "Je hebt geen rechten om dit bedrijf te bewerken. Alleen gekoppelde teamleden kunnen wijzigingen aanbrengen.";
+    PageData["backHref"]  = "/" + communitySlug + "/companies/" + companySlug;
+    PageData["backLabel"] = "Terug naar bedrijfspagina";
 }
-
-<section class="w-full">
-    <div class="w-full px-4 sm:px-6 lg:px-8 py-12">
-        <div class="flex flex-col items-center gap-4 text-center">
-            <div class="flex items-center justify-center size-16 rounded-full bg-danger-100">
-                <i data-lucide="shield-x" class="size-8 text-danger"></i>
-            </div>
-            <h1 class="text-xl font-bold text-foreground-900">Geen toegang</h1>
-            <p class="text-sm text-foreground-500 max-w-md">Je hebt geen rechten om dit bedrijf te bewerken. Alleen gekoppelde teamleden kunnen wijzigingen aanbrengen.</p>
-            <a href="/@communitySlug/companies/@companySlug"
-               class="mt-2 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-                <i data-lucide="arrow-left" class="size-4"></i>
-                Terug naar bedrijfspagina
-            </a>
-        </div>
-    </div>
-</section>
+@RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_AccessDenied.cshtml")

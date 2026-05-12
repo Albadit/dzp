@@ -1,0 +1,38 @@
+@*
+    Standardized button partials.
+    PageData:
+      label    (string, required) — visible button text
+      icon     (string, optional) — lucide icon name (rendered before the label)
+      type     (string, optional) — "submit" (default) | "button"
+      variant  (string, optional) — "primary" (default) | "danger" | "ghost"
+      size     (string, optional) — "md" (default) | "sm"
+      attrs    (string, optional) — extra raw HTML attributes (e.g. `data-foo="bar"`)
+      disabled (bool,   optional)
+*@
+@{
+    var label    = (PageData["label"]   as string) ?? "";
+    var icon     = (PageData["icon"]    as string) ?? "";
+    var btnType  = (PageData["type"]    as string) ?? "submit";
+    var variant  = (PageData["variant"] as string) ?? "primary";
+    var size     = (PageData["size"]    as string) ?? "md";
+    var attrs    = (PageData["attrs"]   as string) ?? "";
+    var disabled = PageData["disabled"] != null && (bool)PageData["disabled"];
+
+    string variantCls;
+    if (variant == "danger") {
+        variantCls = "bg-danger text-white hover:bg-danger-600 focus:ring-2 focus:ring-danger/30";
+    } else if (variant == "ghost") {
+        variantCls = "border border-divider bg-background text-foreground-700 hover:border-primary hover:text-primary";
+    } else {
+        variantCls = "bg-primary text-white hover:bg-primary-600 focus:ring-2 focus:ring-primary/30";
+    }
+    var sizeCls = size == "sm" ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm";
+    var iconSize = size == "sm" ? "size-3.5" : "size-4";
+}
+<button type="@btnType" @(new System.Web.HtmlString(attrs)) @(disabled ? "disabled" : "")
+        class="inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition disabled:opacity-60 disabled:cursor-not-allowed @sizeCls @variantCls">
+    @if (!string.IsNullOrEmpty(icon)) {
+        <i data-lucide="@icon" class="@iconSize"></i>
+    }
+    <span>@label</span>
+</button>

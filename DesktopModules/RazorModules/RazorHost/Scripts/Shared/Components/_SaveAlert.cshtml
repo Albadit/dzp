@@ -1,0 +1,28 @@
+@*
+    Server-side success / error save banners shown after a non-AJAX POST.
+    PageData:
+      success     (string, optional) — green "OK" message; empty = nothing rendered
+      successHtml (string, optional) — extra HTML appended inside the success message (e.g. a "view page" link)
+      error       (string, optional) — red error message; empty = nothing rendered
+*@
+@{
+    var success     = (PageData["success"]     as string) ?? "";
+    var successHtml = (PageData["successHtml"] as string) ?? "";
+    var error       = (PageData["error"]       as string) ?? "";
+}
+@if (!string.IsNullOrEmpty(success)) {
+    <div class="flex items-start gap-3 p-3 rounded-xl border border-success-200 bg-success-50 text-sm font-medium text-success-800">
+        <i data-lucide="check-circle-2" class="size-4 shrink-0 mt-0.5"></i>
+        <div class="flex flex-col gap-0.5">
+            <span>@success</span>
+            @if (!string.IsNullOrEmpty(successHtml)) {
+                <span class="text-xs text-success-800">@(new System.Web.HtmlString(successHtml))</span>
+            }
+        </div>
+    </div>
+}
+@if (!string.IsNullOrEmpty(error)) {
+    <div class="p-3 rounded-xl border border-danger-200 bg-danger-50 text-sm font-medium text-danger-800 flex items-center gap-2">
+        <i data-lucide="alert-circle" class="size-4"></i><span>@error</span>
+    </div>
+}

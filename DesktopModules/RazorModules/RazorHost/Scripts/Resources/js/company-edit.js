@@ -5,17 +5,8 @@ var CompanyEdit = (function () {
   var addUserSelected = [];
   var memberIdSet = {};
 
-  /* ── Toast notification (delegates to the shared window.DZToast) ── */
-  function showToast(msg, ok) {
-    if (window.DZToast && typeof window.DZToast.show === 'function') {
-      window.DZToast.show(msg, ok);
-      return;
-    }
-    // Fallback (script not loaded): silent alert so we don't lose the message.
-    if (!ok) {
-      try { console.warn('toast:', msg); } catch (e) { /* ignore */ }
-    }
-  }
+  /* Toast + AJAX POST delegate to the shared window.DZ helpers (dz-shared.js). */
+  function showToast(msg, ok) { window.DZ.toast(msg, ok); }
 
   function escHtml(s) {
     var d = document.createElement('div');
@@ -23,19 +14,11 @@ var CompanyEdit = (function () {
     return d.innerHTML;
   }
 
-  /* ── Generic POST via fetch ── */
   function post(body) {
-    return fetch(pageUrl, {
-      method: 'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body,
-      credentials: 'same-origin'
-    }).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.text();
-    }).then(function (txt) {
-      try { return JSON.parse(txt); }
-      catch (e) { throw new Error('Invalid JSON'); }
+    return window.DZ.fetch.post(pageUrl, body).then(function (res) {
+      if (!res.ok) { throw new Error('HTTP ' + res.status); }
+      if (!res.data) { throw new Error('Invalid JSON'); }
+      return res.data;
     });
   }
 
@@ -84,26 +67,14 @@ var CompanyEdit = (function () {
     }
     html += '</div>';
     list.innerHTML = html;
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    window.DZ.icons();
     bindMemberActions();
     initAddUserSelect();
   }
 
-  /* ── Toggle team visibility ── */
+  /* Eye-toggle button styling shared with DiscoverEdit. */
   function setEyeButtonState(btn, on) {
-    var onClasses    = ['border-primary/30', 'bg-primary/10', 'text-primary', 'hover:bg-primary/20'];
-    var offClasses   = ['border-divider', 'bg-content2', 'text-foreground-400', 'hover:text-foreground-700', 'hover:bg-content3'];
-    var addClasses   = on ? onClasses  : offClasses;
-    var removeClasses= on ? offClasses : onClasses;
-    for (var i = 0; i < removeClasses.length; i++) btn.classList.remove(removeClasses[i]);
-    for (var j = 0; j < addClasses.length; j++)    btn.classList.add(addClasses[j]);
-    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    btn.setAttribute('title', on ? 'Verbergen in team' : 'Tonen in team');
-    // Lucide replaces <i data-lucide=...> with an <svg>, so the original
-    // <i> may no longer exist. Reset the button's inner markup with a fresh
-    // <i> and let lucide.createIcons() render the new icon.
-    btn.innerHTML = '<i data-lucide="' + (on ? 'eye' : 'eye-off') + '" class="size-4"></i>';
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    window.DZ.eyeToggle(btn, on, { onTitle: 'Verbergen in team', offTitle: 'Tonen in team' });
   }
 
   function toggleTeam(userId, btn) {

@@ -19,58 +19,15 @@
 
     var pageUrl = window.location.pathname + window.location.search;
 
-    function initIcons() {
-        if (window.lucide && typeof window.lucide.createIcons === 'function') {
-            window.lucide.createIcons();
-        }
-    }
+    // initIcons / toast are thin proxies onto window.DZ (dz-shared.js).
+    // For HTTP, call DZ.fetch.{get,post,json,...} directly.
+    function initIcons()       { window.DZ.icons(); }
+    function toast(msg, kind)  { window.DZ.toast(msg, kind !== 'error'); }
 
     function initDropzones(root) {
         if (window.DtDropzone && typeof window.DtDropzone.initAll === 'function') {
             window.DtDropzone.initAll(root || document);
         }
-    }
-
-    function toast(message, kind) {
-        // Use the shared toast if available so DiscoverEdit and CompanyEdit
-        // share the exact same look-and-feel.
-        if (window.DZToast && typeof window.DZToast.show === 'function') {
-            window.DZToast.show(message, kind !== 'error');
-            return;
-        }
-        // Fallback: in-page region (kept around for when the shared script
-        // is unavailable, e.g. cached/legacy pages).
-        var region = document.getElementById('de-toast-region');
-        if (!region) return;
-        var color = kind === 'error'
-            ? 'border-danger/40 bg-danger/10 text-danger-700'
-            : 'border-success/40 bg-success/10 text-success-700';
-        var icon = kind === 'error' ? 'alert-circle' : 'check-circle-2';
-        var el = document.createElement('div');
-        el.className = 'pointer-events-auto px-3 py-2 rounded-lg border text-sm shadow-md flex items-center gap-2 ' + color;
-        el.innerHTML = '<i data-lucide="' + icon + '" class="size-4"></i><span></span>';
-        el.querySelector('span').textContent = message || '';
-        region.appendChild(el);
-        initIcons();
-        setTimeout(function () {
-            el.style.transition = 'opacity .3s';
-            el.style.opacity = '0';
-            setTimeout(function () { el.remove(); }, 350);
-        }, 2200);
-    }
-
-    function ajaxPost(url, fd) {        return fetch(url, {
-            method: 'POST',
-            body: fd,
-            credentials: 'same-origin',
-            headers: { 'X-Requested-With': 'fetch' }
-        }).then(function (r) {
-            return r.text().then(function (text) {
-                var data = null;
-                try { data = JSON.parse(text); } catch (e) { /* not JSON */ }
-                return { status: r.status, ok: r.ok, data: data, raw: text };
-            });
-        });
     }
 
     function postReorder(container) {
@@ -89,7 +46,7 @@
 
         container.classList.add('dt-sort-saving');
 
-        fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' })
+        window.DZ.fetch.post(url, fd)
             .then(function () {
                 container.classList.remove('dt-sort-saving');
                 container.classList.add('dt-sort-saved');
@@ -123,6 +80,30 @@
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    // Recompute and write the "Knoppen (N)" counter in the collapsible
+    // summary, plus the "N knoppen" subtitle in the cat header. Pass any
+    // element inside the cat card; we walk up to .dt-sort-item.
+    function updateBtnCount(anyEl) {
+        if (!anyEl) return;
+        var card = anyEl.closest && anyEl.closest('.dt-sort-item[data-id]');
+        if (!card) return;
+        var listEl = card.querySelector('[data-sortable="btn"]');
+        if (!listEl) return;
+        var n = listEl.querySelectorAll('[data-edit-btn-form]').length;
+        // 1) Collapsible summary counter — <h3>Knoppen <span>(N)</span></h3>
+        var headings = card.querySelectorAll('summary h3');
+        for (var i = 0; i < headings.length; i++) {
+            var h3 = headings[i];
+            if (!/Knoppen/i.test(h3.textContent)) continue;
+            var span = h3.querySelector('span');
+            if (span) { span.textContent = '(' + n + ')'; }
+            else      { h3.innerHTML = 'Knoppen <span class="text-foreground-400 normal-case font-medium">(' + n + ')</span>'; }
+        }
+        // 2) Cat header subtitle — <p>N knoppen</p> (or "1 knop")
+        var sub = card.querySelector('summary p');
+        if (sub) { sub.textContent = n + ' knop' + (n === 1 ? '' : 'pen'); }
+    }
+
     // Build a button row matching the server-rendered template in
     // _CategoryItem.cshtml so we can append a new row in-place after a
     // successful AJAX add (no full page reload).
@@ -143,7 +124,7 @@
             +   '<i data-lucide="grip-vertical" class="size-4"></i>'
             + '</span>'
             + '<div class="w-full sm:w-auto sm:flex-1 sm:min-w-[10rem] flex flex-col gap-1.5">'
-            +   '<label class="text-xs font-medium text-foreground-500">Label *</label>'
+            +   '<label class="text-xs font-medium text-foreground-500">Label <span class="text-danger">*</span></label>'
             +   '<input id="btnLabel_' + esc(bId) + '" name="label" type="text" value="' + esc(label) + '" required '
             +   'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
             + '</div>'
@@ -153,7 +134,7 @@
             +   'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
             + '</div>'
             + '<div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">'
-            +   '<label class="text-xs font-medium text-foreground-500">URL *</label>'
+            +   '<label class="text-xs font-medium text-foreground-500">URL <span class="text-danger">*</span></label>'
             +   '<input id="btnUrl_' + esc(bId) + '" name="url" type="text" value="' + esc(url) + '" required '
             +   'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
             + '</div>'
@@ -164,12 +145,8 @@
             +   'class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors ' + (visible ? onCls : offCls) + '">'
             +     '<i data-lucide="' + (visible ? 'eye' : 'eye-off') + '" class="size-4"></i>'
             +   '</button>'
-            +   '<button type="submit" title="Opslaan" '
-            +   'class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg bg-primary text-white hover:bg-primary/90 transition">'
-            +     '<i data-lucide="save" class="size-4"></i>'
-            +   '</button>'
             +   '<button type="button" data-ajax-delete="btn" data-btn-id="' + esc(bId) + '" title="Verwijderen" '
-            +   'class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-divider text-foreground-700 hover:bg-content2 hover:border-danger/40 hover:text-danger-700 transition">'
+            +   'class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-danger/40 bg-danger/10 text-danger-700 hover:bg-danger/20 transition">'
             +     '<i data-lucide="trash-2" class="size-4"></i>'
             +   '</button>'
             + '</div>';
@@ -188,7 +165,7 @@
             ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
             : 'border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3';
         card.innerHTML =
-              '<details>'
+              '<details open>'
             +   '<summary class="cursor-pointer flex items-center gap-3 p-5 sm:p-6 hover:bg-content2/50 transition">'
             +     '<span class="dt-sort-handle shrink-0 inline-flex items-center justify-center size-8 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-content2 cursor-grab active:cursor-grabbing" title="Sleep om te verplaatsen" onclick="event.preventDefault(); event.stopPropagation();">'
             +       '<i data-lucide="grip-vertical" class="size-4"></i>'
@@ -203,7 +180,7 @@
             +       '<p class="text-xs text-foreground-500 truncate">0 knoppen</p>'
             +     '</div>'
             +     (visible ? '' : '<span class="shrink-0 text-xs px-2 py-1 rounded-full bg-warning/10 text-warning-700 font-medium">verborgen</span>')
-            +     '<i data-lucide="chevron-down" class="size-5 text-foreground-400 shrink-0"></i>'
+            +     '<i data-lucide="chevron-down" class="size-5 text-foreground-400 shrink-0 group-open:rotate-180"></i>'
             +   '</summary>'
             +   '<div class="p-5 sm:p-6 flex flex-col gap-4">'
             +     '<div data-edit-cat-form data-cat-id="' + esc(catId) + '" class="contents">'
@@ -220,7 +197,7 @@
             +         'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition">' + esc(desc) + '</textarea>'
             +       '</div>'
             +       '<div class="flex flex-col gap-1.5">'
-            +         '<label class="text-sm font-medium text-foreground-700">Lucide icon</label>'
+            +         '<label class="text-sm font-medium text-foreground-700">Icon</label>'
             +         '<input id="catIcon_' + esc(catId) + '" name="icon" type="text" value="' + esc(icon) + '" placeholder="bijv. map-pin" data-icon-picker '
             +         'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
             +       '</div>'
@@ -235,7 +212,7 @@
             +       '</div>'
             +       '<div class="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-end gap-3 pt-2 border-t border-divider">'
             +         '<button type="button" data-ajax-delete="cat" data-cat-id="' + esc(catId) + '" '
-            +         'class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-divider text-sm font-medium text-foreground-700 hover:bg-content2 hover:border-danger/40 hover:text-danger-700 transition">'
+            +         'class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-danger/40 bg-danger/10 text-danger-700 text-sm font-medium hover:bg-danger/20 transition">'
             +           '<span>Verwijderen</span>'
             +         '</button>'
             +         '<button type="submit" '
@@ -246,48 +223,19 @@
             +     '</div>'
             +   '</div>'
             +   '<div class="border-t border-divider bg-content2/30 p-5 sm:p-6">'
-            +     '<h3 class="text-xs font-bold uppercase tracking-wider text-foreground-500 mb-3">Knoppen</h3>'
-            +     '<p class="text-sm text-foreground-400 italic mb-4">Nog geen knoppen in deze categorie.</p>'
-            +     '<div class="flex flex-col gap-3" data-sortable="btn" data-cat-id="' + esc(catId) + '" data-reorder-url="' + esc(pageUrl) + '"></div>'
-            +     '<div class="mt-4" data-add-btn-wrap="' + esc(catId) + '">'
-            +       '<div data-add-btn-form="' + esc(catId) + '" class="hidden mb-3 bg-content1 rounded-lg border border-divider p-4">'
-            +         '<input type="hidden" name="formAction" value="btn-save" />'
-            +         '<input type="hidden" name="catId" value="' + esc(catId) + '" />'
-            +         '<input type="hidden" name="btnId" value="0" />'
-            +         '<div class="flex flex-wrap items-end gap-3">'
-            +           '<div class="w-full sm:w-auto sm:flex-1 sm:min-w-[10rem] flex flex-col gap-1.5">'
-            +             '<label class="text-xs font-medium text-foreground-500">Label *</label>'
-            +             '<input id="newBtnLabel_' + esc(catId) + '" name="label" type="text" value="" required '
-            +             'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
-            +           '</div>'
-            +           '<div class="w-full sm:w-auto sm:basis-32 sm:shrink-0 flex flex-col gap-1.5">'
-            +             '<label class="text-xs font-medium text-foreground-500">Icon</label>'
-            +             '<input id="newBtnIcon_' + esc(catId) + '" name="icon" type="text" value="" placeholder="chevron-right" data-icon-picker '
-            +             'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
-            +           '</div>'
-            +           '<div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">'
-            +             '<label class="text-xs font-medium text-foreground-500">URL *</label>'
-            +             '<input id="newBtnUrl_' + esc(catId) + '" name="url" type="text" value="" required '
-            +             'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
-            +           '</div>'
-            +           '<div class="w-full sm:w-auto flex items-center gap-2 sm:justify-end">'
-            +             '<input type="hidden" name="isVisible" value="1" data-vis-input />'
-            +             '<button type="button" data-vis-toggle aria-pressed="true" title="Verbergen" '
-            +             'class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">'
-            +               '<i data-lucide="eye" class="size-4"></i>'
-            +             '</button>'
-            +             '<button type="submit" '
-            +             'class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 px-3 h-9 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">'
-            +               '<i data-lucide="plus" class="size-4"></i><span>Toev.</span>'
-            +             '</button>'
-            +           '</div>'
-            +         '</div>'
+            +     '<details open class="group flex flex-col gap-4">'
+            +       '<summary class="cursor-pointer flex items-center justify-between gap-2 list-none">'
+            +         '<h3 class="text-xs font-bold uppercase tracking-wider text-foreground-500">Knoppen <span class="text-foreground-400 normal-case font-medium">(0)</span></h3>'
+            +         '<i data-lucide="chevron-down" class="size-4 text-foreground-400 group-open:rotate-180"></i>'
+            +       '</summary>'
+            +       '<div class="flex flex-col gap-3" data-sortable="btn" data-cat-id="' + esc(catId) + '" data-reorder-url="' + esc(pageUrl) + '"></div>'
+            +       '<div>'
+            +         '<button type="button" data-add-btn-trigger="' + esc(catId) + '" '
+            +         'class="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-divider text-sm font-medium text-primary hover:border-primary hover:bg-primary/5 transition">'
+            +           '<i data-lucide="plus" class="size-4"></i><span>Knop toevoegen</span>'
+            +         '</button>'
             +       '</div>'
-            +       '<button type="button" data-add-btn-trigger="' + esc(catId) + '" '
-            +       'class="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-divider text-sm font-medium text-primary hover:border-primary hover:bg-primary/5 transition">'
-            +         '<i data-lucide="plus" class="size-4"></i><span>Knop toevoegen</span>'
-            +       '</button>'
-            +     '</div>'
+            +     '</details>'
             +   '</div>'
             + '</details>';
         return card;
@@ -308,8 +256,12 @@
         }
         var card = renderCategoryCard(catId, title, desc, icon, visible);
         list.appendChild(card);
+        // Wire up everything inside the freshly-inserted card.
+        initSortables(card);
         initSortables(list.parentElement || document);
+        initDropzones(card);
         initIcons();
+        try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* ignore */ }
     }
 
     /* ── AJAX form submit ──
@@ -349,13 +301,41 @@
                 fd.append(ip.name, ip.value);
             }
         }
+
+        // For an existing-category save, also collect every button row in the
+        // same card and ship them along as a JSON payload. The server updates
+        // them in one transaction so the user only needs the cat "Opslaan"
+        // button to persist the whole panel.
+        if (container.hasAttribute && container.hasAttribute('data-edit-cat-form')) {
+            var card = container.closest('.dt-sort-item');
+            if (card) {
+                var btnRows = card.querySelectorAll('[data-edit-btn-form]');
+                var arr = [];
+                for (var bi = 0; bi < btnRows.length; bi++) {
+                    var row = btnRows[bi];
+                    var label = row.querySelector('input[name="label"]');
+                    var iconI = row.querySelector('input[name="icon"]');
+                    var url   = row.querySelector('input[name="url"]');
+                    var visI  = row.querySelector('input[name="isVisible"]');
+                    arr.push({
+                        id:        row.getAttribute('data-btn-id') || '0',
+                        tempId:    row.getAttribute('data-temp-id') || '',
+                        label:     label ? label.value : '',
+                        icon:      iconI ? iconI.value : '',
+                        url:       url   ? url.value   : '',
+                        isVisible: !!(visI && visI.value === '1')
+                    });
+                }
+                fd.append('btnsJson', JSON.stringify(arr));
+            }
+        }
         if (!btn) btn = container.querySelector('button[type="submit"]');
         if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
 
         // 'form' alias: rest of the code reads .querySelector / .closest / .reset / classList on it.
         var form = container;
 
-        ajaxPost(pageUrl, fd).then(function (res) {
+        window.DZ.fetch.post(pageUrl, fd).then(function (res) {
             if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
             var d = res.data || {};
             if (res.ok && d.ok) {
@@ -409,9 +389,6 @@
                         var listEl = catEl;
                         var catId  = form.querySelector('input[name="catId"]') ? form.querySelector('input[name="catId"]').value : '0';
                         if (listEl) {
-                            var ph = listEl.parentElement && listEl.parentElement.querySelector('p.italic');
-                            if (ph) ph.remove();
-
                             var label   = (form.querySelector('input[name="label"]') || {}).value || '';
                             var icon    = (form.querySelector('input[name="icon"]')  || {}).value || '';
                             var url     = (form.querySelector('input[name="url"]')   || {}).value || '';
@@ -421,7 +398,9 @@
                             var row = renderButtonRow(d.id, catId, label, icon, url, visible);
                             listEl.appendChild(row);
                             initSortables(listEl.parentElement || document);
+                            initDropzones(row);
                             initIcons();
+                            try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* ignore */ }
                         }
                         // Reset visible fields manually.
                         var bResetInputs = form.querySelectorAll('input, textarea, select');
@@ -455,6 +434,33 @@
                             if (chevron) chevron.parentNode.insertBefore(badge, chevron);
                         } else if (isVis && hiddenBadge) {
                             hiddenBadge.remove();
+                        }
+                        // Promote any not-yet-saved rows: the server returns
+                        // an "inserts" map { tempId: newId } so we can stamp
+                        // the real id onto the row and re-enable per-row delete.
+                        if (d.inserts) {
+                            for (var tk in d.inserts) {
+                                if (!Object.prototype.hasOwnProperty.call(d.inserts, tk)) { continue; }
+                                var tmpRow = card.querySelector('[data-temp-id="' + tk + '"]');
+                                if (!tmpRow) { continue; }
+                                var newBtnId = String(d.inserts[tk]);
+                                tmpRow.setAttribute('data-btn-id', newBtnId);
+                                tmpRow.setAttribute('data-id', newBtnId);
+                                tmpRow.removeAttribute('data-temp-id');
+                                var del = tmpRow.querySelector('[data-temp-remove]');
+                                if (del) {
+                                    del.removeAttribute('data-temp-remove');
+                                    del.setAttribute('data-ajax-delete', 'btn');
+                                    del.setAttribute('data-btn-id', newBtnId);
+                                }
+                                // Stamp the hidden btnId input too.
+                                var hb = tmpRow.querySelector('input[name="btnId"]');
+                                if (hb) { hb.value = newBtnId; }
+                            }
+                        }
+                        // Bubble per-row update msgs (e.g. validation skips).
+                        if (d.btnSkipped) {
+                            toast(d.btnSkipped, 'error');
                         }
                     }
                 }
@@ -530,31 +536,53 @@
             var input = visBtn.parentElement && visBtn.parentElement.querySelector('[data-vis-input]');
             var nowVisible = !(input && input.value === '1');
             if (input) input.value = nowVisible ? '1' : '0';
-            // Match CompanyEdit's setEyeButtonState pattern.
-            var onCls  = ['border-primary/30','bg-primary/10','text-primary','hover:bg-primary/20'];
-            var offCls = ['border-divider','bg-content2','text-foreground-400','hover:text-foreground-700','hover:bg-content3'];
-            (nowVisible ? offCls : onCls).forEach(function (c) { visBtn.classList.remove(c); });
-            (nowVisible ? onCls : offCls).forEach(function (c) { visBtn.classList.add(c); });
-            visBtn.setAttribute('aria-pressed', nowVisible ? 'true' : 'false');
-            visBtn.setAttribute('title', nowVisible ? 'Verbergen' : 'Tonen');
-            // Lucide has already replaced the original <i> with an <svg>; reset
-            // the inner markup with a fresh <i> and re-run lucide to swap the icon.
-            visBtn.innerHTML = '<i data-lucide="' + (nowVisible ? 'eye' : 'eye-off') + '" class="size-4"></i>';
-            initIcons();
+            window.DZ.eyeToggle(visBtn, nowVisible);
             return;
         }
 
         var addBtnTrig = e.target.closest && e.target.closest('[data-add-btn-trigger]');
         if (addBtnTrig) {
+            e.preventDefault();
             var cid = addBtnTrig.getAttribute('data-add-btn-trigger');
-            var bf = document.querySelector('[data-add-btn-form="' + cid + '"]');
-            if (bf) {
-                bf.classList.toggle('hidden');
-                if (!bf.classList.contains('hidden')) {
-                    initIcons();
-                    var firstB = bf.querySelector('input[type="text"], input:not([type])');
-                    if (firstB) firstB.focus();
+            // Find this category's button list and append a fresh empty
+            // draggable row. The category-level "Opslaan" will INSERT it.
+            var card = addBtnTrig.closest('.dt-sort-item');
+            var listEl = card && card.querySelector('[data-sortable="btn"][data-cat-id="' + cid + '"]');
+            if (listEl) {
+                var tempId = 't' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+                var row = renderButtonRow(0, cid, '', '', '', true);
+                row.setAttribute('data-temp-id', tempId);
+                row.removeAttribute('data-btn-id');           // not yet a real btn
+                row.setAttribute('data-id', tempId);          // keep SortableJS happy
+                // Hide the per-row delete on a not-yet-saved row: clicking
+                // delete with btnId=0 wouldn't do anything server-side. Users
+                // can just clear+remove the row manually before saving.
+                var delEl = row.querySelector('[data-ajax-delete="btn"]');
+                if (delEl) {
+                    delEl.setAttribute('data-temp-remove', '1');
+                    delEl.removeAttribute('data-ajax-delete');
+                    delEl.setAttribute('title', 'Verwijderen');
                 }
+                listEl.appendChild(row);
+                initSortables(listEl);
+                initDropzones(row);
+                initIcons();
+                updateBtnCount(listEl);
+                var firstInput = row.querySelector('input[name="label"]');
+                if (firstInput) { firstInput.focus(); }
+            }
+            return;
+        }
+
+        // Pre-save delete for not-yet-persisted rows: just remove the row.
+        var tmpDel = e.target.closest && e.target.closest('[data-temp-remove]');
+        if (tmpDel) {
+            e.preventDefault();
+            var tmpRow = tmpDel.closest('.dt-sort-item');
+            if (tmpRow) {
+                var parent = tmpRow.parentElement;
+                tmpRow.remove();
+                updateBtnCount(parent);
             }
             return;
         }
@@ -584,16 +612,16 @@
             delBtn.disabled = true;
             delBtn.classList.add('opacity-60');
 
-            ajaxPost(pageUrl, fd).then(function (res) {
+            window.DZ.fetch.post(pageUrl, fd).then(function (res) {
                 var d = res.data || {};
                 if (res.ok && d.ok) {
                     var row = kind === 'btn'
                         ? delBtn.closest('[data-edit-btn-form]') || delBtn.closest('.dt-sort-item')
                         : delBtn.closest('.dt-sort-item');
                     if (row) {
-                        row.style.transition = 'opacity .25s';
-                        row.style.opacity = '0';
-                        setTimeout(function () { row.remove(); }, 260);
+                        var rowParent = row.parentElement;
+                        row.remove();
+                        if (kind === 'btn') { updateBtnCount(rowParent); }
                     }
                     toast(d.msg || 'Verwijderd.', 'success');
                 } else {
