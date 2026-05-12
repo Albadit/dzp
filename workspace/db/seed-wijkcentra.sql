@@ -4,18 +4,21 @@
 --  Chunk-aware version.
 --
 --  Required sqlcmd variables:
---      NumUsers
+--      UsersPerCommunity
 --      GroupsPerCommunity
 --      CompaniesPerCommunity
 --      PostsPerCommunity
 --      MinCommentsPerPost
 --      MaxCommentsPerPost
+--      SingleQuestionsPerSurvey
+--      MultiQuestionsPerSurvey
+--      OpenQuestionsPerSurvey
 --      CommunityOffset
 --      CommunityLimit
 --
 --  Example:
 --      sqlcmd -I -b -W -s " " -i seed-wijkcentra.sql ^
---        -v NumUsers=500 ^
+--        -v UsersPerCommunity=100 ^
 --           GroupsPerCommunity=4 ^
 --           CompaniesPerCommunity=10 ^
 --           PostsPerCommunity=20 ^
@@ -33,12 +36,16 @@ SET ANSI_NULLS ON;
 -- ║ 0) Variables                                            ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-DECLARE @NumUsers               INT = $(NumUsers);
+DECLARE @UsersPerCommunity      INT = $(UsersPerCommunity);
+DECLARE @NumUsers               INT;  -- computed below = UsersPerCommunity * #cities
 DECLARE @GroupsPerCommunity     INT = $(GroupsPerCommunity);
 DECLARE @CompaniesPerCommunity  INT = $(CompaniesPerCommunity);
 DECLARE @PostsPerCommunity      INT = $(PostsPerCommunity);
 DECLARE @MinCommentsPerPost     INT = $(MinCommentsPerPost);
 DECLARE @MaxCommentsPerPost     INT = $(MaxCommentsPerPost);
+DECLARE @SingleQuestionsPerSurvey INT = $(SingleQuestionsPerSurvey);
+DECLARE @MultiQuestionsPerSurvey  INT = $(MultiQuestionsPerSurvey);
+DECLARE @OpenQuestionsPerSurvey   INT = $(OpenQuestionsPerSurvey);
 DECLARE @CommunityOffset        INT = $(CommunityOffset);
 DECLARE @CommunityLimit         INT = $(CommunityLimit);
 
@@ -268,6 +275,9 @@ INSERT INTO @CommentBodies (Body) VALUES
     (N'Echt iets voor mijn dochter, ik ga het haar laten weten.');
 
 DECLARE @TotalCommunityCount INT = (SELECT COUNT(*) FROM @Cities);
+-- One shared pool of dummy users that joins every community —
+-- avoids exploding Users by (users-per-community * #communities).
+SET @NumUsers = @UsersPerCommunity;
 
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║ 3) Communities for this chunk                           ║
@@ -411,23 +421,21 @@ END;
 
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║ 5) UserCommunity + beheerders                           ║
+-- ║                                                         ║
+-- ║ Every dummy user joins every community in this chunk.   ║
+-- ║ Same Users rows are shared across all communities so we ║
+-- ║ don't blow up the Users table.                          ║
 -- ╚══════════════════════════════════════════════════════════╝
 
-;WITH UC AS (
-    SELECT pu.UserId,
-           ((pu.Idx - 1) % @TotalCommunityCount) + 1 AS Seq,
-           (pu.Idx - 1) / @TotalCommunityCount AS Rotation
-    FROM #PlanUsers pu
-)
 INSERT INTO UserCommunity (UserId, CommunityId)
-SELECT u.UserId,
+SELECT pu.UserId,
        pc.CommunityId
-FROM UC u
-JOIN #PlanCommunities pc ON pc.Seq = u.Seq
+FROM #PlanUsers pu
+CROSS JOIN #PlanCommunities pc
 WHERE NOT EXISTS (
     SELECT 1
     FROM UserCommunity x
-    WHERE x.UserId = u.UserId
+    WHERE x.UserId = pu.UserId
       AND x.CommunityId = pc.CommunityId
 );
 
@@ -448,22 +456,17 @@ BEGIN
     );
 END;
 
+-- The first 2 dummy users (by Idx) act as Community-beheerder in
+-- every community.
 IF @BeheerderRole IS NOT NULL
 BEGIN
-    ;WITH Beh AS (
-        SELECT pu.UserId,
-               ((pu.Idx - 1) % @TotalCommunityCount) + 1 AS Seq,
-               (pu.Idx - 1) / @TotalCommunityCount AS Rotation
-        FROM #PlanUsers pu
-    )
     INSERT INTO UserCommunityRole (UserCommunityId, RoleId)
     SELECT uc.Id,
            @BeheerderRole
-    FROM Beh b
-    JOIN #PlanCommunities pc ON pc.Seq = b.Seq
-    JOIN UserCommunity uc ON uc.UserId = b.UserId
-                         AND uc.CommunityId = pc.CommunityId
-    WHERE b.Rotation < 2
+    FROM UserCommunity uc
+    JOIN #PlanCommunities pc ON pc.CommunityId = uc.CommunityId
+    JOIN #PlanUsers pu ON pu.UserId = uc.UserId
+    WHERE pu.Idx <= 2
       AND NOT EXISTS (
           SELECT 1
           FROM UserCommunityRole x
@@ -928,6 +931,10 @@ OUTER APPLY (
 
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║ 13) Survey questions                                    ║
+-- ║                                                         ║
+-- ║ Re-runs without an intervening clear keep existing      ║
+-- ║ questions; run seed-wijkcentra-clear.sql first when you ║
+-- ║ change the per-survey counts.                           ║
 -- ╚══════════════════════════════════════════════════════════╝
 
 DECLARE @SingleQ TABLE (
@@ -975,28 +982,20 @@ DECLARE @SingleQCount INT = (SELECT COUNT(*) FROM @SingleQ);
 DECLARE @MultiQCount INT = (SELECT COUNT(*) FROM @MultiQ);
 DECLARE @OpenQCount INT = (SELECT COUNT(*) FROM @OpenQ);
 
-IF OBJECT_ID('tempdb..#NewQs') IS NOT NULL DROP TABLE #NewQs;
+-- Stress-test how the survey UI scales: each survey post gets a
+-- mixed-type question set sized via the sqlcmd variables above
+-- (controlled from reseed.ps1).
 
-CREATE TABLE #NewQs (
-    PostId INT NOT NULL,
-    QuestionId INT NOT NULL,
-    QType INT NOT NULL,
-    O1 NVARCHAR(128) NULL,
-    O2 NVARCHAR(128) NULL,
-    O3 NVARCHAR(128) NULL,
-    O4 NVARCHAR(128) NULL
-);
-
+-- ── Single-choice questions ─────────────────────────────────────
 INSERT INTO Dnn_Modules_Blog_Questions (PostId, QuestionType, QuestionText, SortOrder)
-OUTPUT inserted.PostId, inserted.QuestionId, 1, NULL, NULL, NULL, NULL
-INTO #NewQs (PostId, QuestionId, QType, O1, O2, O3, O4)
 SELECT p.PostId,
        1,
-       sq.Q,
-       1
+       sq.Q + N' (Vraag ' + CAST(n.n AS NVARCHAR(8)) + N')',
+       n.n
 FROM Dnn_Modules_Blog_Posts p
 JOIN #PlanCommunities pc ON pc.CommunityId = p.CommunityId
-JOIN @SingleQ sq ON sq.Id = (((CHECKSUM(p.PostId, 1) & 0x7fffffff) % @SingleQCount) + 1)
+JOIN #Numbers n ON n.n <= @SingleQuestionsPerSurvey
+JOIN @SingleQ sq ON sq.Id = (((CHECKSUM(p.PostId, 1, n.n) & 0x7fffffff) % @SingleQCount) + 1)
 WHERE p.PostType = 3
   AND p.IsDeleted = 0
   AND NOT EXISTS (
@@ -1004,46 +1003,39 @@ WHERE p.PostType = 3
       FROM Dnn_Modules_Blog_Questions q
       WHERE q.PostId = p.PostId
         AND q.QuestionType = 1
+        AND q.SortOrder = n.n
   );
 
-UPDATE nq
-SET O1 = sq.O1,
-    O2 = sq.O2,
-    O3 = sq.O3,
-    O4 = sq.O4
-FROM #NewQs nq
-JOIN Dnn_Modules_Blog_Questions q ON q.QuestionId = nq.QuestionId
-JOIN @SingleQ sq ON sq.Q = q.QuestionText
-WHERE nq.QType = 1;
-
 INSERT INTO Dnn_Modules_Blog_QuestionOptions (QuestionId, OptionText, SortOrder)
-SELECT QuestionId, OptionText, SortOrder
-FROM (
-    SELECT QuestionId, O1 AS OptionText, 1 AS SortOrder FROM #NewQs WHERE QType = 1
-    UNION ALL SELECT QuestionId, O2, 2 FROM #NewQs WHERE QType = 1
-    UNION ALL SELECT QuestionId, O3, 3 FROM #NewQs WHERE QType = 1
-    UNION ALL SELECT QuestionId, O4, 4 FROM #NewQs WHERE QType = 1
-) x
-WHERE x.OptionText IS NOT NULL
+SELECT q.QuestionId, x.OptionText, x.SortOrder
+FROM Dnn_Modules_Blog_Questions q
+JOIN Dnn_Modules_Blog_Posts p ON p.PostId = q.PostId
+JOIN #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+JOIN @SingleQ sq ON sq.Id = (((CHECKSUM(q.PostId, 1, q.SortOrder) & 0x7fffffff) % @SingleQCount) + 1)
+CROSS APPLY (
+    VALUES (sq.O1, 1), (sq.O2, 2), (sq.O3, 3), (sq.O4, 4)
+) x(OptionText, SortOrder)
+WHERE q.QuestionType = 1
+  AND p.PostType = 3
+  AND q.SortOrder BETWEEN 1 AND @SingleQuestionsPerSurvey
+  AND x.OptionText IS NOT NULL
   AND NOT EXISTS (
       SELECT 1
       FROM Dnn_Modules_Blog_QuestionOptions qo
-      WHERE qo.QuestionId = x.QuestionId
-        AND qo.OptionText = x.OptionText
+      WHERE qo.QuestionId = q.QuestionId
+        AND qo.SortOrder = x.SortOrder
   );
 
-DELETE FROM #NewQs;
-
+-- ── Multiple-choice questions ───────────────────────────────────
 INSERT INTO Dnn_Modules_Blog_Questions (PostId, QuestionType, QuestionText, SortOrder)
-OUTPUT inserted.PostId, inserted.QuestionId, 2, NULL, NULL, NULL, NULL
-INTO #NewQs (PostId, QuestionId, QType, O1, O2, O3, O4)
 SELECT p.PostId,
        2,
-       mq.Q,
-       2
+       mq.Q + N' (Vraag ' + CAST(n.n AS NVARCHAR(8)) + N')',
+       100 + n.n
 FROM Dnn_Modules_Blog_Posts p
 JOIN #PlanCommunities pc ON pc.CommunityId = p.CommunityId
-JOIN @MultiQ mq ON mq.Id = (((CHECKSUM(p.PostId, 2) & 0x7fffffff) % @MultiQCount) + 1)
+JOIN #Numbers n ON n.n <= @MultiQuestionsPerSurvey
+JOIN @MultiQ mq ON mq.Id = (((CHECKSUM(p.PostId, 2, n.n) & 0x7fffffff) % @MultiQCount) + 1)
 WHERE p.PostType = 3
   AND p.IsDeleted = 0
   AND NOT EXISTS (
@@ -1051,42 +1043,39 @@ WHERE p.PostType = 3
       FROM Dnn_Modules_Blog_Questions q
       WHERE q.PostId = p.PostId
         AND q.QuestionType = 2
+        AND q.SortOrder = 100 + n.n
   );
 
-UPDATE nq
-SET O1 = mq.O1,
-    O2 = mq.O2,
-    O3 = mq.O3,
-    O4 = mq.O4
-FROM #NewQs nq
-JOIN Dnn_Modules_Blog_Questions q ON q.QuestionId = nq.QuestionId
-JOIN @MultiQ mq ON mq.Q = q.QuestionText
-WHERE nq.QType = 2;
-
 INSERT INTO Dnn_Modules_Blog_QuestionOptions (QuestionId, OptionText, SortOrder)
-SELECT QuestionId, OptionText, SortOrder
-FROM (
-    SELECT QuestionId, O1 AS OptionText, 1 AS SortOrder FROM #NewQs WHERE QType = 2
-    UNION ALL SELECT QuestionId, O2, 2 FROM #NewQs WHERE QType = 2
-    UNION ALL SELECT QuestionId, O3, 3 FROM #NewQs WHERE QType = 2
-    UNION ALL SELECT QuestionId, O4, 4 FROM #NewQs WHERE QType = 2
-) x
-WHERE x.OptionText IS NOT NULL
+SELECT q.QuestionId, x.OptionText, x.SortOrder
+FROM Dnn_Modules_Blog_Questions q
+JOIN Dnn_Modules_Blog_Posts p ON p.PostId = q.PostId
+JOIN #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+JOIN @MultiQ mq ON mq.Id = (((CHECKSUM(q.PostId, 2, q.SortOrder - 100) & 0x7fffffff) % @MultiQCount) + 1)
+CROSS APPLY (
+    VALUES (mq.O1, 1), (mq.O2, 2), (mq.O3, 3), (mq.O4, 4)
+) x(OptionText, SortOrder)
+WHERE q.QuestionType = 2
+  AND p.PostType = 3
+  AND q.SortOrder BETWEEN 101 AND 100 + @MultiQuestionsPerSurvey
+  AND x.OptionText IS NOT NULL
   AND NOT EXISTS (
       SELECT 1
       FROM Dnn_Modules_Blog_QuestionOptions qo
-      WHERE qo.QuestionId = x.QuestionId
-        AND qo.OptionText = x.OptionText
+      WHERE qo.QuestionId = q.QuestionId
+        AND qo.SortOrder = x.SortOrder
   );
 
+-- ── Open questions ──────────────────────────────────────────────
 INSERT INTO Dnn_Modules_Blog_Questions (PostId, QuestionType, QuestionText, SortOrder)
 SELECT p.PostId,
        3,
-       oq.Q,
-       3
+       oq.Q + N' (Vraag ' + CAST(n.n AS NVARCHAR(8)) + N')',
+       200 + n.n
 FROM Dnn_Modules_Blog_Posts p
 JOIN #PlanCommunities pc ON pc.CommunityId = p.CommunityId
-JOIN @OpenQ oq ON oq.Id = (((CHECKSUM(p.PostId, 3) & 0x7fffffff) % @OpenQCount) + 1)
+JOIN #Numbers n ON n.n <= @OpenQuestionsPerSurvey
+JOIN @OpenQ oq ON oq.Id = (((CHECKSUM(p.PostId, 3, n.n) & 0x7fffffff) % @OpenQCount) + 1)
 WHERE p.PostType = 3
   AND p.IsDeleted = 0
   AND NOT EXISTS (
@@ -1094,7 +1083,131 @@ WHERE p.PostType = 3
       FROM Dnn_Modules_Blog_Questions q
       WHERE q.PostId = p.PostId
         AND q.QuestionType = 3
+        AND q.SortOrder = 200 + n.n
   );
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║ 13b) Survey answers                                     ║
+-- ║                                                         ║
+-- ║ Seed dummy submissions for every published survey post  ║
+-- ║ (PostType = 3) so that the post-card "comments" total   ║
+-- ║ matches the total number of survey answers.             ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+DECLARE @AnswerTexts TABLE (Id INT IDENTITY(1,1) PRIMARY KEY, Body NVARCHAR(500));
+INSERT INTO @AnswerTexts (Body) VALUES
+    (N'Bedankt voor de enquete, ik vind dit een goed initiatief.'),
+    (N'Meer activiteiten in het weekend zou geweldig zijn.'),
+    (N'Ik mis een gezellige ontmoetingsplek voor jongeren.'),
+    (N'Misschien iets organiseren rond duurzaamheid?'),
+    (N'Houden zo, het is goed zoals het nu loopt.'),
+    (N'Een vaste koffieochtend voor ouderen zou helpen.'),
+    (N'Graag meer aandacht voor de speeltuinen in de buurt.'),
+    (N'Goede communicatie via de nieuwsbrief, ga zo door.'),
+    (N'Ik zou graag meer culturele evenementen zien.'),
+    (N'Veiligheid s avonds blijft een aandachtspunt.');
+
+DECLARE @AnsTextCount INT = (SELECT COUNT(*) FROM @AnswerTexts);
+
+-- Eligible questions: published survey posts in this chunk that
+-- still have no answers stored.
+IF OBJECT_ID('tempdb..#SurveyQ') IS NOT NULL DROP TABLE #SurveyQ;
+
+SELECT q.QuestionId,
+       q.PostId,
+       q.QuestionType
+INTO #SurveyQ
+FROM Dnn_Modules_Blog_Questions q
+JOIN Dnn_Modules_Blog_Posts p ON p.PostId = q.PostId
+JOIN #PlanCommunities pc ON pc.CommunityId = p.CommunityId
+WHERE p.PostType = 3
+  AND p.IsDraft = 0
+  AND p.IsDeleted = 0
+  AND p.PublishOn <= GETUTCDATE()
+  AND NOT EXISTS (
+      SELECT 1
+      FROM Dnn_Modules_Blog_Answers a
+      WHERE a.QuestionId = q.QuestionId
+  );
+
+-- Every audience member answers every question (no sampling).
+IF OBJECT_ID('tempdb..#Responders') IS NOT NULL DROP TABLE #Responders;
+
+SELECT sq.QuestionId,
+       sq.PostId,
+       sq.QuestionType,
+       pa.UserId,
+       (CHECKSUM(sq.QuestionId, pa.UserId, 211) & 0x7fffffff) AS R
+INTO #Responders
+FROM #SurveyQ sq
+JOIN #PostAudience pa ON pa.PostId = sq.PostId;
+
+-- ── Single-choice answers (one option per user) ────────────────
+;WITH OptsByQ AS (
+    SELECT qo.QuestionId,
+           qo.OptionId,
+           ROW_NUMBER() OVER (PARTITION BY qo.QuestionId ORDER BY qo.SortOrder, qo.OptionId) AS Seq,
+           COUNT(*) OVER (PARTITION BY qo.QuestionId) AS Cnt
+    FROM Dnn_Modules_Blog_QuestionOptions qo
+)
+INSERT INTO Dnn_Modules_Blog_Answers (QuestionId, UserId, OptionId, AnswerText, CreatedOn)
+SELECT r.QuestionId,
+       r.UserId,
+       o.OptionId,
+       NULL,
+       DATEADD(MINUTE, -(r.R % (60 * 24 * 30)), GETUTCDATE())
+FROM #Responders r
+JOIN OptsByQ o ON o.QuestionId = r.QuestionId
+              AND o.Seq = (r.R % CASE WHEN o.Cnt = 0 THEN 1 ELSE o.Cnt END) + 1
+WHERE r.QuestionType = 1;
+
+-- ── Multiple-choice answers (1-N options per user) ─────────────
+;WITH OptsByQ AS (
+    SELECT qo.QuestionId,
+           qo.OptionId,
+           ROW_NUMBER() OVER (PARTITION BY qo.QuestionId ORDER BY qo.SortOrder, qo.OptionId) AS Seq,
+           COUNT(*) OVER (PARTITION BY qo.QuestionId) AS Cnt
+    FROM Dnn_Modules_Blog_QuestionOptions qo
+),
+Picks AS (
+    SELECT r.QuestionId,
+           r.UserId,
+           r.R,
+           o.OptionId,
+           o.Seq,
+           o.Cnt,
+           (CHECKSUM(r.QuestionId, r.UserId, o.OptionId, 212) & 0x7fffffff) AS PR
+    FROM #Responders r
+    JOIN OptsByQ o ON o.QuestionId = r.QuestionId
+    WHERE r.QuestionType = 2
+)
+INSERT INTO Dnn_Modules_Blog_Answers (QuestionId, UserId, OptionId, AnswerText, CreatedOn)
+SELECT p.QuestionId,
+       p.UserId,
+       p.OptionId,
+       NULL,
+       DATEADD(MINUTE, -(p.PR % (60 * 24 * 30)), GETUTCDATE())
+FROM Picks p
+WHERE
+      -- Guarantee at least one option per user.
+      p.Seq = (p.R % CASE WHEN p.Cnt = 0 THEN 1 ELSE p.Cnt END) + 1
+   -- Other options are picked with ~35% probability each.
+   OR (p.PR % 100) < 35;
+
+-- ── Open answers (free text) ───────────────────────────────────
+INSERT INTO Dnn_Modules_Blog_Answers (QuestionId, UserId, OptionId, AnswerText, CreatedOn)
+SELECT r.QuestionId,
+       r.UserId,
+       NULL,
+       at.Body,
+       DATEADD(MINUTE, -(r.R % (60 * 24 * 30)), GETUTCDATE())
+FROM #Responders r
+JOIN @AnswerTexts at ON at.Id = ((r.R / 13) % @AnsTextCount) + 1
+WHERE r.QuestionType = 3;
+
+-- Note: post.CommentCount is NOT overridden for surveys — it stays
+-- in sync with the regular Comments table (set in section 12), so
+-- the post card's "comments" indicator and the reactions tab agree.
 
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║ 14) View / click stats                                  ║
@@ -1139,6 +1252,98 @@ FROM Dnn_Modules_Blog_Posts p
 JOIN #PlanCommunities pc ON pc.CommunityId = p.CommunityId
 WHERE p.IsDraft = 1
    OR p.PublishOn > GETUTCDATE();
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║ 14b) Discovery cards (Ondekt)                           ║
+-- ║                                                         ║
+-- ║ Seeds CommunityDiscoverCategory + CommunityDiscoverButton ║
+-- ║ per community, each with a Lucide icon name.            ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+DECLARE @DiscoverCats TABLE (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Title NVARCHAR(128),
+    Descr NVARCHAR(512),
+    Icon  NVARCHAR(64)
+);
+
+INSERT INTO @DiscoverCats (Title, Descr, Icon) VALUES
+    (N'Eten & Drinken',   N'Lokale restaurants, cafes en lunchadressen om te ontdekken.',  N'utensils'),
+    (N'Winkelen',         N'Winkels, boutieks en marktjes in de buurt.',                   N'shopping-bag'),
+    (N'Cultuur',          N'Musea, galeries, theaters en bijzondere plekken.',             N'palette'),
+    (N'Buurthuis',        N'Activiteiten en bijeenkomsten in en rondom het wijkcentrum.',  N'house'),
+    (N'Sport & Beweging', N'Sportscholen, parken en sportieve activiteiten.',              N'dumbbell'),
+    (N'Groen & Parken',   N'Wandel- en fietsroutes en groene plekken om te ontspannen.',   N'trees');
+
+DECLARE @DiscoverBtns TABLE (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    CatIdx INT,
+    Label NVARCHAR(128),
+    Icon  NVARCHAR(64),
+    UrlSuffix NVARCHAR(128)
+);
+
+INSERT INTO @DiscoverBtns (CatIdx, Label, Icon, UrlSuffix) VALUES
+    (1, N'Restaurants',     N'utensils-crossed', N'restaurants'),
+    (1, N'Cafes',           N'coffee',           N'cafes'),
+    (1, N'Lunchrooms',      N'sandwich',         N'lunch'),
+    (1, N'Terrassen',       N'sun',              N'terrassen'),
+
+    (2, N'Boutieks',        N'shirt',            N'boutieks'),
+    (2, N'Markten',         N'store',            N'markten'),
+    (2, N'Boekhandels',     N'book-open',        N'boekhandels'),
+
+    (3, N'Musea',           N'landmark',         N'musea'),
+    (3, N'Galeries',        N'image',            N'galeries'),
+    (3, N'Theaters',        N'drama',            N'theaters'),
+
+    (4, N'Agenda',          N'calendar',         N'agenda'),
+    (4, N'Cursussen',       N'graduation-cap',   N'cursussen'),
+    (4, N'Vrijwilligers',   N'hand-heart',       N'vrijwilligers'),
+
+    (5, N'Sportscholen',    N'dumbbell',         N'sportscholen'),
+    (5, N'Yoga',            N'flower',           N'yoga'),
+    (5, N'Hardlooproutes',  N'footprints',       N'hardlopen'),
+
+    (6, N'Parken',          N'tree-pine',        N'parken'),
+    (6, N'Wandelroutes',    N'map',              N'wandelroutes'),
+    (6, N'Fietsroutes',     N'bike',             N'fietsroutes');
+
+INSERT INTO CommunityDiscoverCategory (CommunityId, Title, Description, Icon, IsVisible, SortOrder, CreatedOn)
+SELECT pc.CommunityId,
+       dc.Title,
+       dc.Descr,
+       dc.Icon,
+       1,
+       dc.Id,
+       GETUTCDATE()
+FROM #PlanCommunities pc
+CROSS JOIN @DiscoverCats dc
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM CommunityDiscoverCategory x
+    WHERE x.CommunityId = pc.CommunityId
+      AND x.Title = dc.Title
+);
+
+INSERT INTO CommunityDiscoverButton (CommunityDiscoverCategoryId, Label, Icon, Url, IsVisible, SortOrder, CreatedOn)
+SELECT cat.Id,
+       db.Label,
+       db.Icon,
+       N'https://example.com/' + pc.Slug + N'/' + db.UrlSuffix,
+       1,
+       db.Id,
+       GETUTCDATE()
+FROM #PlanCommunities pc
+JOIN CommunityDiscoverCategory cat ON cat.CommunityId = pc.CommunityId
+JOIN @DiscoverCats dc ON dc.Title = cat.Title
+JOIN @DiscoverBtns db ON db.CatIdx = dc.Id
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM CommunityDiscoverButton x
+    WHERE x.CommunityDiscoverCategoryId = cat.Id
+      AND x.Label = db.Label
+);
 
 -- ╔══════════════════════════════════════════════════════════╗
 -- ║ 15) Compact final summary                               ║
@@ -1213,7 +1418,28 @@ SELECT
         FROM Dnn_Modules_Blog_Questions q
         JOIN Dnn_Modules_Blog_Posts p ON p.PostId = q.PostId
         WHERE p.CommunityId = c.Id
-    ) AS VARCHAR(9)) AS Questions
+    ) AS VARCHAR(9)) AS Questions,
+
+    CAST((
+        SELECT COUNT(*)
+        FROM Dnn_Modules_Blog_Answers a
+        JOIN Dnn_Modules_Blog_Questions q ON q.QuestionId = a.QuestionId
+        JOIN Dnn_Modules_Blog_Posts p ON p.PostId = q.PostId
+        WHERE p.CommunityId = c.Id
+    ) AS VARCHAR(8)) AS Answers,
+
+    CAST((
+        SELECT COUNT(*)
+        FROM CommunityDiscoverCategory dc
+        WHERE dc.CommunityId = c.Id
+    ) AS VARCHAR(7)) AS DiscCats,
+
+    CAST((
+        SELECT COUNT(*)
+        FROM CommunityDiscoverButton db
+        JOIN CommunityDiscoverCategory dc ON dc.Id = db.CommunityDiscoverCategoryId
+        WHERE dc.CommunityId = c.Id
+    ) AS VARCHAR(7)) AS DiscBtns
 
 FROM Community c
 JOIN #PlanCommunities pc ON pc.CommunityId = c.Id

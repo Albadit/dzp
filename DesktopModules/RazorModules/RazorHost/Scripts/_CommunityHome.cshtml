@@ -152,6 +152,35 @@
         } catch { /* swallow — page still renders with empty-state */ }
     }
 
+    /* ── Discovery buttons (visible buttons in visible categories) ── */
+    var discoverButtons = new List<Dictionary<string, object>>();
+    if (rc != null && !string.IsNullOrEmpty(connStr)) {
+        try {
+            using (var conn = new SqlConnection(connStr)) {
+            using (var cmd = new SqlCommand(@"
+                SELECT b.Label, b.Icon, b.Url
+                FROM CommunityDiscoverButton b
+                INNER JOIN CommunityDiscoverCategory c ON c.Id = b.CommunityDiscoverCategoryId
+                WHERE c.CommunityId = @cid
+                  AND c.IsVisible   = 1
+                  AND b.IsVisible   = 1
+                ORDER BY c.SortOrder, c.Id, b.SortOrder, b.Id", conn)) {
+                cmd.Parameters.AddWithValue("@cid", rc.CommunityId);
+                conn.Open();
+                using (var reader = cmd.ExecuteReader()) {
+                    while (reader.Read()) {
+                        discoverButtons.Add(new Dictionary<string, object> {
+                            { "Label", reader.GetString(0) },
+                            { "Icon",  reader.IsDBNull(1) ? "" : reader.GetString(1) },
+                            { "Url",   reader.GetString(2) }
+                        });
+                    }
+                }
+            }
+            }
+        } catch { /* swallow — Ondekt section just renders empty */ }
+    }
+
     /* ── Team members (Community beheerders for this community) ── */
     var teamMembers = new List<Dictionary<string, object>>();
     if (rc != null && !string.IsNullOrEmpty(connStr)) {
@@ -195,6 +224,7 @@
     PageData["groupImages"]   = groupImages;
     PageData["latestPosts"]   = latestPosts;
     PageData["teamMembers"]   = teamMembers;
+    PageData["discoverButtons"] = discoverButtons;
 }
 
 <main class="max-w-8xl w-full m-auto flex flex-col gap-4">

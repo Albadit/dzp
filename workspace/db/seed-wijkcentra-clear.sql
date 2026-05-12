@@ -77,30 +77,12 @@ BEGIN TRY
         (N'de-esch-winkelgebied');
 
     DECLARE @CommIds TABLE (Id INT NOT NULL PRIMARY KEY);
-    DECLARE @CompIds TABLE (Id INT NOT NULL PRIMARY KEY);
-    DECLARE @GroupIds TABLE (Id INT NOT NULL PRIMARY KEY);
-    DECLARE @PostIds TABLE (PostId INT NOT NULL PRIMARY KEY);
     DECLARE @DummyUids TABLE (UserId INT NOT NULL PRIMARY KEY);
 
     INSERT INTO @CommIds (Id)
     SELECT c.Id
     FROM Community c
     JOIN @CitySlugs s ON s.Slug = c.Slug;
-
-    INSERT INTO @CompIds (Id)
-    SELECT co.Id
-    FROM Company co
-    WHERE co.CommunityId IN (SELECT Id FROM @CommIds);
-
-    INSERT INTO @GroupIds (Id)
-    SELECT g.Id
-    FROM CommunityGroups g
-    WHERE g.CommunityId IN (SELECT Id FROM @CommIds);
-
-    INSERT INTO @PostIds (PostId)
-    SELECT p.PostId
-    FROM Dnn_Modules_Blog_Posts p
-    WHERE p.CommunityId IN (SELECT Id FROM @CommIds);
 
     INSERT INTO @DummyUids (UserId)
     SELECT u.UserID
@@ -109,212 +91,51 @@ BEGIN TRY
       AND u.Username LIKE N'dzpdummy.%';
 
     -- ╔══════════════════════════════════════════════════════════╗
-    -- ║ 2) Count what will be cleared                           ║
+    -- ║ 2) Cascade-delete every child of the target communities ║
+    -- ║                                                         ║
+    -- ║ Migration 002 added ON DELETE CASCADE on every FK that  ║
+    -- ║ chains down from Community, so a single DELETE here     ║
+    -- ║ wipes:                                                  ║
+    -- ║                                                         ║
+    -- ║   Community                                             ║
+    -- ║     ├─ Company                  → UserCompany           ║
+    -- ║     ├─ CommunityGroups          → UserCommunityGroups   ║
+    -- ║     ├─ UserCommunity            → UserCommunityRole     ║
+    -- ║     ├─ CommunityDiscoverCategory → CommunityDiscoverButton
+    -- ║     └─ Dnn_Modules_Blog_Posts                           ║
+    -- ║           ├─ Comments                                   ║
+    -- ║           ├─ PostGroups                                 ║
+    -- ║           └─ Questions                                  ║
+    -- ║                 ├─ QuestionOptions                      ║
+    -- ║                 └─ Answers                              ║
+    -- ║                                                         ║
+    -- ║ The Community rows themselves are removed too — the     ║
+    -- ║ seed re-creates them (Slug, Name, ImageUrl) on the next ║
+    -- ║ run, so the 50 wijkcentra reappear with fresh Ids.      ║
     -- ╚══════════════════════════════════════════════════════════╝
-
-    DECLARE @CntCommunities INT = (SELECT COUNT(*) FROM @CommIds);
-    DECLARE @CntCompanies INT = (SELECT COUNT(*) FROM @CompIds);
-    DECLARE @CntGroups INT = (SELECT COUNT(*) FROM @GroupIds);
-    DECLARE @CntPosts INT = (SELECT COUNT(*) FROM @PostIds);
-    DECLARE @CntDummyUsers INT = (SELECT COUNT(*) FROM @DummyUids);
-
-    DECLARE @CntComments INT = 0;
-    DECLARE @CntPostGroups INT = 0;
-    DECLARE @CntQuestions INT = 0;
-    DECLARE @CntQuestionOptions INT = 0;
-    DECLARE @CntUserCompany INT = 0;
-    DECLARE @CntUserGroups INT = 0;
-    DECLARE @CntUserCommunity INT = 0;
-    DECLARE @CntUserCommunityRole INT = 0;
-
-    IF OBJECT_ID('Dnn_Modules_Blog_Comments','U') IS NOT NULL
-        SELECT @CntComments = COUNT(*)
-        FROM Dnn_Modules_Blog_Comments
-        WHERE PostId IN (SELECT PostId FROM @PostIds);
-
-    IF OBJECT_ID('Dnn_Modules_Blog_PostGroups','U') IS NOT NULL
-        SELECT @CntPostGroups = COUNT(*)
-        FROM Dnn_Modules_Blog_PostGroups
-        WHERE PostId IN (SELECT PostId FROM @PostIds);
-
-    IF OBJECT_ID('Dnn_Modules_Blog_Questions','U') IS NOT NULL
-        SELECT @CntQuestions = COUNT(*)
-        FROM Dnn_Modules_Blog_Questions
-        WHERE PostId IN (SELECT PostId FROM @PostIds);
-
-    IF OBJECT_ID('Dnn_Modules_Blog_QuestionOptions','U') IS NOT NULL
-        SELECT @CntQuestionOptions = COUNT(*)
-        FROM Dnn_Modules_Blog_QuestionOptions qo
-        JOIN Dnn_Modules_Blog_Questions q ON q.QuestionId = qo.QuestionId
-        WHERE q.PostId IN (SELECT PostId FROM @PostIds);
-
-    IF OBJECT_ID('UserCompany','U') IS NOT NULL
-        SELECT @CntUserCompany = COUNT(*)
-        FROM UserCompany
-        WHERE CompanyId IN (SELECT Id FROM @CompIds)
-           OR UserId IN (SELECT UserId FROM @DummyUids);
-
-    IF OBJECT_ID('UserCommunityGroups','U') IS NOT NULL
-        SELECT @CntUserGroups = COUNT(*)
-        FROM UserCommunityGroups
-        WHERE CommunityGroupId IN (SELECT Id FROM @GroupIds)
-           OR UserId IN (SELECT UserId FROM @DummyUids);
-
-    IF OBJECT_ID('UserCommunity','U') IS NOT NULL
-        SELECT @CntUserCommunity = COUNT(*)
-        FROM UserCommunity
-        WHERE CommunityId IN (SELECT Id FROM @CommIds)
-           OR UserId IN (SELECT UserId FROM @DummyUids);
-
-    IF OBJECT_ID('UserCommunityRole','U') IS NOT NULL
-        SELECT @CntUserCommunityRole = COUNT(*)
-        FROM UserCommunityRole
-        WHERE UserCommunityId IN (
-            SELECT Id
-            FROM UserCommunity
-            WHERE CommunityId IN (SELECT Id FROM @CommIds)
-               OR UserId IN (SELECT UserId FROM @DummyUids)
-        );
-
-    -- ╔══════════════════════════════════════════════════════════╗
-    -- ║ 3) Delete blog content, children first                  ║
-    -- ╚══════════════════════════════════════════════════════════╝
-
-    IF OBJECT_ID('Dnn_Modules_Blog_QuestionOptions','U') IS NOT NULL
-    BEGIN
-        DELETE qo
-        FROM Dnn_Modules_Blog_QuestionOptions qo
-        JOIN Dnn_Modules_Blog_Questions q ON q.QuestionId = qo.QuestionId
-        WHERE q.PostId IN (SELECT PostId FROM @PostIds);
-    END;
-
-    IF OBJECT_ID('Dnn_Modules_Blog_Questions','U') IS NOT NULL
-    BEGIN
-        DELETE FROM Dnn_Modules_Blog_Questions
-        WHERE PostId IN (SELECT PostId FROM @PostIds);
-    END;
-
-    IF OBJECT_ID('Dnn_Modules_Blog_Comments','U') IS NOT NULL
-    BEGIN
-        DELETE FROM Dnn_Modules_Blog_Comments
-        WHERE PostId IN (SELECT PostId FROM @PostIds);
-    END;
-
-    IF OBJECT_ID('Dnn_Modules_Blog_PostGroups','U') IS NOT NULL
-    BEGIN
-        DELETE FROM Dnn_Modules_Blog_PostGroups
-        WHERE PostId IN (SELECT PostId FROM @PostIds);
-    END;
-
-    DELETE FROM Dnn_Modules_Blog_Posts
-    WHERE PostId IN (SELECT PostId FROM @PostIds);
-
-    -- ╔══════════════════════════════════════════════════════════╗
-    -- ║ 4) Delete companies and company links                   ║
-    -- ╚══════════════════════════════════════════════════════════╝
-
-    IF OBJECT_ID('UserCompany','U') IS NOT NULL
-    BEGIN
-        DELETE FROM UserCompany
-        WHERE CompanyId IN (SELECT Id FROM @CompIds)
-           OR UserId IN (SELECT UserId FROM @DummyUids);
-    END;
-
-    DELETE FROM Company
-    WHERE Id IN (SELECT Id FROM @CompIds);
-
-    -- ╔══════════════════════════════════════════════════════════╗
-    -- ║ 5) Delete groups and group links                        ║
-    -- ╚══════════════════════════════════════════════════════════╝
-
-    IF OBJECT_ID('UserCommunityGroups','U') IS NOT NULL
-    BEGIN
-        DELETE FROM UserCommunityGroups
-        WHERE CommunityGroupId IN (SELECT Id FROM @GroupIds)
-           OR UserId IN (SELECT UserId FROM @DummyUids);
-    END;
-
-    DELETE FROM CommunityGroups
-    WHERE Id IN (SELECT Id FROM @GroupIds);
-
-    -- ╔══════════════════════════════════════════════════════════╗
-    -- ║ 6) Delete community links and communities               ║
-    -- ╚══════════════════════════════════════════════════════════╝
-
-    IF OBJECT_ID('UserCommunityRole','U') IS NOT NULL
-    BEGIN
-        DELETE FROM UserCommunityRole
-        WHERE UserCommunityId IN (
-            SELECT Id
-            FROM UserCommunity
-            WHERE CommunityId IN (SELECT Id FROM @CommIds)
-               OR UserId IN (SELECT UserId FROM @DummyUids)
-        );
-    END;
-
-    IF OBJECT_ID('UserCommunity','U') IS NOT NULL
-    BEGIN
-        DELETE FROM UserCommunity
-        WHERE CommunityId IN (SELECT Id FROM @CommIds)
-           OR UserId IN (SELECT UserId FROM @DummyUids);
-    END;
 
     DELETE FROM Community
     WHERE Id IN (SELECT Id FROM @CommIds);
 
     -- ╔══════════════════════════════════════════════════════════╗
-    -- ║ 7) Delete dummy users                                   ║
+    -- ║ 3) Soft-delete dummy users                              ║
+    -- ║                                                         ║
+    -- ║ Users.UserID isn't on the cascade chain (multi-cascade- ║
+    -- ║ path rule), so dummies are soft-deleted set-based.      ║
     -- ╚══════════════════════════════════════════════════════════╝
 
-    DECLARE @duid INT;
+    UPDATE Users
+    SET IsDeleted = 1
+    WHERE UserID IN (SELECT UserId FROM @DummyUids);
 
-    DECLARE delUserCur CURSOR LOCAL FAST_FORWARD FOR
-        SELECT UserId
-        FROM @DummyUids;
-
-    OPEN delUserCur;
-
-    FETCH NEXT FROM delUserCur INTO @duid;
-
-    WHILE @@FETCH_STATUS = 0
+    IF OBJECT_ID('UserPortals','U') IS NOT NULL
     BEGIN
-        IF OBJECT_ID('DeleteUser','P') IS NOT NULL
-        BEGIN
-            EXEC DeleteUser @UserID = @duid;
-        END
-        ELSE
-        BEGIN
-            UPDATE Users
-            SET IsDeleted = 1
-            WHERE UserID = @duid;
-        END;
-
-        FETCH NEXT FROM delUserCur INTO @duid;
+        UPDATE UserPortals
+        SET IsDeleted = 1
+        WHERE UserId IN (SELECT UserId FROM @DummyUids);
     END;
 
-    CLOSE delUserCur;
-    DEALLOCATE delUserCur;
-
     COMMIT TRANSACTION;
-
-    -- ╔══════════════════════════════════════════════════════════╗
-    -- ║ 8) Compact summary                                      ║
-    -- ╚══════════════════════════════════════════════════════════╝
-
-    SELECT
-        CAST(@CntCommunities AS VARCHAR(11)) AS Communities,
-        CAST(@CntDummyUsers AS VARCHAR(10)) AS DummyUsers,
-        CAST(@CntGroups AS VARCHAR(6)) AS Groups,
-        CAST(@CntCompanies AS VARCHAR(9)) AS Companies,
-        CAST(@CntPosts AS VARCHAR(5)) AS Posts,
-        CAST(@CntComments AS VARCHAR(8)) AS Comments,
-        CAST(@CntPostGroups AS VARCHAR(4)) AS Tags,
-        CAST(@CntQuestions AS VARCHAR(9)) AS Questions,
-        CAST(@CntQuestionOptions AS VARCHAR(7)) AS Options,
-        CAST(@CntUserCommunity AS VARCHAR(11)) AS Memberships,
-        CAST(@CntUserCommunityRole AS VARCHAR(5)) AS Roles,
-        CAST(@CntUserCompany AS VARCHAR(12)) AS UserCompanies,
-        CAST(@CntUserGroups AS VARCHAR(10)) AS UserGroups;
 
 END TRY
 BEGIN CATCH

@@ -24,12 +24,15 @@ param(
     [string]$User     = 'beheer',
     [string]$Password = '7dWb+]e6HxM9~TVC',
 
-    [int]$TotalUsers            = 500,
+    [int]$UsersPerCommunity     = 100,
     [int]$GroupsPerCommunity    = 4,
     [int]$CompaniesPerCommunity = 10,
     [int]$PostsPerCommunity     = 20,
     [int]$MinCommentsPerPost    = 5,
     [int]$MaxCommentsPerPost    = 15,
+    [int]$SingleQuestionsPerSurvey = 4,
+    [int]$MultiQuestionsPerSurvey  = 4,
+    [int]$OpenQuestionsPerSurvey   = 2,
 
     [int]$CommunityChunkSize    = 1,
 
@@ -48,8 +51,8 @@ if ($CommunityChunkSize -lt 1) {
     throw "CommunityChunkSize must be at least 1."
 }
 
-if ($TotalUsers -lt 1) {
-    throw "TotalUsers must be at least 1."
+if ($UsersPerCommunity -lt 1) {
+    throw "UsersPerCommunity must be at least 1."
 }
 
 if ($GroupsPerCommunity -lt 0) {
@@ -120,8 +123,8 @@ $totalSw = [System.Diagnostics.Stopwatch]::StartNew()
 
 Write-Host ""
 Write-Host "Target: $Server / $Database" -ForegroundColor DarkGray
-Write-Host ("Scale: users={0}, groups/community={1}, companies/community={2}, posts/community={3}, comments/post={4}-{5}, chunk={6}" `
-    -f $TotalUsers, $GroupsPerCommunity, $CompaniesPerCommunity, $PostsPerCommunity, $MinCommentsPerPost, $MaxCommentsPerPost, $CommunityChunkSize) -ForegroundColor DarkGray
+Write-Host ("Scale: users/community={0}, groups/community={1}, companies/community={2}, posts/community={3}, comments/post={4}-{5}, chunk={6}" `
+    -f $UsersPerCommunity, $GroupsPerCommunity, $CompaniesPerCommunity, $PostsPerCommunity, $MinCommentsPerPost, $MaxCommentsPerPost, $CommunityChunkSize) -ForegroundColor DarkGray
 
 if (-not $SkipClear) {
     Write-Host ""
@@ -145,14 +148,17 @@ for ($offset = 0; $offset -lt $totalCommunities; $offset += $CommunityChunkSize)
     $chunkSw = [System.Diagnostics.Stopwatch]::StartNew()
 
     Invoke-Sqlcmd-File 'seed-wijkcentra.sql' @{
-        NumUsers              = $TotalUsers
-        GroupsPerCommunity    = $GroupsPerCommunity
-        CompaniesPerCommunity = $CompaniesPerCommunity
-        PostsPerCommunity     = $PostsPerCommunity
-        MinCommentsPerPost    = $MinCommentsPerPost
-        MaxCommentsPerPost    = $MaxCommentsPerPost
-        CommunityOffset       = $offset
-        CommunityLimit        = $limit
+        UsersPerCommunity        = $UsersPerCommunity
+        GroupsPerCommunity       = $GroupsPerCommunity
+        CompaniesPerCommunity    = $CompaniesPerCommunity
+        PostsPerCommunity        = $PostsPerCommunity
+        MinCommentsPerPost       = $MinCommentsPerPost
+        MaxCommentsPerPost       = $MaxCommentsPerPost
+        SingleQuestionsPerSurvey = $SingleQuestionsPerSurvey
+        MultiQuestionsPerSurvey  = $MultiQuestionsPerSurvey
+        OpenQuestionsPerSurvey   = $OpenQuestionsPerSurvey
+        CommunityOffset          = $offset
+        CommunityLimit           = $limit
     }
 
     $chunkSw.Stop()
