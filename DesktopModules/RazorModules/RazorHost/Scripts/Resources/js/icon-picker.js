@@ -83,12 +83,13 @@
         var html = '';
         for (var i = 0; i < names.length; i++) {
             var n = names[i];
-            html += '<button type="button" data-ip-pick="' + escAttr(n) + '" '
-                 +  'title="' + escAttr(n) + '" '
-                 +  'class="flex flex-col items-center justify-center gap-1 p-2 rounded-md hover:bg-content2 focus:outline-none focus:ring-2 focus:ring-primary/40 transition min-h-[52px]">'
-                 +    '<i data-ip-icon="' + escAttr(n) + '" class="size-5 text-foreground-700 inline-block"></i>'
-                 +    '<span class="text-[10px] leading-tight text-foreground-500 truncate w-full text-center">' + escAttr(n) + '</span>'
-                 +  '</button>';
+            html += `
+                <button type="button" data-ip-pick="${escAttr(n)}"
+                        title="${escAttr(n)}"
+                        class="flex flex-col items-center justify-center gap-1 p-2 rounded-md hover:bg-content2 focus:outline-none focus:ring-2 focus:ring-primary/40 transition min-h-[52px]">
+                    <i data-ip-icon="${escAttr(n)}" class="size-5 text-foreground-700 inline-block"></i>
+                    <span class="text-[10px] leading-tight text-foreground-500 truncate w-full text-center">${escAttr(n)}</span>
+                </button>`;
         }
         grid.innerHTML = html;
         if (!g.lucide || typeof g.lucide.createIcons !== 'function') return;

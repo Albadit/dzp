@@ -703,7 +703,7 @@ INSERT INTO Dnn_Modules_Blog_Posts
     (ModuleId, CommunityId, PostType, Title, Content, ImageUrl,
      AuthorUserId, PublishOn, EventClosingOn,
      IsDraft, IsDeleted, ViewCount, ClickCount, CommentCount,
-     CreatedOn, ModifiedOn)
+     CreatedOn, ModifiedOn, IsPriority)
 SELECT @ModuleId,
        p.CommunityId,
        p.PostType,
@@ -731,7 +731,11 @@ SELECT @ModuleId,
        0,
        0,
        DATEADD(DAY, -((p.R4 % 90) + 1), GETUTCDATE()),
-       GETUTCDATE()
+       GETUTCDATE(),
+       -- Pin the first published post (PostIdx=3) and an extra one (PostIdx=7
+       -- when seeded) so the "priority always on top" behaviour is visible
+       -- right after seeding without overwhelming the feed.
+       CASE WHEN p.PostIdx IN (3, 7) THEN 1 ELSE 0 END
 FROM PlannedPosts p
 WHERE NOT EXISTS (
     SELECT 1

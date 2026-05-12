@@ -35,32 +35,45 @@
 
     function avatarHtml(c, sizeClass, iconSize) {
         if (c.img) {
-            return '<div class="' + sizeClass + ' rounded-xl overflow-hidden shrink-0 bg-content2">' +
-                   '<img src="' + escHtml(c.img) + '" alt="' + escHtml(c.name) + '" loading="lazy" decoding="async" class="w-full h-full object-cover" />' +
-                   '</div>';
+            return `<div class="${sizeClass} rounded-xl overflow-hidden shrink-0 bg-content2">
+                        <img src="${escHtml(c.img)}" alt="${escHtml(c.name)}" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+                    </div>`;
         }
-        return '<div class="flex items-center justify-center ' + sizeClass + ' rounded-xl bg-primary/10 shrink-0"><i data-lucide="building-2" class="' + iconSize + ' text-primary"></i></div>';
+        return `<div class="flex items-center justify-center ${sizeClass} rounded-xl bg-primary/10 shrink-0">
+                    <i data-lucide="building-2" class="${iconSize} text-primary"></i>
+                </div>`;
     }
 
     function gridCardHtml(c) {
-        var addrBlock = c.addr ? ('<div class="flex items-center gap-1.5 text-xs text-foreground-400"><i data-lucide="map-pin" class="size-3 shrink-0"></i><span class="truncate">' + escHtml(c.addr) + '</span></div>') : '';
-        var descBlock = c.desc ? ('<p class="text-sm text-foreground-500 leading-relaxed line-clamp-2 grow">' + escHtml(c.desc) + '</p>') : '';
-        var mcLabel   = (c.mc === 1 ? 'medewerker' : 'medewerkers');
-        return '<a href="/' + escHtml(slug) + '/companies/' + escHtml(c.slug) + '"' +
-            ' class="company-card group flex flex-col gap-3 p-5 rounded-xl border border-divider bg-background hover:border-primary/40 transition">' +
-            '<div class="flex items-start gap-4">' +
-              avatarHtml(c, 'size-12', 'size-5') +
-              '<div class="flex flex-col gap-1 min-w-0 flex-1">' +
-                '<h3 class="text-base font-semibold text-foreground-900 group-hover:text-primary transition truncate">' + escHtml(c.name) + '</h3>' +
-                addrBlock +
-              '</div>' +
-              '<i data-lucide="chevron-right" class="size-5 text-foreground-300 group-hover:text-primary shrink-0 mt-1 transition"></i>' +
-            '</div>' +
-            descBlock +
-            '<div class="flex items-center gap-3 pt-1 border-t border-divider">' +
-              '<div class="flex items-center gap-1.5 text-xs text-foreground-400"><i data-lucide="users" class="size-3.5"></i><span>' + c.mc + ' ' + mcLabel + '</span></div>' +
-            '</div>' +
-        '</a>';
+        var addrBlock = c.addr
+            ? `<div class="flex items-center gap-1.5 text-xs text-foreground-400">
+                   <i data-lucide="map-pin" class="size-3 shrink-0"></i>
+                   <span class="truncate">${escHtml(c.addr)}</span>
+               </div>`
+            : '';
+        var descBlock = c.desc
+            ? `<p class="text-sm text-foreground-500 leading-relaxed line-clamp-2 grow">${escHtml(c.desc)}</p>`
+            : '';
+        var mcLabel = (c.mc === 1 ? 'medewerker' : 'medewerkers');
+        return `
+            <a href="/${escHtml(slug)}/companies/${escHtml(c.slug)}"
+               class="company-card group flex flex-col gap-3 p-5 rounded-xl border border-divider bg-background hover:border-primary/40 transition">
+                <div class="flex items-start gap-4">
+                    ${avatarHtml(c, 'size-12', 'size-5')}
+                    <div class="flex flex-col gap-1 min-w-0 flex-1">
+                        <h3 class="text-base font-semibold text-foreground-900 group-hover:text-primary transition truncate">${escHtml(c.name)}</h3>
+                        ${addrBlock}
+                    </div>
+                    <i data-lucide="chevron-right" class="size-5 text-foreground-300 group-hover:text-primary shrink-0 mt-1 transition"></i>
+                </div>
+                ${descBlock}
+                <div class="flex items-center gap-3 pt-1 border-t border-divider">
+                    <div class="flex items-center gap-1.5 text-xs text-foreground-400">
+                        <i data-lucide="users" class="size-3.5"></i>
+                        <span>${c.mc} ${mcLabel}</span>
+                    </div>
+                </div>
+            </a>`;
     }
 
     var gridIo = null;

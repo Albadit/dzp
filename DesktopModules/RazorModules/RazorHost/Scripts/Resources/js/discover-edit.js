@@ -116,40 +116,40 @@
         row.className = 'dt-sort-item bg-content1 rounded-lg border border-divider p-4 flex flex-wrap items-end gap-3';
         var onCls  = 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20';
         var offCls = 'border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3';
-        row.innerHTML =
-              '<input type="hidden" name="formAction" value="btn-save" />'
-            + '<input type="hidden" name="catId"      value="' + esc(catId) + '" />'
-            + '<input type="hidden" name="btnId"      value="' + esc(bId) + '" />'
-            + '<span class="dt-sort-handle hidden sm:inline-flex items-center justify-center size-9 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-content2 cursor-grab active:cursor-grabbing shrink-0" title="Sleep om te verplaatsen">'
-            +   '<i data-lucide="grip-vertical" class="size-4"></i>'
-            + '</span>'
-            + '<div class="w-full sm:w-auto sm:flex-1 sm:min-w-[10rem] flex flex-col gap-1.5">'
-            +   '<label class="text-xs font-medium text-foreground-500">Label <span class="text-danger">*</span></label>'
-            +   '<input id="btnLabel_' + esc(bId) + '" name="label" type="text" value="' + esc(label) + '" required '
-            +   'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
-            + '</div>'
-            + '<div class="w-full sm:w-auto sm:basis-32 sm:shrink-0 flex flex-col gap-1.5">'
-            +   '<label class="text-xs font-medium text-foreground-500">Icon</label>'
-            +   '<input id="btnIcon_' + esc(bId) + '" name="icon" type="text" value="' + esc(icon) + '" placeholder="chevron-right" data-icon-picker '
-            +   'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
-            + '</div>'
-            + '<div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">'
-            +   '<label class="text-xs font-medium text-foreground-500">URL <span class="text-danger">*</span></label>'
-            +   '<input id="btnUrl_' + esc(bId) + '" name="url" type="text" value="' + esc(url) + '" required '
-            +   'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
-            + '</div>'
-            + '<div class="w-full sm:w-auto flex items-center gap-2 sm:justify-end">'
-            +   '<input type="hidden" name="isVisible" value="' + (visible ? '1' : '0') + '" data-vis-input />'
-            +   '<button type="button" data-vis-toggle aria-pressed="' + (visible ? 'true' : 'false') + '" '
-            +   'title="' + (visible ? 'Verbergen' : 'Tonen') + '" '
-            +   'class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors ' + (visible ? onCls : offCls) + '">'
-            +     '<i data-lucide="' + (visible ? 'eye' : 'eye-off') + '" class="size-4"></i>'
-            +   '</button>'
-            +   '<button type="button" data-ajax-delete="btn" data-btn-id="' + esc(bId) + '" title="Verwijderen" '
-            +   'class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-danger bg-danger text-white hover:bg-danger/90 transition">'
-            +     '<i data-lucide="trash-2" class="size-4"></i>'
-            +   '</button>'
-            + '</div>';
+        row.innerHTML = `
+            <input type="hidden" name="formAction" value="btn-save" />
+            <input type="hidden" name="catId"      value="${esc(catId)}" />
+            <input type="hidden" name="btnId"      value="${esc(bId)}" />
+            <span class="dt-sort-handle hidden sm:inline-flex items-center justify-center size-9 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-content2 cursor-grab active:cursor-grabbing shrink-0" title="Sleep om te verplaatsen">
+                <i data-lucide="grip-vertical" class="size-4"></i>
+            </span>
+            <div class="w-full sm:w-auto sm:flex-1 sm:min-w-[10rem] flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-foreground-500">Label <span class="text-danger">*</span></label>
+                <input id="btnLabel_${esc(bId)}" name="label" type="text" value="${esc(label)}" required
+                       class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+            </div>
+            <div class="w-full sm:w-auto sm:basis-32 sm:shrink-0 flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-foreground-500">Icon</label>
+                <input id="btnIcon_${esc(bId)}" name="icon" type="text" value="${esc(icon)}" placeholder="chevron-right" data-icon-picker
+                       class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+            </div>
+            <div class="w-full sm:w-auto sm:flex-[2] sm:min-w-[12rem] flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-foreground-500">URL <span class="text-danger">*</span></label>
+                <input id="btnUrl_${esc(bId)}" name="url" type="text" value="${esc(url)}" required
+                       class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+            </div>
+            <div class="w-full sm:w-auto flex items-center gap-2 sm:justify-end">
+                <input type="hidden" name="isVisible" value="${visible ? '1' : '0'}" data-vis-input />
+                <button type="button" data-vis-toggle aria-pressed="${visible ? 'true' : 'false'}"
+                        title="${visible ? 'Verbergen' : 'Tonen'}"
+                        class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border transition-colors ${visible ? onCls : offCls}">
+                    <i data-lucide="${visible ? 'eye' : 'eye-off'}" class="size-4"></i>
+                </button>
+                <button type="button" data-ajax-delete="btn" data-btn-id="${esc(bId)}" title="Verwijderen"
+                        class="flex-1 sm:flex-none inline-flex items-center justify-center h-9 sm:size-9 rounded-lg border border-danger bg-danger text-white hover:bg-danger/90 transition">
+                    <i data-lucide="trash-2" class="size-4"></i>
+                </button>
+            </div>`;
         return row;
     }
 
@@ -164,82 +164,86 @@
         var visBtnCls = visible
             ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
             : 'border-divider bg-content2 text-foreground-400 hover:text-foreground-700 hover:bg-content3';
-        card.innerHTML =
-              '<details open>'
-            +   '<summary class="cursor-pointer flex items-center gap-3 p-5 sm:p-6 hover:bg-content2/50 transition">'
-            +     '<span class="dt-sort-handle shrink-0 inline-flex items-center justify-center size-8 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-content2 cursor-grab active:cursor-grabbing" title="Sleep om te verplaatsen" onclick="event.preventDefault(); event.stopPropagation();">'
-            +       '<i data-lucide="grip-vertical" class="size-4"></i>'
-            +     '</span>'
-            +     '<div class="size-10 rounded-lg flex items-center justify-center bg-primary/10 shrink-0 overflow-hidden">'
-            +       (icon
-                        ? '<i data-lucide="' + esc(icon) + '" class="size-5 text-primary"></i>'
-                        : '<span class="text-sm font-bold text-primary">' + esc(initial) + '</span>')
-            +     '</div>'
-            +     '<div class="flex-1 min-w-0">'
-            +       '<h2 class="text-base font-semibold text-foreground-900 truncate">' + esc(title) + '</h2>'
-            +       '<p class="text-xs text-foreground-500 truncate">0 knoppen</p>'
-            +     '</div>'
-            +     (visible ? '' : '<span class="shrink-0 text-xs px-2 py-1 rounded-full bg-warning/10 text-warning-700 font-medium">verborgen</span>')
-            +     '<i data-lucide="chevron-down" class="size-5 text-foreground-400 shrink-0 group-open:rotate-180"></i>'
-            +   '</summary>'
-            +   '<div class="p-5 sm:p-6 flex flex-col gap-4">'
-            +     '<div data-edit-cat-form data-cat-id="' + esc(catId) + '" class="contents">'
-            +       '<input type="hidden" name="formAction" value="cat-save" />'
-            +       '<input type="hidden" name="catId" value="' + esc(catId) + '" />'
-            +       '<div class="flex flex-col gap-1.5">'
-            +         '<label class="text-sm font-medium text-foreground-700">Titel <span class="text-danger">*</span></label>'
-            +         '<input id="catTitle_' + esc(catId) + '" name="title" type="text" value="' + esc(title) + '" required '
-            +         'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
-            +       '</div>'
-            +       '<div class="flex flex-col gap-1.5">'
-            +         '<label class="text-sm font-medium text-foreground-700">Beschrijving</label>'
-            +         '<textarea id="catDesc_' + esc(catId) + '" name="description" rows="3" '
-            +         'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition">' + esc(desc) + '</textarea>'
-            +       '</div>'
-            +       '<div class="flex flex-col gap-1.5">'
-            +         '<label class="text-sm font-medium text-foreground-700">Icon</label>'
-            +         '<input id="catIcon_' + esc(catId) + '" name="icon" type="text" value="' + esc(icon) + '" placeholder="bijv. map-pin" data-icon-picker '
-            +         'class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />'
-            +       '</div>'
-            +       '<div class="flex items-center gap-4">'
-            +         '<input type="hidden" name="isVisible" value="' + (visible ? '1' : '0') + '" data-vis-input />'
-            +         '<button type="button" data-vis-toggle aria-pressed="' + (visible ? 'true' : 'false') + '" '
-            +         'title="' + (visible ? 'Verbergen op de Ondekt-pagina' : 'Tonen op de Ondekt-pagina') + '" '
-            +         'class="inline-flex items-center justify-center size-9 rounded-lg border transition-colors shrink-0 ' + visBtnCls + '">'
-            +           '<i data-lucide="' + (visible ? 'eye' : 'eye-off') + '" class="size-4"></i>'
-            +         '</button>'
-            +         '<span class="text-sm font-medium text-foreground-700">Zichtbaar op de Ondekt-pagina</span>'
-            +       '</div>'
-            +       '<hr class="border-divider m-0" />'
-            +       '<div class="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-end gap-3">'
-            +         '<button type="button" data-ajax-delete="cat" data-cat-id="' + esc(catId) + '" '
-            +         'class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-danger/40 bg-danger/10 text-danger-700 text-sm font-medium hover:bg-danger/20 transition">'
-            +           '<span>Verwijderen</span>'
-            +         '</button>'
-            +         '<button type="submit" '
-            +         'class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">'
-            +           '<i data-lucide="save" class="size-4"></i><span>Opslaan</span>'
-            +         '</button>'
-            +       '</div>'
-            +     '</div>'
-            +   '</div>'
-            +   '<hr class="border-divider m-0" />'
-            +   '<div class="bg-content2/30">'
-            +     '<details class="group">'
-            +       '<summary class="cursor-pointer flex items-center justify-between gap-2 list-none py-4">'
-            +         '<h3 class="text-xs font-bold uppercase tracking-wider text-foreground-500">Knoppen <span class="text-foreground-400 normal-case font-medium">(0)</span></h3>'
-            +         '<i data-lucide="chevron-down" class="size-4 text-foreground-400 group-open:rotate-180"></i>'
-            +       '</summary>'
-            +       '<div class="flex flex-col gap-4">'
-            +         '<div class="flex flex-col gap-3" data-sortable="btn" data-cat-id="' + esc(catId) + '" data-reorder-url="' + esc(pageUrl) + '"></div>'
-            +         '<button type="button" data-add-btn-trigger="' + esc(catId) + '" '
-            +         'class="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-divider text-sm font-medium text-primary hover:border-primary hover:bg-primary/5 transition">'
-            +           '<i data-lucide="plus" class="size-4"></i><span>Knop toevoegen</span>'
-            +         '</button>'
-            +       '</div>'
-            +     '</details>'
-            +   '</div>'
-            + '</details>';
+        var iconHtml = icon
+            ? `<i data-lucide="${esc(icon)}" class="size-5 text-primary"></i>`
+            : `<span class="text-sm font-bold text-primary">${esc(initial)}</span>`;
+        var hiddenBadge = visible
+            ? ''
+            : '<span class="shrink-0 text-xs px-2 py-1 rounded-full bg-warning/10 text-warning-700 font-medium">verborgen</span>';
+        card.innerHTML = `
+            <details open>
+                <summary class="cursor-pointer flex items-center gap-3 p-5 sm:p-6 hover:bg-content2/50 transition">
+                    <span class="dt-sort-handle shrink-0 inline-flex items-center justify-center size-8 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-content2 cursor-grab active:cursor-grabbing" title="Sleep om te verplaatsen" onclick="event.preventDefault(); event.stopPropagation();">
+                        <i data-lucide="grip-vertical" class="size-4"></i>
+                    </span>
+                    <div class="size-10 rounded-lg flex items-center justify-center bg-primary/10 shrink-0 overflow-hidden">
+                        ${iconHtml}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-base font-semibold text-foreground-900 truncate">${esc(title)}</h2>
+                        <p class="text-xs text-foreground-500 truncate">0 knoppen</p>
+                    </div>
+                    ${hiddenBadge}
+                    <i data-lucide="chevron-down" class="size-5 text-foreground-400 shrink-0 group-open:rotate-180"></i>
+                </summary>
+                <div class="p-5 sm:p-6 flex flex-col gap-4">
+                    <div data-edit-cat-form data-cat-id="${esc(catId)}" class="contents">
+                        <input type="hidden" name="formAction" value="cat-save" />
+                        <input type="hidden" name="catId" value="${esc(catId)}" />
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-foreground-700">Titel <span class="text-danger">*</span></label>
+                            <input id="catTitle_${esc(catId)}" name="title" type="text" value="${esc(title)}" required
+                                   class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-foreground-700">Beschrijving</label>
+                            <textarea id="catDesc_${esc(catId)}" name="description" rows="3"
+                                      class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition">${esc(desc)}</textarea>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-sm font-medium text-foreground-700">Icon</label>
+                            <input id="catIcon_${esc(catId)}" name="icon" type="text" value="${esc(icon)}" placeholder="bijv. map-pin" data-icon-picker
+                                   class="w-full px-4 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <input type="hidden" name="isVisible" value="${visible ? '1' : '0'}" data-vis-input />
+                            <button type="button" data-vis-toggle aria-pressed="${visible ? 'true' : 'false'}"
+                                    title="${visible ? 'Verbergen op de Ondekt-pagina' : 'Tonen op de Ondekt-pagina'}"
+                                    class="inline-flex items-center justify-center size-9 rounded-lg border transition-colors shrink-0 ${visBtnCls}">
+                                <i data-lucide="${visible ? 'eye' : 'eye-off'}" class="size-4"></i>
+                            </button>
+                            <span class="text-sm font-medium text-foreground-700">Zichtbaar op de Ondekt-pagina</span>
+                        </div>
+                        <hr class="border-divider m-0" />
+                        <div class="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center sm:justify-end gap-3">
+                            <button type="button" data-ajax-delete="cat" data-cat-id="${esc(catId)}"
+                                    class="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-danger/40 bg-danger/10 text-danger-700 text-sm font-medium hover:bg-danger/20 transition">
+                                <span>Verwijderen</span>
+                            </button>
+                            <button type="submit"
+                                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition">
+                                <i data-lucide="save" class="size-4"></i><span>Opslaan</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <hr class="border-divider m-0" />
+                <div class="bg-content2/30">
+                    <details class="group">
+                        <summary class="cursor-pointer flex items-center justify-between gap-2 list-none py-4">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground-500">Knoppen <span class="text-foreground-400 normal-case font-medium">(0)</span></h3>
+                            <i data-lucide="chevron-down" class="size-4 text-foreground-400 group-open:rotate-180"></i>
+                        </summary>
+                        <div class="flex flex-col gap-4">
+                            <div class="flex flex-col gap-3" data-sortable="btn" data-cat-id="${esc(catId)}" data-reorder-url="${esc(pageUrl)}"></div>
+                            <button type="button" data-add-btn-trigger="${esc(catId)}"
+                                    class="w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed border-divider text-sm font-medium text-primary hover:border-primary hover:bg-primary/5 transition">
+                                <i data-lucide="plus" class="size-4"></i><span>Knop toevoegen</span>
+                            </button>
+                        </div>
+                    </details>
+                </div>
+            </details>`;
         return card;
     }
 
