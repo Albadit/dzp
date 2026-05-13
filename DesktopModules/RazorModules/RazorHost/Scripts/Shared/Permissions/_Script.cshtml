@@ -1,0 +1,23 @@
+@*
+    Bootstrap script for the Permissions page. Publishes the role list,
+    permission catalog and save endpoint URL on window.DZ_PERMISSIONS, then
+    pulls in permissions.js which owns all DOM behaviour.
+
+    PageData expected:
+      rolesJson    (string) — JSON array of { id, name, group, description, isSystem, perms:[key,...] }
+      catalogJson  (string) — JSON array of { id, key, area, label }
+      saveUrl      (string) — POST endpoint that accepts { roleId, permissionIds }
+*@
+@{
+    var rolesJson   = (PageData["rolesJson"]   as string) ?? "[]";
+    var catalogJson = (PageData["catalogJson"] as string) ?? "[]";
+    var saveUrl     = (PageData["saveUrl"]     as string) ?? "";
+}
+<script>
+    window.DZ_PERMISSIONS = {
+        roles:   @(new System.Web.HtmlString(rolesJson)),
+        catalog: @(new System.Web.HtmlString(catalogJson)),
+        saveUrl: @(new System.Web.HtmlString(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(saveUrl)))
+    };
+</script>
+<script src="/DesktopModules/RazorModules/RazorHost/Scripts/Resources/js/permissions.js?v=@DateTime.UtcNow.Ticks"></script>

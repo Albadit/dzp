@@ -1,0 +1,35 @@
+@*
+    Roles table panel. Composes _DataTable, _Pagination and _KebabMenu using flex+gap only.
+*@
+@{
+    var dzRoleTableId = "dzRole";
+
+    PageData["tableId"]   = dzRoleTableId;
+    PageData["columns"]   = new System.Collections.Generic.List<System.Collections.Generic.IDictionary<string, object>> {
+        new System.Collections.Generic.Dictionary<string, object> { { "label", "" },           { "width", "w-10" },   { "align", "center" } },
+        new System.Collections.Generic.Dictionary<string, object> { { "label", "Name" },        { "width", "flex-1" } },
+        new System.Collections.Generic.Dictionary<string, object> { { "label", "Description" }, { "width", "flex-1" } },
+        new System.Collections.Generic.Dictionary<string, object> { { "label", "Type" },        { "width", "w-32" } },
+        new System.Collections.Generic.Dictionary<string, object> { { "label", "Actions" },     { "width", "w-24" },   { "align", "right" } }
+    };
+    PageData["emptyText"] = "No roles found.";
+    PageData["emptyIcon"] = "users";
+}
+@RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_DataTable.cshtml")
+
+@{
+    PageData["tableId"]     = dzRoleTableId;
+    PageData["defaultSize"] = 10;
+    PageData["pageSizes"]   = new[] { 10, 25, 50, 100 };
+}
+@RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_Pagination.cshtml")
+
+@{
+    PageData["templateId"] = "dzRoleActionsTpl";
+    PageData["items"]      = new System.Collections.Generic.List<System.Collections.Generic.IDictionary<string, object>> {
+        new System.Collections.Generic.Dictionary<string, object> { { "action", "permissions" }, { "label", "Permissions" }, { "icon", "shield-check" } },
+        new System.Collections.Generic.Dictionary<string, object> { { "action", "edit" },        { "label", "Edit role" },   { "icon", "pencil" } },
+        new System.Collections.Generic.Dictionary<string, object> { { "action", "delete" },      { "label", "Delete" },      { "icon", "trash-2" }, { "kind", "danger" } }
+    };
+}
+@RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_KebabMenu.cshtml")

@@ -1,179 +1,484 @@
 @*
-    Shared select dropdown — Razor + Tailwind.
-    Uses <details>/<summary> for native toggle and peer-checked: for visual state.
-    Requires: Tailwind CSS v4 browser build + Lucide icons (loaded by TailwindDNN skin).
+    <Select> RazorHost (WebPages) component — Tailwind v4 + Lucide icons.
 
-    Include once per page via @Html.Partial("_Select").
-    Provides:
-      1. Server-rendered <details> widget when ViewData options are supplied.
-      2. Inline MultiSelect.create() bridge (emitted once) so edit.js / module.js
-         can dynamically create matching widgets at runtime.
+    PageData parameters (all optional):
+        "id"             — element id
+        "name"           — name of the hidden input (form post)
+        "placeholder"    — text shown when nothing is selected
+        "selectionMode"  — "single" (default) or "multiple"
+        "fullWidth"      — bool (default true)
+        "isDisabled"     — bool
+        "isInvalid"      — bool
+        "isRequired"     — bool
+        "className"      — extra Tailwind classes appended to root
+        "disabledKeys"   — IEnumerable<string> of keys to disable
+        "defaultValue"   — string OR IEnumerable<string> (initial selection)
+        "items"          — IEnumerable of { Key, Label } (or { Value, Text })
+        "showSearch"     — bool override (auto: true when items >= 8)
+        "scriptOnly"     — bool; when true, emit ONLY the behavior <script>
 
-    ViewData parameters (all optional):
-      "ms-id"           – unique id for the component
-      "ms-name"         – form input name (defaults to ms-id)
-      "ms-placeholder"  – placeholder text
-      "ms-options"      – JSON string of [{value,label}]
-      "ms-selected"     – JSON string of ["val1","val2"]
-      "ms-single"       – "true" for single-select (radio), omit for multi-select (checkbox)
+    The behavior IIFE is emitted exactly once per request via
+    HttpContext.Current.Items["_select_assets_loaded"].
 *@
+@using System.Collections;
+@using System.Collections.Generic;
+@using System.Linq;
 @{
-    var msId        = ViewData["ms-id"] != null ? ViewData["ms-id"].ToString() : "";
-    var msName      = ViewData["ms-name"] != null ? ViewData["ms-name"].ToString() : msId;
-    var placeholder = ViewData["ms-placeholder"] != null ? ViewData["ms-placeholder"].ToString() : "Select\u2026";
-    var optionsJson = ViewData["ms-options"] != null ? ViewData["ms-options"].ToString() : "[]";
-    var selectedJson= ViewData["ms-selected"] != null ? ViewData["ms-selected"].ToString() : "[]";
-    var isSingle    = ViewData["ms-single"] != null && ViewData["ms-single"].ToString() == "true";
-
-    var optionsArr  = Newtonsoft.Json.Linq.JArray.Parse(optionsJson);
-    var selectedArr = Newtonsoft.Json.Linq.JArray.Parse(selectedJson);
-    var selectedSet = new System.Collections.Generic.HashSet<string>();
-    foreach (var s in selectedArr) { selectedSet.Add(s.ToString()); }
-
-    // Build trigger display text
-    var displayText  = placeholder;
-    var isPlaceholder = true;
-    if (isSingle && selectedSet.Count > 0)
-    {
-        foreach (var opt in optionsArr)
-        {
-            if (selectedSet.Contains(opt["value"].ToString()))
-            {
-                displayText   = opt["label"].ToString();
-                isPlaceholder = false;
-                break;
-            }
-        }
-    }
-    else if (!isSingle && selectedSet.Count > 0)
-    {
-        var labels = new System.Collections.Generic.List<string>();
-        foreach (var opt in optionsArr)
-        {
-            if (selectedSet.Contains(opt["value"].ToString()))
-            {
-                labels.Add(opt["label"].ToString());
-            }
-        }
-        displayText   = string.Join(", ", labels);
-        isPlaceholder = false;
-    }
-
-    var inputType = isSingle ? "radio" : "checkbox";
+    bool selScriptOnly = PageData["scriptOnly"] is bool && (bool)PageData["scriptOnly"];
 }
-@if (!string.IsNullOrEmpty(msId))
+@if (!selScriptOnly)
 {
-    <details id="@msId" class="js-ms-select group relative inline-block w-full text-sm font-[inherit]">
-        <summary class="flex items-center gap-[0.3rem] min-h-10 px-2.5 py-[0.35rem]
-                        bg-content2 rounded-lg
-                        cursor-pointer select-none outline-none
-                        transition-shadow duration-150
-                        hover:bg-primary/5
-                        group-open:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]
-                        list-none [&::-webkit-details-marker]:hidden">
-            @if (isPlaceholder)
-            {
-                <span class="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap leading-[1.75] text-[0.8125rem] text-default-400">@displayText</span>
-            }
-            else if (isSingle)
-            {
-                <span class="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap leading-[1.75] text-sm text-default-900">@displayText</span>
-            }
+    string selId          = PageData["id"] as string;
+    string selName        = PageData["name"] as string ?? selId ?? "";
+    string selPlaceholder = PageData["placeholder"] as string ?? "Select an item";
+    string selMode        = (PageData["selectionMode"] as string ?? "single").ToLowerInvariant();
+    bool   selFullWidth   = !(PageData["fullWidth"] is bool fw) || fw;
+    bool   selDisabled    = PageData["isDisabled"] is bool && (bool)PageData["isDisabled"];
+    bool   selInvalid     = PageData["isInvalid"] is bool && (bool)PageData["isInvalid"];
+    bool   selRequired    = PageData["isRequired"] is bool && (bool)PageData["isRequired"];
+    string selExtraClass  = PageData["className"] as string ?? "";
+    bool?  selShowSearchOpt = PageData["showSearch"] as bool?;
+
+    var selDisabledKeys = new HashSet<string>(System.StringComparer.Ordinal);
+    if (PageData["disabledKeys"] is IEnumerable dkEnum)
+    {
+        foreach (var k in dkEnum) { if (k != null) selDisabledKeys.Add(k.ToString()); }
+    }
+
+    var selSelected = new HashSet<string>(System.StringComparer.Ordinal);
+    var dv = PageData["defaultValue"];
+    if (dv is string s && !string.IsNullOrEmpty(s)) { selSelected.Add(s); }
+    else if (dv is IEnumerable dvEnum && !(dv is string))
+    {
+        foreach (var k in dvEnum) { if (k != null) selSelected.Add(k.ToString()); }
+    }
+
+    var selItems = new List<KeyValuePair<string, string>>();
+    if (PageData["items"] is IEnumerable itemsEnum)
+    {
+        foreach (var it in itemsEnum)
+        {
+            if (it == null) continue;
+            string key = null, label = null;
+            if (it is KeyValuePair<string, string> kvp) { key = kvp.Key; label = kvp.Value; }
             else
             {
-                <span class="flex flex-1 flex-wrap gap-1 min-w-0">
-                    @foreach (var opt in optionsArr)
-                    {
-                        if (selectedSet.Contains(opt["value"].ToString()))
-                        {
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700">@opt["label"]</span>
-                        }
-                    }
-                </span>
+                var t = it.GetType();
+                var keyProp   = t.GetProperty("Key")   ?? t.GetProperty("key")   ?? t.GetProperty("Value") ?? t.GetProperty("value");
+                var labelProp = t.GetProperty("Label") ?? t.GetProperty("label") ?? t.GetProperty("Text")  ?? t.GetProperty("text");
+                if (keyProp   != null) key   = System.Convert.ToString(keyProp.GetValue(it, null));
+                if (labelProp != null) label = System.Convert.ToString(labelProp.GetValue(it, null));
             }
-            <span class="shrink-0 ml-auto flex items-center text-default-400
-                         transition-transform duration-200 group-open:rotate-180">
-                <i data-lucide="chevron-up" class="size-4"></i>
-            </span>
-        </summary>
-
-        <div class="absolute z-40 top-full left-0 right-0 mt-1
-                    bg-content1 rounded-lg
-                    shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col">
-            @if (optionsArr.Count >= 8)
-            {
-                <div class="sticky top-0 z-10 bg-content1 px-3 pt-3 pb-2">
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-default-400 pointer-events-none flex items-center">
-                            <i data-lucide="search" class="size-4"></i>
-                        </span>
-                        <input type="text" placeholder="Search…" autocomplete="off"
-                               class="js-ms-search w-full pl-9 pr-3 py-2 text-sm bg-content2 rounded-xl outline-none border border-transparent focus:border-primary-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.12)] placeholder:text-default-400" />
-                    </div>
-                </div>
-            }
-            <div class="overflow-y-auto max-h-72 py-1 px-1">
-                @if (optionsArr.Count == 0)
-                {
-                    <div class="py-3 px-4 text-center text-[0.8125rem] text-default-400">No options</div>
-                }
-                @foreach (var opt in optionsArr)
-                {
-                    var val   = opt["value"].ToString();
-                    var label = opt["label"].ToString();
-                    var isSel = selectedSet.Contains(val);
-                    <label class="relative flex items-center justify-between gap-4 px-3 py-2.5
-                                  cursor-pointer select-none transition-colors rounded-md
-                                  has-checked:bg-primary-50
-                                  hover:bg-primary-50 has-checked:hover:bg-primary-100">
-                        @if (isSel)
-                        {
-                            <input type="@inputType" name="@msName" value="@val" checked="checked" class="peer absolute inset-0 w-full h-full opacity-0 m-0 cursor-pointer" />
-                        }
-                        else
-                        {
-                            <input type="@inputType" name="@msName" value="@val" class="peer absolute inset-0 w-full h-full opacity-0 m-0 cursor-pointer" />
-                        }
-                        <span class="text-sm font-normal text-default-800 whitespace-nowrap
-                                     peer-checked:font-medium peer-checked:text-primary-700">@label</span>
-                        <span class="hidden peer-checked:flex shrink-0 items-center text-primary-600 leading-none">
-                            <i data-lucide="check" class="size-4"></i>
-                        </span>
-                    </label>
-                }
-            </div>
-        </div>
-    </details>
-}
-@if (HttpContext.Current.Items["_blog_select_bridge_loaded"] == null)
-{
-    HttpContext.Current.Items["_blog_select_bridge_loaded"] = true;
-<script src="/DesktopModules/MVC/Dnn.Modules.Blog/Resources/js/select.js"></script>
-<script>
-(function(){
-  if (window.__msDetailsFilter) return; window.__msDetailsFilter = true;
-  document.addEventListener('input', function(e){
-    var inp = e.target;
-    if (!inp || !inp.classList || !inp.classList.contains('js-ms-search')) return;
-    var det = inp.closest('details.js-ms-select'); if (!det) return;
-    var q = (inp.value || '').toLowerCase();
-    det.querySelectorAll('label').forEach(function(lb){
-      var t = (lb.textContent || '').toLowerCase();
-      lb.style.display = (!q || t.indexOf(q) !== -1) ? '' : 'none';
-    });
-  });
-  document.addEventListener('toggle', function(e){
-    var det = e.target;
-    if (!det || !det.classList || !det.classList.contains('js-ms-select')) return;
-    if (det.open) {
-      var inp = det.querySelector('.js-ms-search');
-      if (inp) {
-        inp.value = '';
-        det.querySelectorAll('label').forEach(function(lb){ lb.style.display=''; });
-        setTimeout(function(){ try{ inp.focus(); }catch(_){} }, 0);
-      }
+            if (key != null) selItems.Add(new KeyValuePair<string, string>(key, label ?? key));
+        }
     }
-  }, true);
+
+    bool selShowSearch = selShowSearchOpt.HasValue ? selShowSearchOpt.Value : (selItems.Count >= 8);
+
+    var selRoot = new List<string> {
+        "relative", "text-sm", "font-[inherit]",
+        selFullWidth ? "block w-full" : "inline-block"
+    };
+    if (!string.IsNullOrEmpty(selExtraClass)) selRoot.Add(selExtraClass);
+    string selRootClass = string.Join(" ", selRoot);
+
+    var selSelectedItems = selItems.Where(i => selSelected.Contains(i.Key)).ToList();
+    bool   selIsPlaceholder = selSelectedItems.Count == 0;
+    string selDisplay       = selIsPlaceholder ? selPlaceholder : string.Join(", ", selSelectedItems.Select(i => i.Value));
+
+    <div@(string.IsNullOrEmpty(selId) ? null : Html.Raw(" id=\"" + selId + "\""))
+     class="@selRootClass"
+     data-select
+     data-selection-mode="@selMode"
+     data-name="@selName"
+     data-placeholder="@selPlaceholder"
+     data-disabled="@(selDisabled ? "true" : "false")"
+     data-invalid="@(selInvalid ? "true" : "false")"
+     @(selFullWidth ? Html.Raw("data-full-width=\"true\"") : null)>
+    <button type="button"
+            data-trigger
+            data-disabled="@(selDisabled ? "true" : "false")"
+            data-invalid="@(selInvalid ? "true" : "false")"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            class="flex items-center gap-2 w-full min-h-10 px-3 py-1.5
+                   bg-content2 rounded-lg cursor-pointer select-none text-left
+                   outline-none border border-transparent
+                   transition-[box-shadow,border-color,background-color] duration-150
+                   hover:bg-primary/5
+                   focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.18)]
+                   data-[disabled=true]:opacity-55 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:pointer-events-none
+                   data-[invalid=true]:border-danger data-[invalid=true]:shadow-[0_0_0_3px_rgba(239,68,68,0.18)]"
+            @(selDisabled ? Html.Raw("disabled") : null)>
+        <span data-value
+              data-placeholder="@(selIsPlaceholder ? "true" : "false")"
+              class="flex-1 min-w-0 truncate text-sm leading-6
+                     text-default-900
+                     data-[placeholder=true]:text-default-400">@selDisplay</span>
+        <span data-indicator data-open="false"
+              class="shrink-0 ml-auto flex items-center text-default-400
+                     transition-transform duration-200 data-[open=true]:rotate-180">
+            <i data-lucide="chevron-down" class="size-4"></i>
+        </span>
+    </button>
+    <div data-popover hidden
+         class="absolute z-[99999] left-0 right-0 top-full mt-1
+                bg-content1 rounded-lg
+                shadow-[0_8px_24px_rgba(0,0,0,0.12)]
+                overflow-hidden flex flex-col">
+        @if (selShowSearch)
+        {
+            <div data-search-wrap class="sticky top-0 z-10 bg-content1 px-3 pt-3 pb-2">
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-default-400 pointer-events-none flex items-center">
+                        <i data-lucide="search" class="size-4"></i>
+                    </span>
+                    <input type="text" data-search placeholder="Search…" autocomplete="off"
+                           class="w-full pl-9 pr-3 py-2 text-sm
+                                  bg-content2 rounded-xl outline-none
+                                  border border-transparent
+                                  focus:border-primary-500
+                                  focus:shadow-[0_0_0_3px_rgba(59,130,246,0.18)]
+                                  placeholder:text-default-400" />
+                </div>
+            </div>
+        }
+        <ul data-listbox role="listbox"
+            @(selMode == "multiple" ? Html.Raw("aria-multiselectable=\"true\"") : null)
+            class="list-none m-0 p-1 overflow-y-auto max-h-72">
+            @if (selItems.Count == 0)
+            {
+                <li class="py-3 px-4 text-center text-[0.8125rem] text-default-400">No options</li>
+            }
+            @foreach (var it in selItems)
+            {
+                bool isSel = selSelected.Contains(it.Key);
+                bool isDis = selDisabledKeys.Contains(it.Key);
+                <li data-option
+                    role="option"
+                    data-key="@it.Key"
+                    aria-selected="@(isSel ? "true" : "false")"
+                    data-disabled="@(isDis ? "true" : "false")"
+                    class="group flex items-center justify-between gap-3
+                           px-3 py-2.5 rounded-md cursor-pointer select-none
+                           text-sm text-default-800
+                           transition-colors duration-100
+                           hover:bg-default-100
+                           data-[disabled=true]:opacity-45 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:pointer-events-none">
+                    <span data-option-label class="truncate">@it.Value</span>
+                    <span data-option-check
+                          class="shrink-0 inline-flex items-center text-default-900
+                                 invisible group-aria-[selected=true]:visible">
+                        <i data-lucide="check" class="size-4"></i>
+                    </span>
+                </li>
+            }
+        </ul>
+    </div>
+    <input type="hidden" name="@selName" value="@string.Join(",", selSelected)" @(selRequired ? Html.Raw("required") : null) />
+    </div>
+}
+@if (HttpContext.Current.Items["_select_assets_loaded"] == null)
+{
+    HttpContext.Current.Items["_select_assets_loaded"] = true;
+<script>
+/* <Select> behavior — auto-initializes any element matching [data-select]. */
+(function () {
+    'use strict';
+    if (window.__selectInit) return; window.__selectInit = true;
+
+    var SEARCH_THRESHOLD = 8;
+
+    function $(sel, root) { return (root || document).querySelector(sel); }
+    function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+    function getPlaceholder(root) { return root.getAttribute('data-placeholder') || 'Select an item'; }
+    function isMultiple(root) { return root.getAttribute('data-selection-mode') === 'multiple'; }
+    function getOptions(root) { return $$('[data-option]', root); }
+    function getSelectedOptions(root) {
+        return getOptions(root).filter(function (o) { return o.getAttribute('aria-selected') === 'true'; });
+    }
+    function getSelectedKeys(root) {
+        return getSelectedOptions(root).map(function (o) { return o.getAttribute('data-key'); });
+    }
+
+    function updateValue(root) {
+        var valueEl = $('[data-value]', root);
+        if (!valueEl) return;
+        var sel = getSelectedOptions(root);
+        var hidden = $('input[type="hidden"]', root);
+
+        if (!sel.length) {
+            valueEl.setAttribute('data-placeholder', 'true');
+            valueEl.textContent = getPlaceholder(root);
+        } else {
+            valueEl.removeAttribute('data-placeholder');
+            var labels = sel.map(function (o) {
+                var lab = o.querySelector('[data-option-label]');
+                return (lab || o).textContent.trim();
+            });
+            valueEl.textContent = labels.join(', ');
+        }
+        if (hidden) hidden.value = sel.map(function (o) { return o.getAttribute('data-key'); }).join(',');
+    }
+
+    function setOpen(root, open) {
+        var pop = $('[data-popover]', root);
+        var indicator = $('[data-indicator]', root);
+        var trigger = $('[data-trigger]', root);
+        if (!pop || !trigger) return;
+        if (open) {
+            pop.hidden = false;
+            indicator && indicator.setAttribute('data-open', 'true');
+            trigger.setAttribute('aria-expanded', 'true');
+            var search = $('[data-search]', pop);
+            if (search) {
+                search.value = '';
+                filter(root, '');
+                setTimeout(function () { try { search.focus(); } catch (e) { } }, 0);
+            }
+        } else {
+            pop.hidden = true;
+            indicator && indicator.setAttribute('data-open', 'false');
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function isOpen(root) {
+        var pop = $('[data-popover]', root);
+        return pop && !pop.hidden;
+    }
+
+    function filter(root, q) {
+        q = (q || '').toLowerCase();
+        var opts = getOptions(root);
+        var anyVisible = false;
+        opts.forEach(function (o) {
+            var t = (o.textContent || '').toLowerCase();
+            var match = !q || t.indexOf(q) !== -1;
+            o.hidden = !match;
+            if (match) anyVisible = true;
+        });
+        var listbox = $('[data-listbox]', root);
+        if (!listbox) return;
+        var empty = listbox.querySelector('[data-empty-filter]');
+        if (!anyVisible && opts.length) {
+            if (!empty) {
+                empty = document.createElement('div');
+                empty.setAttribute('data-empty-filter', '');
+                empty.className = 'py-3 px-4 text-center text-[0.8125rem] text-default-400';
+                empty.textContent = 'No matches';
+                listbox.appendChild(empty);
+            }
+            empty.hidden = false;
+        } else if (empty) {
+            empty.hidden = true;
+        }
+    }
+
+    function selectOption(root, opt) {
+        if (opt.getAttribute('data-disabled') === 'true') return;
+        if (isMultiple(root)) {
+            var cur = opt.getAttribute('aria-selected') === 'true';
+            opt.setAttribute('aria-selected', cur ? 'false' : 'true');
+        } else {
+            getOptions(root).forEach(function (o) { o.setAttribute('aria-selected', 'false'); });
+            opt.setAttribute('aria-selected', 'true');
+        }
+        updateValue(root);
+        root.dispatchEvent(new CustomEvent('select:change', {
+            bubbles: true,
+            detail: { keys: getSelectedKeys(root) }
+        }));
+        if (!isMultiple(root)) setOpen(root, false);
+    }
+
+    function init(root) {
+        if (root.__selectInited) return;
+        root.__selectInited = true;
+        var searchWrap = $('[data-search-wrap]', root);
+        var opts = getOptions(root);
+        if (searchWrap && root.getAttribute('data-force-search') !== 'true' && opts.length < SEARCH_THRESHOLD) {
+            searchWrap.hidden = true;
+        }
+        updateValue(root);
+        var trigger = $('[data-trigger]', root);
+        if (trigger) {
+            trigger.addEventListener('click', function () {
+                if (root.getAttribute('data-disabled') === 'true') return;
+                setOpen(root, !isOpen(root));
+            });
+            trigger.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(root, !isOpen(root)); }
+                if (e.key === 'Escape') setOpen(root, false);
+                if (e.key === 'ArrowDown' && !isOpen(root)) { e.preventDefault(); setOpen(root, true); }
+            });
+        }
+        var listbox = $('[data-listbox]', root);
+        if (listbox) {
+            listbox.addEventListener('click', function (e) {
+                var opt = e.target.closest('[data-option]');
+                if (opt && listbox.contains(opt)) selectOption(root, opt);
+            });
+        }
+        var searchInput = $('[data-search]', root);
+        if (searchInput) {
+            searchInput.addEventListener('input', function () { filter(root, searchInput.value); });
+            searchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') { e.preventDefault(); setOpen(root, false); trigger && trigger.focus(); }
+                e.stopPropagation();
+            });
+            searchInput.addEventListener('click', function (e) { e.stopPropagation(); });
+        }
+    }
+
+    function initAll(scope) {
+        $$('[data-select]', scope || document).forEach(init);
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            try { window.lucide.createIcons(); } catch (e) { }
+        }
+    }
+
+    function escapeAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function escapeText(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    function buildMarkup(opts) {
+        var mode = opts.single ? 'single' : 'multiple';
+        var placeholder = opts.placeholder || 'Select an item';
+        var name = opts.name || '';
+        var disabled = !!opts.disabled;
+        var invalid  = !!opts.invalid;
+        var selected = (opts.selected || []).map(String);
+        var options  = opts.options || [];
+        var showSearch = (typeof opts.showSearch === 'boolean') ? opts.showSearch : (options.length >= SEARCH_THRESHOLD);
+        var extraClass = opts.className || '';
+
+        var selectedSet = {};
+        selected.forEach(function (k) { selectedSet[k] = true; });
+
+        var displayLabels = options
+            .filter(function (o) { return selectedSet[String(o.value)]; })
+            .map(function (o) { return o.label; });
+        var isPlaceholder = displayLabels.length === 0;
+        var displayText = isPlaceholder ? placeholder : displayLabels.join(', ');
+
+        var rootCls = `relative text-sm font-[inherit] block w-full${extraClass ? ' ' + extraClass : ''}`;
+        var disAttr = disabled ? 'true' : 'false';
+        var invAttr = invalid ? 'true' : 'false';
+
+        var triggerCls = 'flex items-center gap-2 w-full min-h-10 px-3 py-1.5 bg-content2 rounded-lg cursor-pointer select-none text-left outline-none border border-transparent transition-[box-shadow,border-color,background-color] duration-150 hover:bg-primary/5 focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] data-[disabled=true]:opacity-55 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:pointer-events-none data-[invalid=true]:border-danger data-[invalid=true]:shadow-[0_0_0_3px_rgba(239,68,68,0.18)]';
+        var valueCls   = 'flex-1 min-w-0 truncate text-sm leading-6 text-default-900 data-[placeholder=true]:text-default-400';
+        var indCls     = 'shrink-0 ml-auto flex items-center text-default-400 transition-transform duration-200 data-[open=true]:rotate-180';
+        var popCls     = 'absolute z-[99999] left-0 right-0 top-full mt-1 bg-content1 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col';
+        var inputCls   = 'w-full pl-9 pr-3 py-2 text-sm bg-content2 rounded-xl outline-none border border-transparent focus:border-primary-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] placeholder:text-default-400';
+        var optCls     = 'group flex items-center justify-between gap-3 px-3 py-2.5 rounded-md cursor-pointer select-none text-sm text-default-800 transition-colors duration-100 hover:bg-default-100 data-[disabled=true]:opacity-45 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:pointer-events-none';
+
+        var searchHtml = showSearch
+            ? `<div data-search-wrap class="sticky top-0 z-10 bg-content1 px-3 pt-3 pb-2">
+                 <div class="relative">
+                   <span class="absolute left-3 top-1/2 -translate-y-1/2 text-default-400 pointer-events-none flex items-center">
+                     <i data-lucide="search" class="size-4"></i>
+                   </span>
+                   <input type="text" data-search placeholder="Search…" autocomplete="off" class="${inputCls}" />
+                 </div>
+               </div>`
+            : '';
+
+        var optionsHtml = options.length === 0
+            ? `<li class="py-3 px-4 text-center text-[0.8125rem] text-default-400">No options</li>`
+            : options.map(function (o) {
+                var key   = String(o.value);
+                var lab   = o.label == null ? key : o.label;
+                var isSel = !!selectedSet[key];
+                var isDis = !!o.disabled;
+                return `<li data-option role="option"
+                            data-key="${escapeAttr(key)}"
+                            aria-selected="${isSel ? 'true' : 'false'}"
+                            data-disabled="${isDis ? 'true' : 'false'}"
+                            class="${optCls}">
+                          <span data-option-label class="truncate">${escapeText(lab)}</span>
+                          <span data-option-check class="shrink-0 inline-flex items-center text-default-900 invisible group-aria-[selected=true]:visible">
+                            <i data-lucide="check" class="size-4"></i>
+                          </span>
+                        </li>`;
+              }).join('');
+
+        return `<div class="${rootCls}"
+                     data-select
+                     data-selection-mode="${mode}"
+                     data-name="${escapeAttr(name)}"
+                     data-placeholder="${escapeAttr(placeholder)}"
+                     data-disabled="${disAttr}"
+                     data-invalid="${invAttr}"
+                     data-full-width="true">
+                  <button type="button" data-trigger
+                          data-disabled="${disAttr}"
+                          data-invalid="${invAttr}"
+                          aria-haspopup="listbox" aria-expanded="false"
+                          class="${triggerCls}"${disabled ? ' disabled' : ''}>
+                    <span data-value
+                          data-placeholder="${isPlaceholder ? 'true' : 'false'}"
+                          class="${valueCls}">${escapeText(displayText)}</span>
+                    <span data-indicator data-open="false" class="${indCls}">
+                      <i data-lucide="chevron-down" class="size-4"></i>
+                    </span>
+                  </button>
+                  <div data-popover hidden class="${popCls}">
+                    ${searchHtml}
+                    <ul data-listbox role="listbox"${mode === 'multiple' ? ' aria-multiselectable="true"' : ''} class="list-none m-0 p-1 overflow-y-auto max-h-72">
+                      ${optionsHtml}
+                    </ul>
+                  </div>
+                  <input type="hidden" name="${escapeAttr(name)}" value="${escapeAttr(selected.join(','))}" />
+                </div>`;
+    }
+
+    function create(host, opts) {
+        if (!host) return null;
+        opts = opts || {};
+        host.innerHTML = buildMarkup(opts);
+        var root = host.querySelector('[data-select]');
+        if (!root) return null;
+
+        if (typeof opts.onChange === 'function') {
+            root.addEventListener('select:change', function (e) {
+                try { opts.onChange((e.detail && e.detail.keys) || []); } catch (err) { }
+            });
+        }
+
+        init(root);
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            try { window.lucide.createIcons(); } catch (e) { }
+        }
+
+        return {
+            root: root,
+            getSelected: function () { return getSelectedKeys(root); },
+            setSelected: function (keys) {
+                var set = {};
+                (keys || []).forEach(function (k) { set[String(k)] = true; });
+                getOptions(root).forEach(function (o) {
+                    o.setAttribute('aria-selected', set[o.getAttribute('data-key')] ? 'true' : 'false');
+                });
+                updateValue(root);
+            },
+            destroy: function () { host.innerHTML = ''; }
+        };
+    }
+
+    document.addEventListener('mousedown', function (e) {
+        $$('[data-select]').forEach(function (root) {
+            if (isOpen(root) && !root.contains(e.target)) setOpen(root, false);
+        });
+    });
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { initAll(); });
+    } else {
+        initAll();
+    }
+
+    window.Select = { init: init, initAll: initAll, create: create };
 })();
 </script>
 }

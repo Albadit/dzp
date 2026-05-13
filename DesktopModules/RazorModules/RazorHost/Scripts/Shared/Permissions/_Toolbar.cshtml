@@ -1,0 +1,30 @@
+@*
+    Page toolbar for /administrator/permissions.
+    Layout matches /administrator/communities: title row, then a row with the
+    searchbox left and the primary action button right. Uses the shared
+    Components/_SearchBox.cshtml and Components/_Button.cshtml partials so the
+    look stays in sync with TableDZP.
+*@
+<h2 class="text-2xl font-bold text-foreground-900">Roles &amp; Permissions</h2>
+
+<div class="flex flex-wrap justify-between items-center gap-3">
+    <div class="flex-1 min-w-[200px] max-w-sm flex">
+        @{
+            PageData["search-id"]          = "dzRoleSearch";
+            PageData["search-class"]       = "dt-search";
+            PageData["search-placeholder"] = "Search roles\u2026";
+        }
+        @RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_SearchBox.cshtml")
+    </div>
+    <div class="flex gap-2">
+        @{
+            PageData["text"]       = "New";
+            PageData["icon"]       = "plus";
+            PageData["color"]      = "primary";
+            PageData["variant"]    = "solid";
+            PageData["id"]         = "dzAddRoleBtn";
+            PageData["extraClass"] = "dt-btn-add";
+        }
+        @RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_Button.cshtml")
+    </div>
+</div>

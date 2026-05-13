@@ -13,8 +13,12 @@
     var isSuperUser     = user != null && user.IsSuperUser;
     var adminRoleName   = PortalSettings.Current != null ? PortalSettings.Current.AdministratorRoleName : "Administrators";
     var isAdministrator = user != null && !string.IsNullOrEmpty(adminRoleName) && user.IsInRole(adminRoleName);
-    var isCommunityMgr  = user != null && user.IsInRole("Community beheerder");
-    var canEdit         = isSuperUser || isAdministrator || isCommunityMgr;
+    // Edit access is now driven by the role-based permission system
+    // (see dbo.RolePermissions). "community:manage" grants Discover edit;
+    // SuperUsers / portal Administrators bypass via HasPermission.
+    var canEdit         = isSuperUser
+                       || isAdministrator
+                       || (rc != null && rc.HasPermission("community:manage"));
 
     // Defensive URL normalisation for legacy rows that may have been saved
     // without a scheme (e.g. "www.youtube.com"): browsers would otherwise

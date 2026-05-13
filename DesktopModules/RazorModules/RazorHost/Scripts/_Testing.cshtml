@@ -1,0 +1,158 @@
+@{
+    Layout = "Shared/_Layout.cshtml";
+    PageData["seoTitle"] = "Select — testing";
+}
+
+<section class="w-full max-w-2xl mx-auto p-8 text-default-900 space-y-8">
+
+    <header>
+        <h1 class="text-2xl font-bold">&lt;Select&gt; — visual test</h1>
+        <p class="text-sm text-default-400">
+            Live render of <code>Shared/Components/_Select.cshtml</code> via <code>@@RenderPage</code>.
+        </p>
+    </header>
+
+    @* 1. Single (placeholder) *@
+    <div class="space-y-1">
+        <h2 class="text-base font-semibold">1. Single (placeholder)</h2>
+        <div class="text-xs text-default-400">Country</div>
+        @RenderPage("Shared/Components/_Select.cshtml", new {
+            id = "country",
+            name = "country",
+            placeholder = "Select an item",
+            items = new[] {
+                new { Key = "us", Label = "United States" },
+                new { Key = "ca", Label = "Canada" },
+                new { Key = "mx", Label = "Mexico" },
+                new { Key = "br", Label = "Brazil" }
+            }
+        })
+    </div>
+
+    @* 2. Single with default value *@
+    <div class="space-y-1">
+        <h2 class="text-base font-semibold">2. Single with default value (height stays the same)</h2>
+        <div class="text-xs text-default-400">Language</div>
+        @RenderPage("Shared/Components/_Select.cshtml", new {
+            id = "lang",
+            name = "lang",
+            placeholder = "Pick a language",
+            defaultValue = "ts",
+            disabledKeys = new[] { "py" },
+            items = new[] {
+                new { Key = "js", Label = "JavaScript" },
+                new { Key = "ts", Label = "TypeScript" },
+                new { Key = "cs", Label = "C#" },
+                new { Key = "py", Label = "Python" }
+            }
+        })
+    </div>
+
+    @* 3. Multiple — no selected bg, just check on right *@
+    <div class="space-y-1">
+        <h2 class="text-base font-semibold">3. Multiple — no selected bg, just check on right</h2>
+        <div class="text-xs text-default-400">States</div>
+        @RenderPage("Shared/Components/_Select.cshtml", new {
+            id = "states",
+            name = "states",
+            selectionMode = "multiple",
+            placeholder = "Pick states",
+            showSearch = true,
+            defaultValue = new[] { "ca", "tx" },
+            items = new[] {
+                new { Key = "fl", Label = "Florida" },
+                new { Key = "de", Label = "Delaware" },
+                new { Key = "ca", Label = "California" },
+                new { Key = "tx", Label = "Texas" },
+                new { Key = "ny", Label = "New York" },
+                new { Key = "wa", Label = "Washington" },
+                new { Key = "or", Label = "Oregon" },
+                new { Key = "nv", Label = "Nevada" }
+            }
+        })
+    </div>
+
+    @* 4. Disabled + Invalid *@
+    <div class="space-y-1">
+        <h2 class="text-base font-semibold">4. Disabled / Invalid</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+                <div class="text-xs text-default-400">Disabled</div>
+                @RenderPage("Shared/Components/_Select.cshtml", new {
+                    placeholder = "Disabled",
+                    isDisabled = true,
+                    items = new[] {
+                        new { Key = "a", Label = "A" },
+                        new { Key = "b", Label = "B" }
+                    }
+                })
+            </div>
+            <div class="space-y-1">
+                <div class="text-xs text-default-400">Invalid</div>
+                @RenderPage("Shared/Components/_Select.cshtml", new {
+                    placeholder = "This is required",
+                    isInvalid = true,
+                    isRequired = true,
+                    items = new[] {
+                        new { Key = "a", Label = "A" },
+                        new { Key = "b", Label = "B" }
+                    }
+                })
+            </div>
+        </div>
+    </div>
+
+    @* 5. Built at runtime via Select.create() *@
+    <div class="space-y-1">
+        <h2 class="text-base font-semibold">5. Built at runtime via <code>Select.create()</code></h2>
+        <div class="text-xs text-default-400">Fruit</div>
+        <div id="rt-host"></div>
+        <pre id="out" class="mt-3 text-xs bg-content2 rounded-lg p-3 max-h-40 overflow-auto whitespace-pre-wrap text-default-800">change events will appear here…</pre>
+    </div>
+
+    @* Asset loader: emits the Select IIFE exactly once via HttpContext.Items.
+       scriptOnly = true skips markup and only emits the <script> block. *@
+    @RenderPage("Shared/Components/_Select.cshtml", new { scriptOnly = true })
+
+    <script>
+    (function () {
+        function ready(fn) {
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+            else fn();
+        }
+        ready(function () {
+            var host = document.getElementById('rt-host');
+            var out  = document.getElementById('out');
+            if (!host || !window.Select || typeof window.Select.create !== 'function') return;
+
+            function logChange(name, keys) {
+                var t = new Date().toISOString().substr(11, 8);
+                out.textContent = '[' + t + '] ' + name + ' = [' + keys.join(', ') + ']\n' + out.textContent;
+            }
+
+            window.Select.create(host, {
+                placeholder: '-- Pick a fruit --',
+                name: 'fruit',
+                single: true,
+                options: [
+                    { value: 'ap', label: 'Apple' },
+                    { value: 'ba', label: 'Banana' },
+                    { value: 'ch', label: 'Cherry' },
+                    { value: 'da', label: 'Date' }
+                ],
+                selected: ['ba'],
+                onChange: function (keys) { logChange('fruit', keys); }
+            });
+
+            // also log change events from server-rendered selects
+            ['country', 'lang', 'states'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('select:change', function (e) {
+                    logChange(id, (e.detail && e.detail.keys) || []);
+                });
+            });
+        });
+    })();
+    </script>
+
+</section>

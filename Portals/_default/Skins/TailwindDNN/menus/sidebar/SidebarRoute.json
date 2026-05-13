@@ -42,7 +42,8 @@
     {
       "label": "Admin",
       "pages": [
-        { "page": "administrator/communities", "icon": "plus-circle" }
+        { "page": "administrator/communities", "icon": "plus-circle" },
+        { "page": "administrator/permissions", "icon": "shield-check" }
       ],
       "context": ["admin", "dashboard", "community"]
     },

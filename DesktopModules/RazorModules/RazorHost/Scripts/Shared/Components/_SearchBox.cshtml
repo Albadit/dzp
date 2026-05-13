@@ -1,31 +1,75 @@
 @*
-    Shared search box with clear button + optional live count.
-    Reuses across pages. Params (via PageData):
-      id          (string, required)  - input id; clear button gets id + "Clear"
-      placeholder (string, optional)  - placeholder text
-      countId     (string, optional)  - id for the count <span> (omit to skip)
-      countText   (string, optional)  - initial text inside the count span
-      extraClass  (string, optional)  - extra Tailwind classes on the wrapper
+    Reusable search input with leading icon + clear (reset) button.
+    Mirrors the TableDZP module's _SearchBox so admin pages share the same look.
+
+    PageData (all optional):
+      "search-class"       extra CSS class on the <input>
+      "search-placeholder" placeholder text (default "Search…")
+      "search-id"          DOM id on the <input>
+      "search-name"        form input name
+      "search-value"       initial value
+      "search-data"        IDictionary<string,string> of data-* attrs
+
+    The clear button stays hidden when the input is empty. Click resets the
+    value, focuses the input, and dispatches a bubbling `input` event so
+    listeners (debounced filter, etc.) react.
 *@
 @{
-    var sbId          = PageData["id"] as string ?? "searchBox";
-    var sbPlaceholder = PageData["placeholder"] as string ?? "Zoeken...";
-    var sbCountId     = PageData["countId"] as string;
-    var sbCountText   = PageData["countText"] as string ?? "";
-    var sbExtra       = PageData["extraClass"] as string ?? "";
-    var sbClearId     = sbId + "Clear";
-}
-<div class="flex items-center gap-3 @sbExtra">
-    <div class="relative flex-1">
-        <i data-lucide="search" class="size-4 text-foreground-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-        <input id="@sbId" type="text" placeholder="@sbPlaceholder" autocomplete="off"
-               class="w-full pl-9 pr-9 py-2.5 rounded-lg bg-content2 text-sm text-foreground-700 placeholder:text-foreground-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
-        <button id="@sbClearId" type="button"
-                class="hidden absolute right-2 top-1/2 -translate-y-1/2 size-7 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-default-200 flex items-center justify-center transition">
-            <i data-lucide="x" class="size-4"></i>
-        </button>
-    </div>
-    @if (!string.IsNullOrEmpty(sbCountId)) {
-        <span id="@sbCountId" class="text-sm text-foreground-400 shrink-0">@sbCountText</span>
+    var sClass       = PageData["search-class"]       as string ?? "";
+    var sPlaceholder = PageData["search-placeholder"] as string ?? "Search\u2026";
+    var sId          = PageData["search-id"]          as string ?? "";
+    var sName        = PageData["search-name"]        as string ?? "";
+    var sValue       = PageData["search-value"]       as string ?? "";
+    var sData        = PageData["search-data"]        as System.Collections.Generic.IDictionary<string, string>;
+
+    var dataAttrs = "";
+    if (sData != null)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var kv in sData) { sb.Append(' ').Append(kv.Key).Append("=\"").Append(System.Web.HttpUtility.HtmlEncode(kv.Value)).Append('"'); }
+        dataAttrs = sb.ToString();
     }
+
+    var idAttr        = string.IsNullOrEmpty(sId)   ? "" : "id=\""   + sId   + "\"";
+    var nameAttr      = string.IsNullOrEmpty(sName) ? "" : "name=\"" + sName + "\"";
+    var hiddenIfEmpty = string.IsNullOrEmpty(sValue) ? "hidden" : "";
+}
+<div class="dzp-searchbox relative flex-1 min-w-0">
+    <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-foreground-400 pointer-events-none"></i>
+    <input type="text"
+           @(new System.Web.HtmlString(idAttr))
+           @(new System.Web.HtmlString(nameAttr))
+           value="@sValue"
+           class="@sClass dzp-searchbox-input w-full pl-10 pr-10 py-2.5 text-sm rounded-lg bg-content2 focus:outline-none focus:ring-2 focus:ring-primary/30 transition placeholder:text-foreground-400"
+           placeholder="@sPlaceholder"@(new System.Web.HtmlString(dataAttrs)) />
+    <button type="button"
+            class="dzp-searchbox-clear absolute right-2 top-1/2 -translate-y-1/2 size-7 rounded-md text-foreground-400 hover:text-foreground-700 hover:bg-default-200 flex items-center justify-center transition @hiddenIfEmpty"
+            aria-label="Clear">
+        <i data-lucide="x" class="size-4"></i>
+    </button>
 </div>
+
+@if (HttpContext.Current.Items["_dzp_searchbox_bridge"] == null)
+{
+    HttpContext.Current.Items["_dzp_searchbox_bridge"] = true;
+    <script>
+        (function () {
+            document.addEventListener('input', function (e) {
+                var inp = e.target.closest && e.target.closest('.dzp-searchbox-input');
+                if (!inp) return;
+                var btn = inp.parentNode.querySelector('.dzp-searchbox-clear');
+                if (btn) btn.classList.toggle('hidden', !inp.value);
+            }, true);
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest && e.target.closest('.dzp-searchbox-clear');
+                if (!btn) return;
+                var inp = btn.parentNode.querySelector('.dzp-searchbox-input');
+                if (!inp) return;
+                inp.value = '';
+                btn.classList.add('hidden');
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                inp.focus();
+            });
+        })();
+    </script>
+}

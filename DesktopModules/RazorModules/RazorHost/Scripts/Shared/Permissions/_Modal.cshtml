@@ -1,0 +1,40 @@
+@*
+    Manage Permissions modal — flex + gap only, no padding/margin classes.
+*@
+<div id="dzPermModal" class="hidden fixed inset-0 z-[1100] flex items-center justify-center bg-overlay backdrop-blur-sm">
+    <div data-dz-modal-backdrop class="absolute inset-0"></div>
+
+    <div class="relative flex flex-col gap-0 w-full max-w-3xl max-h-[85vh] rounded-xl bg-background border border-divider shadow-2xl overflow-hidden">
+
+        <div class="flex items-center gap-3 min-h-14 border-b border-divider">
+            <span class="w-12 flex items-center justify-center">
+                <i data-lucide="shield-check" class="size-5 text-primary"></i>
+            </span>
+            <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+                <h3 id="dzPermModalTitle" class="text-base font-semibold text-foreground-900 truncate">Manage Permissions</h3>
+                <p id="dzPermModalSub" class="text-xs text-foreground-500 truncate"></p>
+            </div>
+            <button type="button" data-dz-perm-close
+                    class="w-12 h-12 inline-flex items-center justify-center text-foreground-400 hover:text-foreground-700 hover:bg-default-100 transition">
+                <i data-lucide="x" class="size-4"></i>
+            </button>
+        </div>
+
+        <div id="dzPermModalBody" class="flex flex-col gap-4 overflow-y-auto"></div>
+
+        <div class="flex items-center gap-3 min-h-14 border-t border-divider">
+            <span id="dzPermModalStatus" class="flex-1 text-xs text-foreground-500 pl-4"></span>
+            <button type="button" data-dz-perm-close
+                    class="inline-flex items-center justify-center h-9 w-20 rounded-md border border-divider text-sm text-foreground-700 hover:bg-default-100 transition">
+                Cancel
+            </button>
+            <button id="dzPermModalSave" type="button"
+                    class="inline-flex items-center gap-2 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition">
+                <span class="w-8 flex items-center justify-center">
+                    <i data-lucide="save" class="size-4"></i>
+                </span>
+                <span class="pr-3">Save</span>
+            </button>
+        </div>
+    </div>
+</div>

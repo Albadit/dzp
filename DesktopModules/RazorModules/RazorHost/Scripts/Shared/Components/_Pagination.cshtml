@@ -1,0 +1,67 @@
+@*
+    Reusable pagination bar — flex + gap only, no padding/margin.
+    Page-size dropdown rendered as a host <div> and upgraded by MultiSelect at runtime.
+
+    PageData inputs:
+      "tableId"      string  matching table prefix (e.g. "dzRole")
+      "pageSizes"    int[]   options for the page size (default {10,25,50,100})
+      "defaultSize"  int     selected option (default 10)
+
+    DOM ids exposed:
+      {tableId}Count       outer wrapper showing "Rows N"
+      {tableId}CountNum    text node for N
+      {tableId}Prev        prev button
+      {tableId}Next        next button
+      {tableId}Page        number input (current page)
+      {tableId}Total       text node for total pages
+      {tableId}Size        host <div> for the MultiSelect page-size dropdown
+*@
+@{
+    var tableId     = PageData["tableId"] as string ?? "dzTable";
+    var pageSizes   = PageData["pageSizes"] as int[] ?? new[] { 10, 25, 50, 100 };
+    var defaultSize = PageData["defaultSize"] is int ? (int)PageData["defaultSize"] : 10;
+
+    var sizeOptions = new System.Text.StringBuilder("[");
+    var first = true;
+    foreach (var sz in pageSizes)
+    {
+        if (!first) { sizeOptions.Append(","); }
+        sizeOptions.AppendFormat("{{\"value\":\"{0}\",\"label\":\"{0}\"}}", sz);
+        first = false;
+    }
+    sizeOptions.Append("]");
+    var sizeOptionsJson = sizeOptions.ToString();
+}
+<div class="flex flex-wrap items-center justify-end gap-3 text-sm text-foreground-600">
+    <span id="@(tableId)Count" class="inline-flex items-center gap-1.5 rounded-full bg-default-100 text-foreground-600 text-xs font-medium min-h-6 px-3">
+        <span>Rows</span>
+        <span id="@(tableId)CountNum" class="font-semibold text-foreground-900">0</span>
+    </span>
+
+    <div class="inline-flex items-center gap-1">
+        <button id="@(tableId)Prev" type="button"
+                class="inline-flex items-center justify-center size-7 rounded-md text-foreground-600 hover:bg-default-100 disabled:text-foreground-300 disabled:cursor-not-allowed disabled:hover:bg-transparent transition">
+            <i data-lucide="chevron-left" class="size-4"></i>
+        </button>
+
+        <input id="@(tableId)Page" type="number" min="1" value="1"
+               class="w-12 h-7 text-center bg-content2 rounded-md text-sm text-foreground-900 outline-none focus:ring-2 focus:ring-primary/30 transition" />
+        <span class="text-foreground-500">/</span>
+        <span id="@(tableId)Total" class="text-foreground-700 font-medium">1</span>
+
+        <button id="@(tableId)Next" type="button"
+                class="inline-flex items-center justify-center size-7 rounded-md text-foreground-600 hover:bg-default-100 disabled:text-foreground-300 disabled:cursor-not-allowed disabled:hover:bg-transparent transition">
+            <i data-lucide="chevron-right" class="size-4"></i>
+        </button>
+    </div>
+
+    <div id="@(tableId)Size" class="w-20"
+         data-dz-multiselect="true"
+         data-dz-options='@sizeOptionsJson'
+         data-dz-selected='["@defaultSize"]'></div>
+</div>
+@if (HttpContext.Current.Items["_dzp_select_js_loaded"] == null)
+{
+    HttpContext.Current.Items["_dzp_select_js_loaded"] = true;
+    <text><script src="/DesktopModules/MVC/Dnn.Modules.Blog/Resources/js/select.js"></script></text>
+}

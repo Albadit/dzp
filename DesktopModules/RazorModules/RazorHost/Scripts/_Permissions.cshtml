@@ -1,0 +1,230 @@
+@using DotNetNuke.Entities.Portals
+@using System.Web
+@using System.Linq
+@using System.IO
+@using System.Configuration
+@using System.Data.SqlClient
+@using System.Web.Script.Serialization
+@*
+    Roles & Permissions admin page.
+
+    Schema:
+        dbo.Permissions      (Id, [Key], Area, Label)
+        dbo.RolePermissions  (Id, RoleID, PermissionId)
+
+    This file is the orchestrator. It:
+      1. Acts as an AJAX endpoint when called with a JSON POST body — saves
+         the role's permission set and returns JSON. No page reload.
+      2. Otherwise, loads roles + catalog, hands the data to the partials
+         under Shared/Permissions/, and lets permissions.js drive the UI.
+
+    Access: SuperUser or portal Administrators only — managing role
+    permissions must not be gated by a permission stored in the same
+    table this screen edits.
+*@
+@{
+    var ps              = PortalSettings.Current;
+    var portalId        = ps != null ? ps.PortalId : 0;
+    var adminRoleName   = ps != null ? ps.AdministratorRoleName : "Administrators";
+    var dnnUser         = ps != null ? ps.UserInfo : null;
+    var isSuperUser     = dnnUser != null && dnnUser.IsSuperUser;
+    var isAdministrator = dnnUser != null && !string.IsNullOrEmpty(adminRoleName) && dnnUser.IsInRole(adminRoleName);
+    var canManage       = isSuperUser || isAdministrator;
+
+    var systemRoleNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        adminRoleName ?? "Administrators",
+        "Administrators",
+        "Registered Users",
+        "Subscribers",
+        "Unverified Users"
+    };
+
+    var connStr = ConfigurationManager.ConnectionStrings["SiteSqlServer"] != null
+                ? ConfigurationManager.ConnectionStrings["SiteSqlServer"].ConnectionString
+                : null;
+
+    // ── AJAX endpoint ────────────────────────────────────────────
+    // Triggered when the page is POSTed with JSON. Saves the new permission
+    // set for a single role inside a transaction and returns JSON.
+    var isAjaxSave = string.Equals(Request.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase)
+                  && Request.ContentType != null
+                  && Request.ContentType.IndexOf("application/json", StringComparison.OrdinalIgnoreCase) >= 0;
+
+    if (isAjaxSave) {
+        Response.Clear();
+        Response.ContentType = "application/json; charset=utf-8";
+        Response.Cache.SetCacheability(System.Web.HttpCacheability.NoCache);
+        var ser = new JavaScriptSerializer();
+
+        try {
+            if (!canManage) {
+                Response.StatusCode = 403;
+                Response.Write(ser.Serialize(new { ok = false, error = "Not authorized." }));
+            } else if (string.IsNullOrEmpty(connStr)) {
+                Response.StatusCode = 500;
+                Response.Write(ser.Serialize(new { ok = false, error = "No connection string." }));
+            } else {
+                string body;
+                Request.InputStream.Position = 0;
+                using (var sr = new StreamReader(Request.InputStream)) { body = sr.ReadToEnd(); }
+                var payload = ser.Deserialize<Dictionary<string, object>>(body) ?? new Dictionary<string, object>();
+
+                int roleId = 0;
+                object ridObj; if (payload.TryGetValue("roleId", out ridObj)) {
+                    int.TryParse(Convert.ToString(ridObj), out roleId);
+                }
+                var permIds = new List<int>();
+                object pidsObj;
+                if (payload.TryGetValue("permissionIds", out pidsObj) && pidsObj is System.Collections.IEnumerable) {
+                    foreach (var v in (System.Collections.IEnumerable)pidsObj) {
+                        int pid;
+                        if (int.TryParse(Convert.ToString(v), out pid) && pid > 0) {
+                            permIds.Add(pid);
+                        }
+                    }
+                }
+                permIds = permIds.Distinct().ToList();
+
+                if (roleId <= 0) {
+                    Response.StatusCode = 400;
+                    Response.Write(ser.Serialize(new { ok = false, error = "Missing roleId." }));
+                } else {
+                    using (var conn = new SqlConnection(connStr)) {
+                        conn.Open();
+                        // Make sure roleId belongs to this portal — otherwise an
+                        // admin of portal A could mutate roles of portal B.
+                        using (var chk = new SqlCommand(
+                            "SELECT COUNT(1) FROM dbo.Roles WHERE RoleID = @rid AND PortalID = @pid", conn)) {
+                            chk.Parameters.AddWithValue("@rid", roleId);
+                            chk.Parameters.AddWithValue("@pid", portalId);
+                            if (Convert.ToInt32(chk.ExecuteScalar()) == 0) {
+                                Response.StatusCode = 404;
+                                Response.Write(ser.Serialize(new { ok = false, error = "Role not in this portal." }));
+                                Response.End();
+                                return;
+                            }
+                        }
+                        using (var tx = conn.BeginTransaction()) {
+                            using (var del = new SqlCommand(
+                                "DELETE FROM dbo.RolePermissions WHERE RoleID = @rid", conn, tx)) {
+                                del.Parameters.AddWithValue("@rid", roleId);
+                                del.ExecuteNonQuery();
+                            }
+                            foreach (var pid in permIds) {
+                                using (var ins = new SqlCommand(
+                                    "INSERT INTO dbo.RolePermissions (RoleID, PermissionId) VALUES (@rid, @pid)",
+                                    conn, tx)) {
+                                    ins.Parameters.AddWithValue("@rid", roleId);
+                                    ins.Parameters.AddWithValue("@pid", pid);
+                                    ins.ExecuteNonQuery();
+                                }
+                            }
+                            tx.Commit();
+                        }
+                    }
+                    Response.Write(ser.Serialize(new { ok = true, count = permIds.Count }));
+                }
+            }
+        } catch (Exception ex) {
+            Response.StatusCode = 500;
+            Response.Write(ser.Serialize(new { ok = false, error = ex.Message }));
+        }
+        Response.End();
+        return;
+    }
+
+    // ── Normal page render ───────────────────────────────────────
+    var permissionCatalog = new List<Dictionary<string, object>>();
+    var roles             = new List<Dictionary<string, object>>();
+
+    if (canManage && !string.IsNullOrEmpty(connStr)) {
+        using (var conn = new SqlConnection(connStr)) {
+            conn.Open();
+
+            using (var cmd = new SqlCommand(@"
+                SELECT [Id], [Key], [Area], [Label]
+                FROM dbo.Permissions
+                ORDER BY [Area], [Id];", conn)) {
+                using (var r = cmd.ExecuteReader()) {
+                    while (r.Read()) {
+                        permissionCatalog.Add(new Dictionary<string, object> {
+                            { "id",    r.GetInt32(0) },
+                            { "key",   r.GetString(1) },
+                            { "area",  r.GetString(2) },
+                            { "label", r.GetString(3) }
+                        });
+                    }
+                }
+            }
+
+            using (var cmd = new SqlCommand(@"
+                SELECT r.RoleID, r.RoleName, ISNULL(r.Description, N'') AS Description,
+                       ISNULL(rg.RoleGroupName, N'(no group)')          AS GroupName
+                FROM dbo.Roles r
+                LEFT JOIN dbo.RoleGroups rg ON rg.RoleGroupID = r.RoleGroupID
+                WHERE r.PortalID = @pid
+                ORDER BY r.RoleName;", conn)) {
+                cmd.Parameters.AddWithValue("@pid", portalId);
+                using (var r = cmd.ExecuteReader()) {
+                    while (r.Read()) {
+                        var name = r.GetString(1);
+                        roles.Add(new Dictionary<string, object> {
+                            { "id",          r.GetInt32(0) },
+                            { "name",        name },
+                            { "description", r.GetString(2) },
+                            { "group",       r.GetString(3) },
+                            { "isSystem",    systemRoleNames.Contains(name) },
+                            { "perms",       new List<string>() }
+                        });
+                    }
+                }
+            }
+
+            using (var cmd = new SqlCommand(@"
+                SELECT rp.RoleID, p.[Key]
+                FROM dbo.RolePermissions rp
+                INNER JOIN dbo.Permissions p ON p.[Id]     = rp.PermissionId
+                INNER JOIN dbo.Roles       r ON r.[RoleID] = rp.RoleID
+                WHERE r.PortalID = @pid;", conn)) {
+                cmd.Parameters.AddWithValue("@pid", portalId);
+                using (var r = cmd.ExecuteReader()) {
+                    while (r.Read()) {
+                        var rid = r.GetInt32(0);
+                        var key = r.GetString(1);
+                        var role = roles.FirstOrDefault(x => (int)x["id"] == rid);
+                        if (role != null) {
+                            ((List<string>)role["perms"]).Add(key);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    var serializer = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
+    PageData["rolesJson"]   = serializer.Serialize(roles);
+    PageData["catalogJson"] = serializer.Serialize(permissionCatalog);
+    PageData["saveUrl"]     = Request.RawUrl; // POST back to ourselves
+
+    PageData["title"]    = "Roles";
+    PageData["subtitle"] = "Manage roles and their permissions";
+
+    if (!canManage) {
+        PageData["compact"] = false;
+        PageData["message"] = "You do not have access to this page.";
+    }
+}
+
+<section class="w-full max-w-7xl m-auto">
+    @if (!canManage) {
+        @RenderPage("~/DesktopModules/RazorModules/RazorHost/Scripts/Shared/Components/_AccessDenied.cshtml")
+    } else {
+        @RenderPage("Shared/Permissions/_Toolbar.cshtml")
+        @RenderPage("Shared/Permissions/_Table.cshtml")
+        @RenderPage("Shared/Permissions/_Modal.cshtml")
+    }
+</section>
+
+@if (canManage) {
+    @RenderPage("Shared/Permissions/_Script.cshtml")
+}

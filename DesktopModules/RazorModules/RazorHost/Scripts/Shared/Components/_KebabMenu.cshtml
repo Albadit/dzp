@@ -1,0 +1,37 @@
+@*
+    Reusable kebab dropdown — flex + gap only, no padding/margin.
+    Renders a <template> that the table's JS clones into each row's actions cell.
+
+    PageData inputs:
+      "templateId"   string  id for the <template> (e.g. "dzRoleActionsTpl")
+      "items"        IEnumerable<IDictionary<string,object>> with keys:
+                          "action"  data-action value
+                          "label"   visible text
+                          "icon"    lucide icon name
+                          "kind"    "default" | "danger"  (default "default")
+*@
+@{
+    var templateId = PageData["templateId"] as string ?? "dzActionsTpl";
+    var items      = PageData["items"] as System.Collections.Generic.IEnumerable<System.Collections.Generic.IDictionary<string, object>>
+                    ?? new System.Collections.Generic.List<System.Collections.Generic.IDictionary<string, object>>();
+}
+<template id="@templateId">
+    <div class="absolute right-0 top-full z-30 w-48 rounded-lg border border-divider bg-content1 shadow-lg flex flex-col overflow-hidden">
+        @foreach (var it in items)
+        {
+            var action = it.ContainsKey("action") ? it["action"] as string : "";
+            var label  = it.ContainsKey("label")  ? it["label"]  as string : "";
+            var icon   = it.ContainsKey("icon")   ? it["icon"]   as string : "circle";
+            var kind   = it.ContainsKey("kind")   ? it["kind"]   as string : "default";
+            var btnCls = kind == "danger"
+                ? "flex items-center gap-2 min-h-9 text-sm text-danger hover:bg-danger/10 transition cursor-pointer w-full"
+                : "flex items-center gap-2 min-h-9 text-sm text-foreground-700 hover:bg-default-100 hover:text-primary transition cursor-pointer w-full";
+            <button type="button" data-action="@action" class="@btnCls">
+                <span class="w-8 flex items-center justify-center">
+                    <i data-lucide="@icon" class="size-4"></i>
+                </span>
+                <span class="flex-1">@label</span>
+            </button>
+        }
+    </div>
+</template>

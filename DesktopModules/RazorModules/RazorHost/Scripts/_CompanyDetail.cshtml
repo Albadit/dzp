@@ -137,12 +137,19 @@
         }
     }
 
-    /* ── Edit permission ── */
+    /* ── Edit permission ──
+       Driven by dbo.RolePermissions: any role granted "company:edit" can
+       manage every company in the community. The legacy owner-based check
+       is kept as a fallback so a company owner without an explicit role
+       permission can still edit their own page. */
     var canEdit = false;
     if (user != null && companyId > 0) {
         var adminRoleName = PortalSettings.Current != null ? PortalSettings.Current.AdministratorRoleName : "Administrators";
         var isAdministrator = !string.IsNullOrEmpty(adminRoleName) && user.IsInRole(adminRoleName);
-        canEdit = user.IsSuperUser || isAdministrator || (ownerId > 0 && user.UserID == ownerId);
+        canEdit = user.IsSuperUser
+               || isAdministrator
+               || (rc != null && rc.HasPermission("company:edit"))
+               || (ownerId > 0 && user.UserID == ownerId);
     }
 
     /* ── Publish to PageData ── */

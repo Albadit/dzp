@@ -1,0 +1,97 @@
+﻿
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+--  Schema: RolePermissions
+--  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+--  Maps DNN roles to scoped permission strings (e.g. "blog:read",
+--  "blog:manage", "table:edit", "company:edit"). Loaded by
+--  CommunityAuth.HasPermission() per request and ORed across all
+--  roles a user holds (DNN roles + community roles).
+--
+--  Permissions are free-form strings; no enforced enum. Convention:
+--  "<area>:<action>" â€” area is the module/feature, action is one of
+--  read|create|edit|delete|manage|access (or anything else).
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'RolePermissions' AND schema_id = SCHEMA_ID('dbo'))
+CREATE TABLE [dbo].[RolePermissions] (
+    [Id]         INT            IDENTITY(1,1) NOT NULL,
+    [RoleID]     INT            NOT NULL,
+    [Permission] NVARCHAR(128)  NOT NULL,
+    [CreatedOn]  DATETIME2      NOT NULL CONSTRAINT [DF_RolePermissions_CreatedOn] DEFAULT (GETUTCDATE()),
+    CONSTRAINT [PK_RolePermissions]        PRIMARY KEY ([Id]),
+    CONSTRAINT [UQ_RolePermissions]        UNIQUE ([RoleID], [Permission]),
+    CONSTRAINT [FK_RolePermissions_Roles]  FOREIGN KEY ([RoleID])
+        REFERENCES [dbo].[Roles]([RoleID]) ON DELETE CASCADE
+);
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_RolePermissions_Permission' AND object_id = OBJECT_ID('dbo.RolePermissions'))
+CREATE INDEX [IX_RolePermissions_Permission]
+    ON [dbo].[RolePermissions] ([Permission]);
+
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+--  Seed: predefined permissions for known roles
+--  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+--  Catalog (free-form, but conventional):
+--    blog:read       blog:create     blog:manage
+--    table:read      table:create    table:edit       table:delete    table:manage
+--    company:read    company:edit
+--
+--  Mapping (idempotent â€” only inserts missing rows):
+--    Community beheerder (RoleID 100): all manage + edit perms
+--    Algemeen bestuur    (RoleID  99): blog:manage, table:edit, company:edit
+--    Directeur           (RoleID  97): company:edit
+--    Bedrijfseigenaar    (RoleID  94): company:edit
+--    Bedrijfsmanager     (RoleID  93): company:edit
+--    Lid                 (RoleID  91): blog:read, table:read, company:read
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+;WITH SeedPerms ([RoleID], [Permission]) AS (
+    -- Community beheerder
+    SELECT 100, N'blog:read'      UNION ALL
+    SELECT 100, N'blog:create'    UNION ALL
+    SELECT 100, N'blog:manage'    UNION ALL
+    SELECT 100, N'table:read'     UNION ALL
+    SELECT 100, N'table:create'   UNION ALL
+    SELECT 100, N'table:edit'     UNION ALL
+    SELECT 100, N'table:delete'   UNION ALL
+    SELECT 100, N'table:manage'   UNION ALL
+    SELECT 100, N'company:read'   UNION ALL
+    SELECT 100, N'company:edit'   UNION ALL
+    SELECT 100, N'community:manage' UNION ALL
+    -- Algemeen bestuur
+    SELECT  99, N'blog:read'      UNION ALL
+    SELECT  99, N'blog:create'    UNION ALL
+    SELECT  99, N'blog:manage'    UNION ALL
+    SELECT  99, N'table:read'     UNION ALL
+    SELECT  99, N'table:edit'     UNION ALL
+    SELECT  99, N'company:read'   UNION ALL
+    SELECT  99, N'company:edit'   UNION ALL
+    SELECT  99, N'community:manage' UNION ALL
+    -- Directeur
+    SELECT  97, N'blog:read'      UNION ALL
+    SELECT  97, N'table:read'     UNION ALL
+    SELECT  97, N'company:read'   UNION ALL
+    SELECT  97, N'company:edit'   UNION ALL
+    -- Bedrijfseigenaar
+    SELECT  94, N'blog:read'      UNION ALL
+    SELECT  94, N'table:read'     UNION ALL
+    SELECT  94, N'company:read'   UNION ALL
+    SELECT  94, N'company:edit'   UNION ALL
+    -- Bedrijfsmanager
+    SELECT  93, N'blog:read'      UNION ALL
+    SELECT  93, N'table:read'     UNION ALL
+    SELECT  93, N'company:read'   UNION ALL
+    SELECT  93, N'company:edit'   UNION ALL
+    -- Lid
+    SELECT  91, N'blog:read'      UNION ALL
+    SELECT  91, N'table:read'     UNION ALL
+    SELECT  91, N'company:read'
+)
+INSERT INTO [dbo].[RolePermissions] ([RoleID], [Permission])
+SELECT s.[RoleID], s.[Permission]
+FROM SeedPerms s
+INNER JOIN [dbo].[Roles] r ON r.[RoleID] = s.[RoleID]
+WHERE NOT EXISTS (
+    SELECT 1 FROM [dbo].[RolePermissions] rp
+    WHERE rp.[RoleID] = s.[RoleID] AND rp.[Permission] = s.[Permission]
+);

@@ -1,0 +1,42 @@
+@*
+    Reusable data table shell — flex + gap only, no padding/margin.
+
+    PageData inputs:
+      "tableId"    string  unique table prefix (e.g. "dzRole")
+      "columns"    IEnumerable<IDictionary<string,object>> with keys:
+                       "label"     header text
+                       "width"     Tailwind width class (e.g. "w-10", "flex-1")
+                       "align"     "left" | "right" | "center"  (default left)
+      "emptyText"  string  shown when no rows
+      "emptyIcon"  string  lucide icon name (default "inbox")
+
+    Renders header + empty <body> container with id "{tableId}Rows".
+    JS owns the row markup; rows are flex containers with the same column widths.
+*@
+@{
+    var tableId    = PageData["tableId"] as string ?? "dzTable";
+    var columns    = PageData["columns"] as System.Collections.Generic.IEnumerable<System.Collections.Generic.IDictionary<string, object>>
+                    ?? new System.Collections.Generic.List<System.Collections.Generic.IDictionary<string, object>>();
+    var emptyText  = PageData["emptyText"] as string ?? "No items.";
+    var emptyIcon  = PageData["emptyIcon"] as string ?? "inbox";
+
+    Func<string, string> alignClass = a =>
+        a == "right"  ? "justify-end"  :
+        a == "center" ? "justify-center" : "justify-start";
+}
+<div class="flex flex-col rounded-lg bg-content1 border border-divider overflow-hidden" data-dz-table="@tableId">
+    <div class="flex items-center gap-4 min-h-11 bg-content2 text-xs font-semibold uppercase tracking-wide text-foreground-700">
+        @foreach (var col in columns)
+        {
+            var label = col.ContainsKey("label") ? col["label"] as string : "";
+            var width = col.ContainsKey("width") ? col["width"] as string : "flex-1";
+            var align = col.ContainsKey("align") ? col["align"] as string : "left";
+            <div class="flex items-center @width @alignClass(align)">@label</div>
+        }
+    </div>
+    <div id="@(tableId)Rows" class="flex flex-col"></div>
+    <div id="@(tableId)Empty" class="hidden flex flex-col items-center justify-center gap-2 min-h-40 text-foreground-400">
+        <i data-lucide="@emptyIcon" class="size-8"></i>
+        <span class="text-sm">@emptyText</span>
+    </div>
+</div>
