@@ -5,51 +5,407 @@
     NOTE: DNN MVC's `DnnHtmlHelper<T>` does NOT expose `Html.BeginForm`
     or `Html.AntiForgeryToken`, so we emit a plain HTML form and rely on
     DNN's own moduleId routing to deliver the POST to ScriptController.Edit.
+
+    Self-contained styling — does not assume Tailwind/Bootstrap is loaded
+    in the host page (DNN edit dialog).
 *@
 @{
     Layout = null;
     var available = ViewBag.AvailableScripts as System.Collections.Generic.List<string>
                     ?? new System.Collections.Generic.List<string>();
     var selected  = ViewBag.Selected as string ?? string.Empty;
+    var content   = ViewBag.ScriptContent as string ?? string.Empty;
+    var allContents = ViewBag.AllContents as System.Collections.Generic.Dictionary<string, string>
+                      ?? new System.Collections.Generic.Dictionary<string, string>();
     var postUrl   = Url.Action("Edit", "Script");
+    var hasSelected = !string.IsNullOrEmpty(selected);
+    var allContentsJson = Newtonsoft.Json.JsonConvert.SerializeObject(allContents);
 }
 
-<h2>Razor MVC Host — pick a script</h2>
+<style>
+    .rmh-edit {
+        /* ---- design tokens (DRY) ---- */
+        --rmh-color-text:        #111827;
+        --rmh-color-text-soft:   #374151;
+        --rmh-color-text-muted:  #6b7280;
+        --rmh-color-text-invert: #e5e7eb;
 
-<form method="post" action="@postUrl">
+        --rmh-color-surface:     #ffffff;
+        --rmh-color-surface-2:   #f9fafb;
+        --rmh-color-surface-3:   #f3f4f6;
+        --rmh-color-surface-dark: #1f2937;
+        --rmh-color-surface-darker: #111827;
 
-    <div style="margin: 12px 0;">
-        <label for="scriptPath" style="display:block; font-weight:600; margin-bottom:4px;">
-            Script (relative to <code>Views/Scripts/</code>)
-        </label>
+        --rmh-color-border:      #e5e7eb;
+        --rmh-color-border-2:    #d1d5db;
+        --rmh-color-border-soft: #f3f4f6;
 
-        @if (available.Count == 0)
-        {
-            <p><em>No <code>.cshtml</code> files found under
-                <code>~/DesktopModules/MVC/Dnn.Modules.RazorMvcHost/Views/Scripts/</code>.
-                Drop one in and reload this page.</em></p>
-            <input type="hidden" name="scriptPath" value="" />
-        }
-        else
-        {
-            <select id="scriptPath" name="scriptPath" style="min-width: 320px;">
-                <option value="">-- (none) --</option>
-                @foreach (var path in available)
-                {
-                    if (string.Equals(path, selected, System.StringComparison.OrdinalIgnoreCase))
+        --rmh-color-primary:        #3b82f6;
+        --rmh-color-primary-strong: #6366f1;
+        --rmh-color-primary-ring:   rgba(59,130,246,0.25);
+        --rmh-color-primary-glow:   rgba(59,130,246,0.4);
+        --rmh-color-primary-soft:   #93c5fd;
+
+        --rmh-color-success-bg:     #ecfdf5;
+        --rmh-color-success-border: #a7f3d0;
+        --rmh-color-success-text:   #065f46;
+        --rmh-color-success-icon:   #059669;
+
+        --rmh-color-warn-bg:     #fffbeb;
+        --rmh-color-warn-border: #fde68a;
+        --rmh-color-warn-text:   #92400e;
+        --rmh-color-warn-icon:   #d97706;
+
+        --rmh-color-empty-bg:     #fef3c7;
+        --rmh-color-empty-border: #fcd34d;
+
+        --rmh-gradient-primary: linear-gradient(135deg, var(--rmh-color-primary), var(--rmh-color-primary-strong));
+
+        --rmh-radius-sm: 3px;
+        --rmh-radius-md: 8px;
+        --rmh-radius-lg: 10px;
+        --rmh-radius-xl: 12px;
+        --rmh-radius-pill: 999px;
+
+        --rmh-space-1: 4px;
+        --rmh-space-2: 6px;
+        --rmh-space-3: 8px;
+        --rmh-space-4: 10px;
+        --rmh-space-5: 12px;
+        --rmh-space-6: 16px;
+        --rmh-space-7: 18px;
+        --rmh-space-8: 20px;
+
+        --rmh-font-stack:    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --rmh-font-mono:     ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+        --rmh-font-xs: 12px;
+        --rmh-font-sm: 13px;
+        --rmh-font-md: 14px;
+        --rmh-font-lg: 18px;
+        --rmh-font-mono-size: 12.5px;
+
+        --rmh-icon-sm: 14px;
+        --rmh-icon-md: 16px;
+        --rmh-icon-lg: 22px;
+
+        --rmh-shadow-card:   0 1px 2px rgba(0,0,0,0.04);
+        --rmh-shadow-btn:    0 1px 2px var(--rmh-color-primary-glow);
+        --rmh-shadow-btn-hv: 0 4px 12px var(--rmh-color-primary-glow);
+        --rmh-transition:    border-color .15s, box-shadow .15s, background .15s;
+
+        /* ---- container ---- */
+        width: 100%; max-width: 1280px; margin: 0 auto;
+        padding: var(--rmh-space-6);
+        font-family: var(--rmh-font-stack); color: var(--rmh-color-text);
+    }
+    .rmh-edit * { box-sizing: border-box; }
+
+    .rmh-edit__header { display: flex; align-items: center; gap: var(--rmh-space-5); margin-bottom: var(--rmh-space-7); }
+    .rmh-edit__icon-wrap { width: 40px; height: 40px; flex: 0 0 40px; border-radius: var(--rmh-radius-lg); background: var(--rmh-gradient-primary); display: inline-flex; align-items: center; justify-content: center; }
+    .rmh-edit__icon-wrap svg { width: var(--rmh-icon-lg); height: var(--rmh-icon-lg); stroke: #fff; }
+    .rmh-edit__title { margin: 0; font-size: var(--rmh-font-lg); font-weight: 600; line-height: 1.2; }
+    .rmh-edit__subtitle { margin: 2px 0 0 0; font-size: var(--rmh-font-sm); color: var(--rmh-color-text-muted); line-height: 1.3; }
+
+    .rmh-edit__card { background: var(--rmh-color-surface); border: 1px solid var(--rmh-color-border); border-radius: var(--rmh-radius-xl); padding: var(--rmh-space-8); box-shadow: var(--rmh-shadow-card); }
+
+    .rmh-edit__field { margin-bottom: var(--rmh-space-6); }
+    .rmh-edit__label { display: block; font-size: var(--rmh-font-sm); font-weight: 600; color: var(--rmh-color-text-soft); margin-bottom: var(--rmh-space-2); }
+    .rmh-edit__label-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--rmh-space-3); flex-wrap: wrap; margin-bottom: var(--rmh-space-2); }
+    .rmh-edit__label-row .rmh-edit__label { margin-bottom: 0; }
+    .rmh-edit__label-hint { font-size: var(--rmh-font-xs); color: var(--rmh-color-text-muted); font-weight: 400; }
+    .rmh-edit__label-hint code { background: var(--rmh-color-surface-2); padding: 1px var(--rmh-space-2); border-radius: var(--rmh-radius-sm); font-family: var(--rmh-font-mono); font-size: 0.85em; }
+    .rmh-edit__hint  { font-size: var(--rmh-font-xs); color: var(--rmh-color-text-muted); margin: var(--rmh-space-1) 0 0 0; }
+
+    .rmh-edit__select-wrap { position: relative; }
+    .rmh-edit__select {
+        appearance: none; -webkit-appearance: none; -moz-appearance: none;
+        width: 100%; padding: var(--rmh-space-4) 36px var(--rmh-space-4) var(--rmh-space-5);
+        font: inherit; font-size: var(--rmh-font-md); color: var(--rmh-color-text);
+        background: var(--rmh-color-surface-2); border: 1px solid var(--rmh-color-border-2); border-radius: var(--rmh-radius-md);
+        cursor: pointer; outline: none;
+        transition: var(--rmh-transition);
+    }
+    .rmh-edit__select:hover { background: var(--rmh-color-surface-3); }
+    .rmh-edit__select:focus-visible { border-color: var(--rmh-color-primary); box-shadow: 0 0 0 3px var(--rmh-color-primary-ring); background: var(--rmh-color-surface); }
+    .rmh-edit__chev { position: absolute; right: var(--rmh-space-5); top: 50%; transform: translateY(-50%); pointer-events: none; width: var(--rmh-icon-md); height: var(--rmh-icon-md); stroke: var(--rmh-color-text-muted); }
+
+    /* active-script toggle (compact, inline) */
+    .rmh-edit__active-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rmh-space-3); margin-top: var(--rmh-space-2); font-size: var(--rmh-font-xs); color: var(--rmh-color-text-muted); }
+    .rmh-edit__active-toggle { display: inline-flex; align-items: center; gap: var(--rmh-space-2); cursor: pointer; user-select: none; color: var(--rmh-color-text-soft); }
+    .rmh-edit__active-toggle input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--rmh-color-primary); cursor: pointer; margin: 0; }
+    .rmh-edit__active-toggle strong { color: var(--rmh-color-text); }
+    .rmh-edit__active-sep { color: var(--rmh-color-border-2); }
+    .rmh-edit__active-name { background: rgba(59,130,246,0.10); color: var(--rmh-color-primary); padding: 0 var(--rmh-space-2); border-radius: var(--rmh-radius-sm); font-size: var(--rmh-font-xs); font-family: var(--rmh-font-mono); }
+
+    .rmh-edit__empty { padding: var(--rmh-space-6); background: var(--rmh-color-empty-bg); border: 1px solid var(--rmh-color-empty-border); border-radius: var(--rmh-radius-md); color: var(--rmh-color-warn-text); font-size: var(--rmh-font-sm); line-height: 1.45; }
+    .rmh-edit__empty code { background: rgba(120,53,15,0.10); padding: 1px 5px; border-radius: var(--rmh-radius-sm); font-size: var(--rmh-font-xs); }
+
+    .rmh-edit__actions { display: flex; gap: var(--rmh-space-3); align-items: center; margin-top: var(--rmh-space-7); padding-top: var(--rmh-space-6); border-top: 1px solid var(--rmh-color-border-soft); }
+    .rmh-edit__btn-primary {
+        appearance: none; border: 0; cursor: pointer;
+        padding: 9px 18px; font: inherit; font-size: var(--rmh-font-md); font-weight: 600;
+        color: #fff; background: var(--rmh-gradient-primary);
+        border-radius: var(--rmh-radius-md); box-shadow: var(--rmh-shadow-btn);
+        transition: transform .1s, box-shadow .15s, opacity .15s;
+        display: inline-flex; align-items: center; gap: var(--rmh-space-2);
+    }
+    .rmh-edit__btn-primary:hover  { box-shadow: var(--rmh-shadow-btn-hv); }
+    .rmh-edit__btn-primary:active { transform: translateY(1px); }
+    .rmh-edit__btn-primary svg    { width: var(--rmh-icon-sm); height: var(--rmh-icon-sm); stroke: #fff; }
+
+    .rmh-edit__btn-secondary {
+        appearance: none; cursor: pointer;
+        padding: 9px 16px; font: inherit; font-size: var(--rmh-font-md); font-weight: 600;
+        color: var(--rmh-color-primary); background: var(--rmh-color-surface);
+        border: 1px solid var(--rmh-color-border-2);
+        border-radius: var(--rmh-radius-md);
+        transition: var(--rmh-transition);
+        display: inline-flex; align-items: center; gap: var(--rmh-space-2);
+    }
+    .rmh-edit__btn-secondary:hover  { border-color: var(--rmh-color-primary); background: var(--rmh-color-surface-2); }
+    .rmh-edit__btn-secondary:active { transform: translateY(1px); }
+    .rmh-edit__btn-secondary svg    { width: var(--rmh-icon-sm); height: var(--rmh-icon-sm); stroke: var(--rmh-color-primary); }
+
+    .rmh-edit__btn-ghost {
+        appearance: none; cursor: pointer;
+        padding: 9px 16px; font: inherit; font-size: var(--rmh-font-md); font-weight: 500;
+        color: var(--rmh-color-text-soft); background: transparent;
+        border: 1px solid transparent;
+        border-radius: var(--rmh-radius-md);
+        transition: var(--rmh-transition);
+        display: inline-flex; align-items: center; gap: var(--rmh-space-2);
+    }
+    .rmh-edit__btn-ghost:hover  { color: var(--rmh-color-text); background: var(--rmh-color-surface-2); border-color: var(--rmh-color-border); }
+    .rmh-edit__btn-ghost:active { transform: translateY(1px); }
+    .rmh-edit__btn-ghost svg    { width: var(--rmh-icon-sm); height: var(--rmh-icon-sm); stroke: currentColor; }
+
+    .rmh-edit__count { margin-left: auto; font-size: var(--rmh-font-xs); color: var(--rmh-color-text-muted); }
+
+    .rmh-edit__editor-wrap { margin-top: var(--rmh-space-7); }
+    .rmh-edit__editor-bar { display: flex; align-items: center; gap: var(--rmh-space-2); padding: var(--rmh-space-3) var(--rmh-space-4); background: var(--rmh-color-surface-dark); color: var(--rmh-color-text-invert); border: 1px solid var(--rmh-color-surface-dark); border-bottom: 0; border-radius: var(--rmh-radius-md) var(--rmh-radius-md) 0 0; font-size: var(--rmh-font-xs); }
+    .rmh-edit__editor-bar svg { width: var(--rmh-icon-sm); height: var(--rmh-icon-sm); stroke: var(--rmh-color-primary-soft); }
+    .rmh-edit__editor-bar code { background: rgba(255,255,255,0.08); color: var(--rmh-color-text-invert); padding: 1px var(--rmh-space-2); border-radius: var(--rmh-radius-sm); font-size: var(--rmh-font-xs); }
+    .rmh-edit__editor-bar .rmh-edit__lines { margin-left: auto; opacity: .7; }
+    .rmh-edit__textarea {
+        display: block; width: 100%; min-height: 360px; resize: vertical;
+        padding: var(--rmh-space-5);
+        font-family: var(--rmh-font-mono); font-size: var(--rmh-font-mono-size); line-height: 1.55; color: var(--rmh-color-text-invert);
+        background: var(--rmh-color-surface-darker); border: 1px solid var(--rmh-color-surface-dark); border-top: 0;
+        border-radius: 0 0 var(--rmh-radius-md) var(--rmh-radius-md); outline: none;
+        tab-size: 4; -moz-tab-size: 4;
+        white-space: pre; overflow: auto;
+    }
+    .rmh-edit__textarea:focus { box-shadow: inset 0 0 0 1px var(--rmh-color-primary); }
+
+    /* ---- mobile / tablet responsive ---- */
+    @@media (max-width: 768px) {
+        .rmh-edit { padding: var(--rmh-space-4); }
+        .rmh-edit__card { padding: var(--rmh-space-6); border-radius: var(--rmh-radius-lg); }
+        .rmh-edit__header { gap: var(--rmh-space-4); margin-bottom: var(--rmh-space-6); }
+        .rmh-edit__icon-wrap { width: 36px; height: 36px; flex: 0 0 36px; }
+        .rmh-edit__title { font-size: 16px; }
+        .rmh-edit__subtitle { font-size: var(--rmh-font-xs); }
+        .rmh-edit__select { padding: var(--rmh-space-3) 32px var(--rmh-space-3) var(--rmh-space-4); font-size: var(--rmh-font-sm); }
+        .rmh-edit__textarea { min-height: 280px; padding: var(--rmh-space-4); font-size: 12px; }
+        .rmh-edit__editor-bar { flex-wrap: wrap; }
+        .rmh-edit__editor-bar .rmh-edit__lines { margin-left: 0; flex-basis: 100%; }
+        .rmh-edit__actions { flex-wrap: wrap; gap: var(--rmh-space-2); }
+        .rmh-edit__btn-primary, .rmh-edit__btn-secondary { flex: 1 1 auto; justify-content: center; padding: var(--rmh-space-4) var(--rmh-space-5); }
+        .rmh-edit__btn-ghost { flex: 1 1 100%; justify-content: center; padding: var(--rmh-space-4) var(--rmh-space-5); }
+        .rmh-edit__count { flex-basis: 100%; margin-left: 0; text-align: center; margin-top: var(--rmh-space-2); }
+        .rmh-edit__active-row { font-size: 11px; gap: var(--rmh-space-2); }
+        .rmh-edit__active-sep { display: none; }
+    }
+
+    @@media (max-width: 480px) {
+        .rmh-edit { padding: var(--rmh-space-3); }
+        .rmh-edit__card { padding: var(--rmh-space-5); }
+        .rmh-edit__header { flex-direction: column; align-items: flex-start; }
+        .rmh-edit__textarea { min-height: 220px; }
+        .rmh-edit__actions { flex-direction: column; align-items: stretch; }
+        .rmh-edit__btn-primary, .rmh-edit__btn-secondary { width: 100%; }
+        .rmh-edit__btn-ghost { width: 100%; }
+    }
+</style>
+
+<div class="rmh-edit">
+
+    <div class="rmh-edit__header">
+        <span class="rmh-edit__icon-wrap" aria-hidden="true">
+            @* file-code icon *@
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <path d="m9 18-3-3 3-3"/>
+                <path d="m15 12 3 3-3 3"/>
+            </svg>
+        </span>
+        <div>
+            <h2 class="rmh-edit__title">Razor MVC Host</h2>
+            <p class="rmh-edit__subtitle">Pick a Razor view to render in this module instance.</p>
+        </div>
+    </div>
+
+    <form method="post" action="@postUrl" class="rmh-edit__card" data-current-active="@selected">
+
+        <div class="rmh-edit__field">
+            <div class="rmh-edit__label-row">
+                <label for="scriptPath" class="rmh-edit__label">Script file</label>
+                <span class="rmh-edit__label-hint">resolved relative to <code>Views/Scripts/</code></span>
+            </div>
+
+            @if (available.Count == 0)
+            {
+                <div class="rmh-edit__empty">
+                    No <code>.cshtml</code> files were found under
+                    <code>~/DesktopModules/MVC/Dnn.Modules.RazorMvcHost/Views/Scripts/</code>.
+                    Drop one in and reload this page.
+                </div>
+                <input type="hidden" name="scriptPath" value="" />
+            }
+            else
+            {
+                <div class="rmh-edit__select-wrap">
+                    <select id="scriptPath" name="scriptPath" class="rmh-edit__select">
+                        <option value="">— None (module shows placeholder) —</option>
+                        @foreach (var path in available)
+                        {
+                            if (string.Equals(path, selected, System.StringComparison.OrdinalIgnoreCase))
+                            {
+                                <option value="@path" selected="selected">@path</option>
+                            }
+                            else
+                            {
+                                <option value="@path">@path</option>
+                            }
+                        }
+                    </select>
+                    @* chevron *@
+                    <svg class="rmh-edit__chev" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+            }
+        </div>
+
+        <div class="rmh-edit__editor-wrap" style="@(hasSelected ? "" : "display:none")">
+            <label for="scriptContent" class="rmh-edit__label">Script source</label>
+            <div class="rmh-edit__editor-bar">
+                @* code icon *@
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                <code>@selected</code>
+                <span class="rmh-edit__lines">@(content == null ? 0 : content.Split('\n').Length) lines &middot; @(content == null ? 0 : content.Length) chars</span>
+            </div>
+            <textarea id="scriptContent" name="scriptContent" class="rmh-edit__textarea" spellcheck="false" wrap="off">@content</textarea>
+            <p class="rmh-edit__hint">Edits are saved to <code>~/DesktopModules/MVC/Dnn.Modules.RazorMvcHost/Views/Scripts/<span class="rmh-edit__hint-path">@selected</span></code> when you click Save.</p>
+            <div class="rmh-edit__active-row">
+                <label class="rmh-edit__active-toggle">
+                    <input type="checkbox" id="setActive" name="setActive" value="1" @(hasSelected ? "checked=\"checked\"" : "") />
+                    Set as <strong>active</strong>
+                </label>
+                <span class="rmh-edit__active-sep">|</span>
+                <span>
+                    Currently active:
+                    @if (hasSelected)
                     {
-                        <option value="@path" selected="selected">@path</option>
+                        <code class="rmh-edit__active-name">@selected</code>
                     }
                     else
                     {
-                        <option value="@path">@path</option>
+                        <em>none</em>
                     }
-                }
-            </select>
-        }
-    </div>
+                </span>
+            </div>
+        </div>
 
-    <div>
-        <button type="submit" class="dnnPrimaryAction">Save</button>
-    </div>
-</form>
+        <div class="rmh-edit__actions">
+            <button type="submit" name="submitAction" value="save" class="rmh-edit__btn-secondary" title="Save and keep editing">
+                @* save-only icon (disk) *@
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                </svg>
+                Save
+            </button>
+            <button type="submit" name="submitAction" value="saveReturn" class="rmh-edit__btn-primary" title="Save and close the edit screen">
+                @* save + arrow icon *@
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Save &amp; Return
+            </button>
+            <button type="submit" name="submitAction" value="return" class="rmh-edit__btn-ghost" title="Discard and go back without saving" formnovalidate="formnovalidate">
+                @* arrow-left icon *@
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="19" y1="12" x2="5" y2="12"/>
+                    <polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Return
+            </button>
+            <span class="rmh-edit__count">@available.Count script@(available.Count == 1 ? "" : "s") available</span>
+        </div>
+
+    </form>
+</div>
+
+<script>
+    (function () {
+        var allContents = @Html.Raw(allContentsJson);
+        var sel = document.getElementById('scriptPath');
+        if (!sel) { return; }
+        var form          = sel.closest('form');
+        var currentActive = form ? (form.getAttribute('data-current-active') || '') : '';
+        var ta            = document.getElementById('scriptContent');
+        var editorWrap    = document.querySelector('.rmh-edit__editor-wrap');
+        var bar           = editorWrap ? editorWrap.querySelector('.rmh-edit__editor-bar') : null;
+        var barCode       = bar ? bar.querySelector('code') : null;
+        var barLines      = bar ? bar.querySelector('.rmh-edit__lines') : null;
+        var hintPath      = document.querySelector('.rmh-edit__hint-path');
+        var setActive     = document.getElementById('setActive');
+
+        // Per-path user overrides for the "set active" checkbox. If the user
+        // explicitly toggles the checkbox while a given file is selected, we
+        // remember that choice so coming back to the same file in this session
+        // restores it instead of snapping back to the auto default.
+        var overrides = {};
+
+        function defaultChecked(path, hasSel) {
+            if (!hasSel) { return false; }
+            // If a script is currently active on disk, only auto-check when the
+            // dropdown matches it. Otherwise (no active yet) auto-check, since
+            // picking any file is most likely a "make this the one" action.
+            if (currentActive && currentActive.length > 0) {
+                return path === currentActive;
+            }
+            return true;
+        }
+
+        function update() {
+            var path   = sel.value || '';
+            var hasSel = path.length > 0;
+            var text   = hasSel && allContents.hasOwnProperty(path) ? allContents[path] : '';
+
+            if (editorWrap) { editorWrap.style.display = hasSel ? '' : 'none'; }
+            if (ta)         { ta.value = text; }
+            if (barCode)    { barCode.textContent = path; }
+            if (barLines)   { barLines.textContent = text.split('\n').length + ' lines \u00b7 ' + text.length + ' chars'; }
+            if (hintPath)   { hintPath.textContent = path; }
+
+            if (setActive) {
+                setActive.checked = overrides.hasOwnProperty(path)
+                    ? overrides[path]
+                    : defaultChecked(path, hasSel);
+            }
+        }
+
+        sel.addEventListener('change', update);
+        if (setActive) {
+            setActive.addEventListener('change', function () {
+                var path = sel.value || '';
+                if (path.length > 0) { overrides[path] = setActive.checked; }
+            });
+        }
+    })();
+</script>
