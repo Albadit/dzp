@@ -1,7 +1,22 @@
 @*
-    <Select> RazorHost (WebPages) component — Tailwind v4 + Lucide icons.
+    <Select> Razor partial for DNN MVC — Tailwind v4 + Lucide icons.
 
-    PageData parameters (all optional):
+    Uses BEM-ish data attributes:
+      data-select, data-trigger, data-value, data-indicator, data-popover,
+      data-listbox, data-option, data-option-label, data-option-check, data-search
+
+    State hooks (consumed by Tailwind variants):
+      data-disabled, data-invalid, data-open, data-placeholder, data-full-width,
+      data-selection-mode="single|multiple"
+
+    No external stylesheet — all styling via Tailwind utility classes
+    (uses TailwindDNN skin tokens: bg-content1/2, text-default-*, primary-*).
+    Lucide icons (`<i data-lucide="...">`) are rehydrated by the inlined script.
+
+    The behavior script is emitted exactly once per request via
+    HttpContext.Current.Items["_select_assets_loaded"].
+
+    ViewData parameters (all optional except items):
         "id"             — element id
         "name"           — name of the hidden input (form post)
         "placeholder"    — text shown when nothing is selected
@@ -13,79 +28,124 @@
         "className"      — extra Tailwind classes appended to root
         "disabledKeys"   — IEnumerable<string> of keys to disable
         "defaultValue"   — string OR IEnumerable<string> (initial selection)
-        "items"          — IEnumerable of { Key, Label } (or { Value, Text })
+        "items"          — IEnumerable<{ Key, Label }>
         "showSearch"     — bool override (auto: true when items >= 8)
         "scriptOnly"     — bool; when true, emit ONLY the behavior <script>
-
-    The behavior IIFE is emitted exactly once per request via
-    HttpContext.Current.Items["_select_assets_loaded"].
+                            (used by views that build selects via Select.create at runtime)
 *@
 @using System.Collections;
 @using System.Collections.Generic;
 @using System.Linq;
 @{
-    bool selScriptOnly = PageData["scriptOnly"] != null && (bool)PageData["scriptOnly"];
+    bool selScriptOnly = ViewData["scriptOnly"] is bool && (bool)ViewData["scriptOnly"];
 }
 @if (!selScriptOnly)
 {
-    string selId          = PageData["id"] as string;
-    string selName        = PageData["name"] as string ?? selId ?? "";
-    string selPlaceholder = PageData["placeholder"] as string ?? "Select an item";
-    string selMode        = (PageData["selectionMode"] as string ?? "single").ToLowerInvariant();
-    bool   selFullWidth   = PageData["fullWidth"] == null || (bool)PageData["fullWidth"];
-    bool   selDisabled    = PageData["isDisabled"] != null && (bool)PageData["isDisabled"];
-    bool   selInvalid     = PageData["isInvalid"] != null && (bool)PageData["isInvalid"];
-    bool   selRequired    = PageData["isRequired"] != null && (bool)PageData["isRequired"];
-    string selExtraClass  = PageData["className"] as string ?? "";
-    bool?  selShowSearchOpt = PageData["showSearch"] as bool?;
+    string selId          = ViewData["id"] as string;
+    string selName        = ViewData["name"] as string ?? selId ?? "";
+    string selPlaceholder = ViewData["placeholder"] as string ?? "Select an item";
+    string selMode        = (ViewData["selectionMode"] as string ?? "single").ToLowerInvariant();
+    bool   selFullWidth   = !(ViewData["fullWidth"] is bool) || (bool)ViewData["fullWidth"];
+    bool   selDisabled    = ViewData["isDisabled"] is bool && (bool)ViewData["isDisabled"];
+    bool   selInvalid     = ViewData["isInvalid"] is bool && (bool)ViewData["isInvalid"];
+    bool   selRequired    = ViewData["isRequired"] is bool && (bool)ViewData["isRequired"];
+    string selExtraClass  = ViewData["className"] as string ?? "";
+    bool?  selShowSearchOpt = ViewData["showSearch"] as bool?;
 
     var selDisabledKeys = new HashSet<string>(System.StringComparer.Ordinal);
-    var dkEnum = PageData["disabledKeys"] as IEnumerable;
+    var dkEnum = ViewData["disabledKeys"] as IEnumerable;
     if (dkEnum != null)
     {
-        foreach (var k in dkEnum) { if (k != null) { selDisabledKeys.Add(k.ToString()); } }
+        foreach (var k in dkEnum)
+        {
+            if (k != null)
+            {
+                selDisabledKeys.Add(k.ToString());
+            }
+        }
     }
 
     var selSelected = new HashSet<string>(System.StringComparer.Ordinal);
-    var dv = PageData["defaultValue"];
+    var dv = ViewData["defaultValue"];
     var dvStr = dv as string;
-    if (dvStr != null && dvStr.Length > 0) { selSelected.Add(dvStr); }
+    if (dvStr != null && dvStr.Length > 0)
+    {
+        selSelected.Add(dvStr);
+    }
     else
     {
         var dvEnum = dv as IEnumerable;
-        if (dvEnum != null)
+        if (dvEnum != null && !(dv is string))
         {
-            foreach (var k in dvEnum) { if (k != null) { selSelected.Add(k.ToString()); } }
+            foreach (var k in dvEnum)
+            {
+                if (k != null)
+                {
+                    selSelected.Add(k.ToString());
+                }
+            }
         }
     }
 
     var selItems = new List<KeyValuePair<string, string>>();
-    var itemsEnum = PageData["items"] as IEnumerable;
+    var itemsEnum = ViewData["items"] as IEnumerable;
     if (itemsEnum != null)
     {
         foreach (var it in itemsEnum)
         {
-            if (it == null) { continue; }
+            if (it == null)
+            {
+                continue;
+            }
             string key = null;
             string label = null;
-            var t = it.GetType();
-            var keyProp   = t.GetProperty("Key")   ?? t.GetProperty("key")   ?? t.GetProperty("Value") ?? t.GetProperty("value");
-            var labelProp = t.GetProperty("Label") ?? t.GetProperty("label") ?? t.GetProperty("Text")  ?? t.GetProperty("text");
-            if (keyProp   != null) { key   = System.Convert.ToString(keyProp.GetValue(it, null)); }
-            if (labelProp != null) { label = System.Convert.ToString(labelProp.GetValue(it, null)); }
-            if (key != null) { selItems.Add(new KeyValuePair<string, string>(key, label ?? key)); }
+            if (it is KeyValuePair<string, string>)
+            {
+                var kvp = (KeyValuePair<string, string>)it;
+                key = kvp.Key;
+                label = kvp.Value;
+            }
+            else
+            {
+                var t = it.GetType();
+                var keyProp   = t.GetProperty("Key")   ?? t.GetProperty("key")   ?? t.GetProperty("Value") ?? t.GetProperty("value");
+                var labelProp = t.GetProperty("Label") ?? t.GetProperty("label") ?? t.GetProperty("Text")  ?? t.GetProperty("text");
+                if (keyProp   != null)
+                {
+                    key   = System.Convert.ToString(keyProp.GetValue(it, null));
+                }
+                if (labelProp != null)
+                {
+                    label = System.Convert.ToString(labelProp.GetValue(it, null));
+                }
+            }
+            if (key != null)
+            {
+                selItems.Add(new KeyValuePair<string, string>(key, label ?? key));
+            }
         }
     }
 
     bool selShowSearch = selShowSearchOpt.HasValue ? selShowSearchOpt.Value : (selItems.Count >= 8);
-    string selWidthClass = selFullWidth ? "block w-full" : "inline-block";
-    string selRootClass  = "relative text-sm font-[inherit] " + selWidthClass;
-    if (!string.IsNullOrEmpty(selExtraClass)) { selRootClass = selRootClass + " " + selExtraClass; }
-    var selSelectedItems = selItems.Where(i => selSelected.Contains(i.Key)).ToList();
-    bool selIsPlaceholder = selSelectedItems.Count == 0;
-    string selDisplay = selIsPlaceholder ? selPlaceholder : string.Join(", ", selSelectedItems.Select(i => i.Value));
 
-    <div@(string.IsNullOrEmpty(selId) ? (System.Web.IHtmlString)new System.Web.HtmlString("") : new System.Web.HtmlString(" id=\"" + selId + "\""))
+    // Root classes
+    var selRoot = new List<string>();
+    selRoot.Add("relative");
+    selRoot.Add("text-sm");
+    selRoot.Add("font-[inherit]");
+    selRoot.Add(selFullWidth ? "block w-full" : "inline-block");
+    if (!string.IsNullOrEmpty(selExtraClass))
+    {
+        selRoot.Add(selExtraClass);
+    }
+    string selRootClass = string.Join(" ", selRoot);
+
+    // Compute initial display text (kept simple — chips would change height)
+    var selSelectedItems = selItems.Where(i => selSelected.Contains(i.Key)).ToList();
+    bool   selIsPlaceholder = selSelectedItems.Count == 0;
+    string selDisplay       = selIsPlaceholder ? selPlaceholder : string.Join(", ", selSelectedItems.Select(i => i.Value));
+
+    <div@(string.IsNullOrEmpty(selId) ? null : Html.Raw(" id=\"" + selId + "\""))
      class="@selRootClass"
      data-select
      data-selection-mode="@selMode"
@@ -93,7 +153,7 @@
      data-placeholder="@selPlaceholder"
      data-disabled="@(selDisabled ? "true" : "false")"
      data-invalid="@(selInvalid ? "true" : "false")"
-     @(selFullWidth ? new System.Web.HtmlString("data-full-width=\"true\"") : new System.Web.HtmlString(""))>
+     @(selFullWidth ? Html.Raw("data-full-width=\"true\"") : null)>
     <button type="button"
             data-trigger
             data-disabled="@(selDisabled ? "true" : "false")"
@@ -108,7 +168,7 @@
                    focus-visible:shadow-[0_0_0_3px_rgba(59,130,246,0.18)]
                    data-[disabled=true]:opacity-55 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:pointer-events-none
                    data-[invalid=true]:border-danger data-[invalid=true]:shadow-[0_0_0_3px_rgba(239,68,68,0.18)]"
-            @(selDisabled ? new System.Web.HtmlString("disabled") : new System.Web.HtmlString(""))>
+            @(selDisabled ? Html.Raw("disabled") : null)>
         <span data-value
               data-placeholder="@(selIsPlaceholder ? "true" : "false")"
               class="flex-1 min-w-0 truncate text-sm leading-6
@@ -143,7 +203,7 @@
             </div>
         }
         <ul data-listbox role="listbox"
-            @(selMode == "multiple" ? new System.Web.HtmlString("aria-multiselectable=\"true\"") : new System.Web.HtmlString(""))
+            @(selMode == "multiple" ? Html.Raw("aria-multiselectable=\"true\"") : null)
             class="list-none m-0 p-1 overflow-y-auto max-h-72">
             @if (selItems.Count == 0)
             {
@@ -174,7 +234,7 @@
             }
         </ul>
     </div>
-    <input type="hidden" name="@selName" value="@string.Join(",", selSelected)" @(selRequired ? new System.Web.HtmlString("required") : new System.Web.HtmlString("")) />
+    <input type="hidden" name="@selName" value="@string.Join(",", selSelected)" @(selRequired ? Html.Raw("required") : null) />
     </div>
 }
 @if (HttpContext.Current.Items["_select_assets_loaded"] == null)
@@ -338,6 +398,20 @@
         }
     }
 
+    /* Runtime API — build the same Tailwind markup inside `host` from a JS opts object.
+       opts = {
+         placeholder: string,
+         options:     [{ value, label, disabled? }],
+         selected:    [string],
+         single:      bool        // true => selectionMode "single", false => "multiple"
+         name:        string,     // hidden input name (optional)
+         className:   string,     // extra classes on root
+         disabled:    bool,
+         invalid:     bool,
+         showSearch:  bool        // override (default: auto when options.length >= 8)
+         onChange:    function(selectedKeysArray)
+       }
+       Returns: { root, getSelected(), setSelected(keys), destroy() } */
     function escapeAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
     function escapeText(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 

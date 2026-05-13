@@ -1,0 +1,55 @@
+@*
+    Edit screen — pick which .cshtml under /Views/Scripts/ to render for
+    this module instance. Selection is persisted in module settings.
+
+    NOTE: DNN MVC's `DnnHtmlHelper<T>` does NOT expose `Html.BeginForm`
+    or `Html.AntiForgeryToken`, so we emit a plain HTML form and rely on
+    DNN's own moduleId routing to deliver the POST to ScriptController.Edit.
+*@
+@{
+    Layout = null;
+    var available = ViewBag.AvailableScripts as System.Collections.Generic.List<string>
+                    ?? new System.Collections.Generic.List<string>();
+    var selected  = ViewBag.Selected as string ?? string.Empty;
+    var postUrl   = Url.Action("Edit", "Script");
+}
+
+<h2>Razor MVC Host — pick a script</h2>
+
+<form method="post" action="@postUrl">
+
+    <div style="margin: 12px 0;">
+        <label for="scriptPath" style="display:block; font-weight:600; margin-bottom:4px;">
+            Script (relative to <code>Views/Scripts/</code>)
+        </label>
+
+        @if (available.Count == 0)
+        {
+            <p><em>No <code>.cshtml</code> files found under
+                <code>~/DesktopModules/MVC/Dnn.Modules.RazorMvcHost/Views/Scripts/</code>.
+                Drop one in and reload this page.</em></p>
+            <input type="hidden" name="scriptPath" value="" />
+        }
+        else
+        {
+            <select id="scriptPath" name="scriptPath" style="min-width: 320px;">
+                <option value="">-- (none) --</option>
+                @foreach (var path in available)
+                {
+                    if (string.Equals(path, selected, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        <option value="@path" selected="selected">@path</option>
+                    }
+                    else
+                    {
+                        <option value="@path">@path</option>
+                    }
+                }
+            </select>
+        }
+    </div>
+
+    <div>
+        <button type="submit" class="dnnPrimaryAction">Save</button>
+    </div>
+</form>

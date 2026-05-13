@@ -1,0 +1,36 @@
+﻿<dotnetnuke type="ResourceFile" version="5.0">
+  <files>
+    <file>
+      <path>Views/Scripts/</path>
+      <name>Hello.cshtml</name>
+    </file>
+    <file>
+      <path>Views/Scripts/</path>
+      <name>SelectDemo.cshtml</name>
+    </file>
+    <file>
+      <path>Views/Script/</path>
+      <name>Edit.cshtml</name>
+    </file>
+    <file>
+      <path>Views/Script/</path>
+      <name>NoScript.cshtml</name>
+    </file>
+    <file>
+      <path>Views/</path>
+      <name>_ViewStart.cshtml</name>
+    </file>
+    <file>
+      <path />
+      <name>License.txt</name>
+    </file>
+    <file>
+      <path />
+      <name>ReleaseNotes.txt</name>
+    </file>
+    <file>
+      <path />
+      <name>Web.config</name>
+    </file>
+  </files>
+</dotnetnuke>

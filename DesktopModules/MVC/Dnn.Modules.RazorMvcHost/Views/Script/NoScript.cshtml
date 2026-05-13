@@ -1,0 +1,12 @@
+@*
+    Fallback view shown when no script is configured (or the configured one
+    is missing). The Edit screen lets a host pick from /Views/Scripts/.
+*@
+@{
+    Layout = null;
+    var msg = ViewBag.Message as string ?? "No script selected.";
+}
+<div class="dnn-form-message dnn-form-info">
+    <p>@msg</p>
+    <p>Use the module's <strong>Edit</strong> action (pencil icon) to choose a Razor script.</p>
+</div>

@@ -16,50 +16,77 @@
     <div class="space-y-1">
         <h2 class="text-base font-semibold">1. Single (placeholder)</h2>
         <div class="text-xs text-default-400">Country</div>
-        @RenderPage("Shared/Components/_Select.cshtml", new {
-            id = "country",
-            name = "country",
-            placeholder = "Select an item",
-            items = new[] {
+        @{
+            PageData["id"]            = "country";
+            PageData["name"]          = "country";
+            PageData["placeholder"]   = "Select an item";
+            PageData["selectionMode"] = null;
+            PageData["defaultValue"]  = null;
+            PageData["disabledKeys"]  = null;
+            PageData["isDisabled"]    = null;
+            PageData["isInvalid"]     = null;
+            PageData["isRequired"]    = null;
+            PageData["showSearch"]    = null;
+            PageData["scriptOnly"]    = null;
+            PageData["className"]     = null;
+            PageData["fullWidth"]     = null;
+            PageData["items"]         = new[] {
                 new { Key = "us", Label = "United States" },
                 new { Key = "ca", Label = "Canada" },
                 new { Key = "mx", Label = "Mexico" },
                 new { Key = "br", Label = "Brazil" }
-            }
-        })
+            };
+        }
+        @RenderPage("Shared/Components/_Select.cshtml")
     </div>
 
     @* 2. Single with default value *@
     <div class="space-y-1">
         <h2 class="text-base font-semibold">2. Single with default value (height stays the same)</h2>
         <div class="text-xs text-default-400">Language</div>
-        @RenderPage("Shared/Components/_Select.cshtml", new {
-            id = "lang",
-            name = "lang",
-            placeholder = "Pick a language",
-            defaultValue = "ts",
-            disabledKeys = new[] { "py" },
-            items = new[] {
+        @{
+            PageData["id"]            = "lang";
+            PageData["name"]          = "lang";
+            PageData["placeholder"]   = "Pick a language";
+            PageData["selectionMode"] = null;
+            PageData["defaultValue"]  = "ts";
+            PageData["disabledKeys"]  = new[] { "py" };
+            PageData["isDisabled"]    = null;
+            PageData["isInvalid"]     = null;
+            PageData["isRequired"]    = null;
+            PageData["showSearch"]    = null;
+            PageData["scriptOnly"]    = null;
+            PageData["className"]     = null;
+            PageData["fullWidth"]     = null;
+            PageData["items"]         = new[] {
                 new { Key = "js", Label = "JavaScript" },
                 new { Key = "ts", Label = "TypeScript" },
                 new { Key = "cs", Label = "C#" },
                 new { Key = "py", Label = "Python" }
-            }
-        })
+            };
+        }
+        @RenderPage("Shared/Components/_Select.cshtml")
     </div>
 
     @* 3. Multiple — no selected bg, just check on right *@
     <div class="space-y-1">
         <h2 class="text-base font-semibold">3. Multiple — no selected bg, just check on right</h2>
         <div class="text-xs text-default-400">States</div>
-        @RenderPage("Shared/Components/_Select.cshtml", new {
-            id = "states",
-            name = "states",
-            selectionMode = "multiple",
-            placeholder = "Pick states",
-            showSearch = true,
-            defaultValue = new[] { "ca", "tx" },
-            items = new[] {
+        @{
+            PageData["id"]            = "states";
+            PageData["name"]          = "states";
+            PageData["selectionMode"] = "multiple";
+            PageData["placeholder"]   = "Pick states";
+            PageData["showSearch"]    = true;
+            PageData["defaultValue"]  = new[] { "ca", "tx" };
+            PageData["disabledKeys"]  = null;
+            PageData["isDisabled"]    = null;
+            PageData["isInvalid"]     = null;
+            PageData["isRequired"]    = null;
+            PageData["scriptOnly"]    = null;
+            PageData["className"]     = null;
+            PageData["fullWidth"]     = null;
+            PageData["items"]         = new[] {
                 new { Key = "fl", Label = "Florida" },
                 new { Key = "de", Label = "Delaware" },
                 new { Key = "ca", Label = "California" },
@@ -68,36 +95,60 @@
                 new { Key = "wa", Label = "Washington" },
                 new { Key = "or", Label = "Oregon" },
                 new { Key = "nv", Label = "Nevada" }
-            }
-        })
+            };
+        }
+        @RenderPage("Shared/Components/_Select.cshtml")
     </div>
 
-    @* 4. Disabled + Invalid *@
+    @* 4. Disabled / Invalid *@
     <div class="space-y-1">
         <h2 class="text-base font-semibold">4. Disabled / Invalid</h2>
         <div class="grid grid-cols-2 gap-4">
             <div class="space-y-1">
                 <div class="text-xs text-default-400">Disabled</div>
-                @RenderPage("Shared/Components/_Select.cshtml", new {
-                    placeholder = "Disabled",
-                    isDisabled = true,
-                    items = new[] {
+                @{
+                    PageData["id"]            = null;
+                    PageData["name"]          = null;
+                    PageData["placeholder"]   = "Disabled";
+                    PageData["isDisabled"]    = true;
+                    PageData["isInvalid"]     = null;
+                    PageData["isRequired"]    = null;
+                    PageData["selectionMode"] = null;
+                    PageData["defaultValue"]  = null;
+                    PageData["disabledKeys"]  = null;
+                    PageData["showSearch"]    = null;
+                    PageData["scriptOnly"]    = null;
+                    PageData["className"]     = null;
+                    PageData["fullWidth"]     = null;
+                    PageData["items"]         = new[] {
                         new { Key = "a", Label = "A" },
                         new { Key = "b", Label = "B" }
-                    }
-                })
+                    };
+                }
+                @RenderPage("Shared/Components/_Select.cshtml")
             </div>
             <div class="space-y-1">
                 <div class="text-xs text-default-400">Invalid</div>
-                @RenderPage("Shared/Components/_Select.cshtml", new {
-                    placeholder = "This is required",
-                    isInvalid = true,
-                    isRequired = true,
-                    items = new[] {
+                @{
+                    PageData["id"]            = null;
+                    PageData["name"]          = null;
+                    PageData["placeholder"]   = "This is required";
+                    PageData["isDisabled"]    = null;
+                    PageData["isInvalid"]     = true;
+                    PageData["isRequired"]    = true;
+                    PageData["selectionMode"] = null;
+                    PageData["defaultValue"]  = null;
+                    PageData["disabledKeys"]  = null;
+                    PageData["showSearch"]    = null;
+                    PageData["scriptOnly"]    = null;
+                    PageData["className"]     = null;
+                    PageData["fullWidth"]     = null;
+                    PageData["items"]         = new[] {
                         new { Key = "a", Label = "A" },
                         new { Key = "b", Label = "B" }
-                    }
-                })
+                    };
+                }
+                @RenderPage("Shared/Components/_Select.cshtml")
             </div>
         </div>
     </div>
@@ -109,10 +160,6 @@
         <div id="rt-host"></div>
         <pre id="out" class="mt-3 text-xs bg-content2 rounded-lg p-3 max-h-40 overflow-auto whitespace-pre-wrap text-default-800">change events will appear here…</pre>
     </div>
-
-    @* Asset loader: emits the Select IIFE exactly once via HttpContext.Items.
-       scriptOnly = true skips markup and only emits the <script> block. *@
-    @RenderPage("Shared/Components/_Select.cshtml", new { scriptOnly = true })
 
     <script>
     (function () {
@@ -144,7 +191,6 @@
                 onChange: function (keys) { logChange('fruit', keys); }
             });
 
-            // also log change events from server-rendered selects
             ['country', 'lang', 'states'].forEach(function (id) {
                 var el = document.getElementById(id);
                 if (el) el.addEventListener('select:change', function (e) {

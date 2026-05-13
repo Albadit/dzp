@@ -1,0 +1,152 @@
+@*
+    Demo: render the shared MVC <Select> partial in multiple configurations.
+*@
+@using System.Collections.Generic
+@{
+    Layout = null;
+
+    // ---- 1. Simple country list ----
+    var countries = new System.Collections.Generic.List<object>();
+    countries.Add(new { Key = "us", Label = "United States" });
+    countries.Add(new { Key = "ca", Label = "Canada" });
+    countries.Add(new { Key = "mx", Label = "Mexico" });
+    countries.Add(new { Key = "br", Label = "Brazil" });
+
+    var vdCountry = new ViewDataDictionary();
+    vdCountry.Add("id", "country");
+    vdCountry.Add("name", "country");
+    vdCountry.Add("placeholder", "Select a country");
+    vdCountry.Add("items", countries);
+
+    // ---- 2. Pre-selected (defaultValue) ----
+    var vdCountryPre = new ViewDataDictionary();
+    vdCountryPre.Add("id", "countryPre");
+    vdCountryPre.Add("name", "countryPre");
+    vdCountryPre.Add("placeholder", "Select a country");
+    vdCountryPre.Add("items", countries);
+    vdCountryPre.Add("defaultValue", "mx");
+
+    // ---- 3. Disabled select ----
+    var vdDisabled = new ViewDataDictionary();
+    vdDisabled.Add("id", "disabledSel");
+    vdDisabled.Add("name", "disabledSel");
+    vdDisabled.Add("placeholder", "I'm disabled");
+    vdDisabled.Add("items", countries);
+    vdDisabled.Add("isDisabled", true);
+
+    // ---- 4. Disabled keys (some options unselectable) ----
+    var vdDisabledKeys = new ViewDataDictionary();
+    vdDisabledKeys.Add("id", "countryDk");
+    vdDisabledKeys.Add("name", "countryDk");
+    vdDisabledKeys.Add("placeholder", "Pick (BR/MX disabled)");
+    vdDisabledKeys.Add("items", countries);
+    var dk = new System.Collections.Generic.List<string>();
+    dk.Add("br");
+    dk.Add("mx");
+    vdDisabledKeys.Add("disabledKeys", dk);
+
+    // ---- 5. Multi-select with two pre-selected ----
+    var vdMulti = new ViewDataDictionary();
+    vdMulti.Add("id", "countriesMulti");
+    vdMulti.Add("name", "countriesMulti");
+    vdMulti.Add("placeholder", "Pick multiple");
+    vdMulti.Add("items", countries);
+    vdMulti.Add("selectionMode", "multiple");
+    var preMulti = new System.Collections.Generic.List<string>();
+    preMulti.Add("us");
+    preMulti.Add("ca");
+    vdMulti.Add("defaultValue", preMulti);
+
+    // ---- 6. Many items (auto search) ----
+    var fruits = new System.Collections.Generic.List<object>();
+    fruits.Add(new { Key = "apple",      Label = "Apple" });
+    fruits.Add(new { Key = "apricot",    Label = "Apricot" });
+    fruits.Add(new { Key = "banana",     Label = "Banana" });
+    fruits.Add(new { Key = "blueberry",  Label = "Blueberry" });
+    fruits.Add(new { Key = "cherry",     Label = "Cherry" });
+    fruits.Add(new { Key = "date",       Label = "Date" });
+    fruits.Add(new { Key = "elderberry", Label = "Elderberry" });
+    fruits.Add(new { Key = "fig",        Label = "Fig" });
+    fruits.Add(new { Key = "grape",      Label = "Grape" });
+    fruits.Add(new { Key = "kiwi",       Label = "Kiwi" });
+    fruits.Add(new { Key = "lemon",      Label = "Lemon" });
+    fruits.Add(new { Key = "mango",      Label = "Mango" });
+    fruits.Add(new { Key = "orange",     Label = "Orange" });
+    fruits.Add(new { Key = "peach",      Label = "Peach" });
+    fruits.Add(new { Key = "pear",       Label = "Pear" });
+    fruits.Add(new { Key = "pineapple",  Label = "Pineapple" });
+    fruits.Add(new { Key = "raspberry",  Label = "Raspberry" });
+    fruits.Add(new { Key = "strawberry", Label = "Strawberry" });
+    fruits.Add(new { Key = "watermelon", Label = "Watermelon" });
+
+    var vdFruits = new ViewDataDictionary();
+    vdFruits.Add("id", "fruitSearch");
+    vdFruits.Add("name", "fruitSearch");
+    vdFruits.Add("placeholder", "Pick a fruit (search)");
+    vdFruits.Add("items", fruits);
+
+    // ---- 7. Required ----
+    var vdReq = new ViewDataDictionary();
+    vdReq.Add("id", "countryReq");
+    vdReq.Add("name", "countryReq");
+    vdReq.Add("placeholder", "Required field");
+    vdReq.Add("items", countries);
+    vdReq.Add("isRequired", true);
+}
+
+<style>
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 920px; padding: 16px; }
+    .demo-card { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa; }
+    .demo-card h3 { margin: 0 0 6px 0; font-size: 14px; color: #374151; }
+    .demo-card p  { margin: 0 0 10px 0; font-size: 12px; color: #6b7280; }
+</style>
+
+<form method="post" class="demo-grid">
+
+    <div class="demo-card">
+        <h3>1. Simple</h3>
+        <p>Country list, no pre-selection.</p>
+        @Html.Partial("_Select", null, vdCountry)
+    </div>
+
+    <div class="demo-card">
+        <h3>2. Pre-selected</h3>
+        <p><code>defaultValue = "mx"</code></p>
+        @Html.Partial("_Select", null, vdCountryPre)
+    </div>
+
+    <div class="demo-card">
+        <h3>3. Disabled</h3>
+        <p>Whole control is disabled.</p>
+        @Html.Partial("_Select", null, vdDisabled)
+    </div>
+
+    <div class="demo-card">
+        <h3>4. Disabled options</h3>
+        <p><code>disabledKeys = [br, mx]</code></p>
+        @Html.Partial("_Select", null, vdDisabledKeys)
+    </div>
+
+    <div class="demo-card">
+        <h3>5. Multi-select</h3>
+        <p>Two pre-selected (US, CA).</p>
+        @Html.Partial("_Select", null, vdMulti)
+    </div>
+
+    <div class="demo-card">
+        <h3>6. Search (auto)</h3>
+        <p>19 fruits — search box appears.</p>
+        @Html.Partial("_Select", null, vdFruits)
+    </div>
+
+    <div class="demo-card">
+        <h3>7. Required</h3>
+        <p>HTML5 required on hidden input.</p>
+        @Html.Partial("_Select", null, vdReq)
+    </div>
+
+    <div class="demo-card" style="display: flex; align-items: end;">
+        <button type="submit" class="dnnPrimaryAction" style="padding: 8px 16px;">Submit form</button>
+    </div>
+
+</form>
